@@ -99,6 +99,44 @@
   .view{display:none;animation:fade .35s ease}
   .view.on{display:block}
 
+  /* ===== СТАРТОВЫЙ ЭКРАН ===== */
+  .start-screen{position:fixed;inset:0;z-index:2000;overflow:auto;background:#1a1410}
+  body.start-active{overflow:hidden}
+  .start-bg{position:fixed;inset:0;z-index:0;opacity:.5}
+  .start-bg .hub-scene{width:100%;height:100%;object-fit:cover}
+  .start-content{position:relative;z-index:1;min-height:100%;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:32px 22px;gap:14px;
+    background:linear-gradient(180deg,rgba(20,12,8,.55),rgba(20,12,8,.78))}
+  .start-logo{margin-bottom:6px}
+  .start-logo-mark{font-size:54px;line-height:1;filter:drop-shadow(0 4px 12px rgba(255,180,80,.4))}
+  .start-title{font-family:'Cinzel';font-size:clamp(34px,8vw,56px);color:var(--gold);letter-spacing:.06em;
+    margin:6px 0 0;text-shadow:0 3px 14px rgba(0,0,0,.7)}
+  .start-subtitle{font-family:'Cinzel';font-size:clamp(13px,3vw,18px);color:#ffe9c0;letter-spacing:.16em;text-transform:uppercase}
+  .start-lede{max-width:460px;color:#f0dcc0;font-size:15px;line-height:1.6;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+  .start-step{font-family:'Cinzel';font-size:12px;letter-spacing:.1em;color:var(--gold-soft);text-transform:uppercase}
+  .start-h2{font-family:'Cinzel';font-size:clamp(20px,5vw,30px);color:#ffe9c0;margin:0;text-shadow:0 2px 10px rgba(0,0,0,.7)}
+  .start-hint{max-width:420px;color:#e6d2b6;font-size:13.5px;line-height:1.5}
+  .start-cta{font-size:17px;padding:14px 30px;margin-top:8px}
+  .start-nav{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+  .start-dragons{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;max-width:680px;margin:6px 0}
+  .start-dcard{background:linear-gradient(180deg,var(--panel),var(--vellum2));border:2px solid var(--edge);
+    border-radius:12px;padding:16px 14px;width:180px;cursor:pointer;transition:.18s;text-align:center;
+    display:flex;flex-direction:column;align-items:center;gap:6px}
+  .start-dcard:hover{transform:translateY(-4px);border-color:var(--gold-soft);box-shadow:0 10px 28px rgba(0,0,0,.5)}
+  .start-dcard.sel{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,164,65,.3),0 10px 28px rgba(0,0,0,.5)}
+  .start-dcard-art{font-size:40px}
+  .start-dcard-art .dragon-art,.start-dcard-art .dragon-photo{width:84px;height:84px;border-radius:8px}
+  .start-dcard-name{font-family:'Cinzel';font-size:16px;color:var(--gold)}
+  .start-dcard-lore{font-size:11.5px;color:var(--ink-dim);line-height:1.4}
+  .start-chosen{display:flex;flex-direction:column;align-items:center;gap:6px;margin:4px 0}
+  .start-chosen .dragon-art,.start-chosen .dragon-photo{width:96px;height:96px;border-radius:10px}
+  .start-chosen-name{font-family:'Cinzel';font-size:15px;color:var(--gold)}
+  .start-settlement-ic{font-size:46px;margin:4px 0}
+  .start-input{width:min(90%,360px);font-family:inherit;font-size:16px;color:var(--ink);text-align:center;
+    background:var(--panel2);border:1px solid var(--gold-soft);border-radius:8px;padding:13px 16px;margin:4px 0}
+  .start-input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,164,65,.2)}
+  .start-input::placeholder{color:var(--ink-dim)}
+
   /* ===== ХАБ (главный экран) ===== */
   .hub-wrap{margin:10px 0}
   .hub-stage{position:relative;width:100%;border:1px solid var(--gold-soft);border-radius:10px;overflow:hidden;
@@ -149,9 +187,16 @@
   .roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
 
   /* Карусель драконов */
-  .carousel{position:relative;display:flex;align-items:center;gap:6px}
+  .lair-roster{display:block;width:100%}
+  .lair-sort{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .lair-sort-label{font-size:13px;color:var(--ink-dim)}
+  .lair-sort-sel{font-family:inherit;font-size:13px;color:var(--ink);cursor:pointer;
+    background:var(--panel2);border:1px solid var(--gold-soft);border-radius:6px;padding:6px 10px}
+  .lair-sort-sel:focus{outline:none;border-color:var(--gold)}
+  .lair-count{margin-left:auto;font-family:'Cinzel';font-size:13px;color:var(--gold)}
+  .carousel{position:relative;display:flex;align-items:center;gap:6px;width:100%}
   .carousel-track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;
-    padding:6px 2px 12px;scroll-behavior:smooth;flex:1;scrollbar-width:thin;scrollbar-color:var(--gold-soft) transparent}
+    padding:6px 2px 12px;scroll-behavior:smooth;flex:1 1 auto;min-width:0;scrollbar-width:thin;scrollbar-color:var(--gold-soft) transparent}
   .carousel-track::-webkit-scrollbar{height:8px}
   .carousel-track::-webkit-scrollbar-thumb{background:var(--gold-soft);border-radius:4px}
   .carousel-track::-webkit-scrollbar-track{background:rgba(0,0,0,.2);border-radius:4px}
@@ -659,6 +704,7 @@
 </style>
 </head>
 <body>
+<div id="startScreen" class="start-screen" style="display:none"></div>
 <div id="app">
   <header class="crest">
     <div class="crest-frame"><h1>Драконис</h1></div>
@@ -689,7 +735,7 @@
     <div class="panel">
       <h2>Логово</h2>
       <p class="lede">Твои крылатые подопечные. Нажми, чтобы открыть свиток дракона.</p>
-      <div class="roster" id="lairRoster"></div>
+      <div class="lair-roster" id="lairRoster"></div>
     </div>
     <div class="panel" id="detailPanel" style="display:none"></div>
   </section>
@@ -1160,6 +1206,7 @@ function artifactBonus(inst){
 /* ======================= СОСТОЯНИЕ ======================= */
 let S = {
   gold:300, eggs:4, dust:0,
+  settlement:'Драконьи Земли',
   dragons:[],      // {uid,id,level,xp,curHp,morph,equip,genes,gen}
   discovered:{},   // species id -> true
   morphsSeen:{},   // species id -> {morphId:true}
@@ -1583,26 +1630,53 @@ function dragonCard(d,{selectable,onclick}={}){
   return div;
 }
 
+function lairSorted(){
+  const mode=S.lairSort||'level-desc';
+  const arr=[...S.dragons];
+  const byName=(a,b)=>dragonName(a).localeCompare(dragonName(b),'ru');
+  if(mode==='level-desc') arr.sort((a,b)=>b.level-a.level || byName(a,b));
+  else if(mode==='level-asc') arr.sort((a,b)=>a.level-b.level || byName(a,b));
+  else if(mode==='rarity') arr.sort((a,b)=>(speciesById(b.id).rarity-speciesById(a.id).rarity) || b.level-a.level);
+  else if(mode==='name') arr.sort(byName);
+  return arr;
+}
+
 function renderLair(){
   if(typeof renderDaily==='function' && $('#dailyPanel')) renderDaily();
   const wrap=$('#lairRoster'); wrap.innerHTML='';
   if(!S.dragons.length){wrap.innerHTML='<div class="empty">Логово пустует. Высиди яйцо в Гнезде, чтобы обрести первого дракона.</div>';$('#detailPanel').style.display='none';return;}
+  const sorted=lairSorted();
+  // панель сортировки
+  const sortBar=document.createElement('div'); sortBar.className='lair-sort';
+  const mode=S.lairSort||'level-desc';
+  sortBar.innerHTML=`<span class="lair-sort-label">Сортировка:</span>
+    <select id="lairSortSel" class="lair-sort-sel">
+      <option value="level-desc"${mode==='level-desc'?' selected':''}>По уровню ↓</option>
+      <option value="level-asc"${mode==='level-asc'?' selected':''}>По уровню ↑</option>
+      <option value="rarity"${mode==='rarity'?' selected':''}>По редкости</option>
+      <option value="name"${mode==='name'?' selected':''}>По имени</option>
+    </select>
+    <span class="lair-count">🐉 ${S.dragons.length}</span>`;
+  wrap.appendChild(sortBar);
   // карусель: стрелки + горизонтальная лента карточек
   const car=document.createElement('div'); car.className='carousel';
   const prev=document.createElement('button'); prev.className='carousel-arrow prev'; prev.innerHTML='‹'; prev.setAttribute('aria-label','Назад');
   const next=document.createElement('button'); next.className='carousel-arrow next'; next.innerHTML='›'; next.setAttribute('aria-label','Вперёд');
   const track=document.createElement('div'); track.className='carousel-track'; track.id='lairTrack';
-  S.dragons.forEach(d=>{
+  sorted.forEach(d=>{
     const card=dragonCard(d,{selectable:true,onclick:selectDragon});
     card.classList.add('carousel-card');
+    card.dataset.uid=d.uid;
     track.appendChild(card);
   });
   car.appendChild(prev); car.appendChild(track); car.appendChild(next);
   wrap.appendChild(car);
+  // обработчик сортировки
+  $('#lairSortSel').onchange=(e)=>{ S.lairSort=e.target.value; persist(); renderLair(); };
   // прокрутка стрелками на ширину видимой области
-  const scrollBy=()=>Math.max(track.clientWidth*0.8, 200);
-  prev.onclick=()=>track.scrollBy({left:-scrollBy(),behavior:'smooth'});
-  next.onclick=()=>track.scrollBy({left: scrollBy(),behavior:'smooth'});
+  const scrollAmt=()=>Math.max(track.clientWidth*0.8, 200);
+  prev.onclick=()=>track.scrollBy({left:-scrollAmt(),behavior:'smooth'});
+  next.onclick=()=>track.scrollBy({left: scrollAmt(),behavior:'smooth'});
   // прятать стрелки на краях
   const updateArrows=()=>{
     prev.classList.toggle('hidden', track.scrollLeft<=4);
@@ -1612,8 +1686,8 @@ function renderLair(){
   setTimeout(updateArrows, 50);
   // прокрутить к выбранному дракону
   if(S.sel){
-    const idx=S.dragons.findIndex(d=>d.uid===S.sel);
-    if(idx>=0){ const c=track.children[idx]; if(c) setTimeout(()=>{ c.scrollIntoView({inline:'center',block:'nearest',behavior:'auto'}); updateArrows(); },0); }
+    const c=[...track.children].find(ch=>ch.dataset.uid===S.sel);
+    if(c) setTimeout(()=>{ c.scrollIntoView({inline:'center',block:'nearest',behavior:'auto'}); updateArrows(); },0);
   }
   if(S.sel && S.dragons.some(d=>d.uid===S.sel)) renderDetail(S.dragons.find(d=>d.uid===S.sel));
   else $('#detailPanel').style.display='none';
@@ -1624,9 +1698,7 @@ function selectDragon(d){
   // обновляем подсветку карточек без пересборки карусели (чтобы не сбивать прокрутку)
   const track=$('#lairTrack');
   if(track){
-    [...track.children].forEach(c=>c.classList.remove('sel'));
-    const idx=S.dragons.findIndex(x=>x.uid===d.uid);
-    if(idx>=0 && track.children[idx]) track.children[idx].classList.add('sel');
+    [...track.children].forEach(c=>c.classList.toggle('sel', c.dataset.uid===d.uid));
     renderDetail(d);
   } else {
     renderLair();
@@ -1921,7 +1993,7 @@ function renderHub(){
     <div class="hub-stage">
       ${hubSceneSVG()}
       <div class="hub-title-plate">
-        <div class="hub-title">Драконьи Земли</div>
+        <div class="hub-title">${S.settlement||'Драконьи Земли'}</div>
         <div class="hub-sub">🪙 ${S.gold} · 🥚 ${S.eggs} · 🐉 ${S.dragons.length} · ✦ ${S.dust}</div>
       </div>
       ${spots}
@@ -3381,29 +3453,147 @@ function confirmReset(){
 $('#hatchBtn').onclick=hatchEgg;
 $('#buyEggBtn').onclick=buyEgg;
 
+/* ===== СТАРТОВЫЙ ЭКРАН (онбординг при первом запуске) ===== */
+const STARTER_DRAGONS=['ember','glacier','sporewing']; // огонь, лёд, яд
+const onboard={dragon:'ember', dragonName:'', settlement:''};
+
+function showStartScreen(){
+  const sc=$('#startScreen'); if(!sc) return;
+  document.body.classList.add('start-active');
+  sc.style.display='block';
+  renderStartWelcome();
+}
+
+function startScreenShell(inner){
+  return `<div class="start-bg">${hubSceneSVG()}</div>
+    <div class="start-content">${inner}</div>`;
+}
+
+// Шаг 1: приветствие
+function renderStartWelcome(){
+  const sc=$('#startScreen');
+  sc.innerHTML=startScreenShell(`
+    <div class="start-logo">
+      <div class="start-logo-mark">🐉</div>
+      <h1 class="start-title">Драконис</h1>
+      <div class="start-subtitle">Кодекс Чешуи</div>
+    </div>
+    <p class="start-lede">Добро пожаловать, драконовод! Тебя ждут земли, полные драконьих яиц, древних реликвий и верных крылатых друзей. Высиживай, выращивай и собери их всех!</p>
+    <button class="btn start-cta" id="startBegin">✨ Начать путь</button>`);
+  $('#startBegin').onclick=renderStartPickDragon;
+}
+
+// Шаг 2: выбор первого дракона
+function renderStartPickDragon(){
+  const sc=$('#startScreen');
+  const cards=STARTER_DRAGONS.map(id=>{
+    const sp=speciesById(id);
+    const sel=onboard.dragon===id?' sel':'';
+    return `<button class="start-dcard${sel}" data-pick="${id}">
+      <div class="start-dcard-art">${dragonVisual(id,1)}</div>
+      <div class="start-dcard-name">${sp.name}</div>
+      ${elTag(sp.el)}
+      <div class="start-dcard-lore">${sp.lore}</div>
+    </button>`;
+  }).join('');
+  sc.innerHTML=startScreenShell(`
+    <div class="start-step">Шаг 1 из 3</div>
+    <h2 class="start-h2">Выбери первого дракона</h2>
+    <p class="start-hint">С ним начнётся твоё странствие. Не волнуйся — позже ты сможешь приручить и остальных!</p>
+    <div class="start-dragons">${cards}</div>
+    <div class="start-nav">
+      <button class="btn ghost" id="startBack">← Назад</button>
+      <button class="btn" id="startNext">Далее →</button>
+    </div>`);
+  sc.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{ onboard.dragon=b.dataset.pick; renderStartPickDragon(); });
+  $('#startBack').onclick=renderStartWelcome;
+  $('#startNext').onclick=renderStartNameDragon;
+}
+
+// Шаг 3: имя дракона
+function renderStartNameDragon(){
+  const sc=$('#startScreen');
+  const sp=speciesById(onboard.dragon);
+  sc.innerHTML=startScreenShell(`
+    <div class="start-step">Шаг 2 из 3</div>
+    <h2 class="start-h2">Как зовут твоего дракона?</h2>
+    <div class="start-chosen">${dragonVisual(onboard.dragon,1)}<div class="start-chosen-name">${sp.name}</div></div>
+    <input type="text" class="start-input" id="startDragonName" maxlength="20" placeholder="Придумай имя (или пропусти)" value="${onboard.dragonName}">
+    <div class="start-nav">
+      <button class="btn ghost" id="startBack">← Назад</button>
+      <button class="btn" id="startNext">Далее →</button>
+    </div>`);
+  const inp=$('#startDragonName'); setTimeout(()=>inp&&inp.focus(),50);
+  $('#startBack').onclick=renderStartPickDragon;
+  $('#startNext').onclick=()=>{ onboard.dragonName=inp.value.trim(); renderStartNameSettlement(); };
+}
+
+// Шаг 4: имя поселения
+function renderStartNameSettlement(){
+  const sc=$('#startScreen');
+  sc.innerHTML=startScreenShell(`
+    <div class="start-step">Шаг 3 из 3</div>
+    <h2 class="start-h2">Назови свои земли</h2>
+    <p class="start-hint">Как будет называться твоё драконье поселение?</p>
+    <div class="start-settlement-ic">🏰</div>
+    <input type="text" class="start-input" id="startSettlement" maxlength="24" placeholder="Например: Драконьи Земли" value="${onboard.settlement}">
+    <div class="start-nav">
+      <button class="btn ghost" id="startBack">← Назад</button>
+      <button class="btn start-cta" id="startFinish">🐉 Начать игру!</button>
+    </div>`);
+  const inp=$('#startSettlement'); setTimeout(()=>inp&&inp.focus(),50);
+  $('#startBack').onclick=renderStartNameDragon;
+  $('#startFinish').onclick=()=>{ onboard.settlement=inp.value.trim(); finishOnboarding(); };
+}
+
+// Завершение: создаём игру с выбором игрока
+function finishOnboarding(){
+  newGameFromOnboard();
+  document.body.classList.remove('start-active');
+  const sc=$('#startScreen'); if(sc){ sc.style.display='none'; sc.innerHTML=''; }
+  runDaily();
+  renderAll();
+  renderDaily();
+  switchView('hub');
+  const dn=onboard.dragonName||speciesById(onboard.dragon).name;
+  toast(`Добро пожаловать в ${S.settlement||'Драконьи Земли'}! ${dn} рад начать путь с тобой 🐉`);
+}
+
+function newGameFromOnboard(){
+  addDragon(onboard.dragon,2,'common',{atk:2,def:2,hp:2,spd:2,spark:false},1);
+  const d=S.dragons[0];
+  if(onboard.dragonName) d.name=onboard.dragonName;
+  // стартовая реликвия под стихию дракона (или базовая)
+  addArtifact('emberfang',1);
+  S.dust=60;
+  S.sel=d.uid;
+  S.settlement=onboard.settlement||'Драконьи Земли';
+}
+
 function newGame(){
   addDragon('ember',2,'common',{atk:2,def:2,hp:2,spd:2,spark:false},1);
   addArtifact('emberfang',1);
   S.dust=60;
   S.sel=S.dragons[0].uid;
+  S.settlement='Драконьи Земли';
 }
 
 const loaded=loadGame();
-if(!loaded){ newGame(); }
 // idle-доход за время отсутствия (только при загрузке сохранения)
 let idleGold=0;
 if(loaded){ idleGold=collectIdle(); }
-runDaily();
-renderAll();
-renderDaily();
-renderHub(); // игра открывается на главном экране
 
 if(loaded){
+  runDaily();
+  renderAll();
+  renderDaily();
+  renderHub(); // игра открывается на главном экране
   let msg='С возвращением! Драконы скучали по тебе 🐉';
   if(idleGold>0) msg+=` Пока тебя не было, в логове накопилось <b>${idleGold}🪙</b>.`;
   toast(msg);
 } else {
-  toast('Привет! Высиживай яйца, заботься о драконах и собери их всех 🐉🥚');
+  // первый запуск — приветственный экран с выбором дракона
+  showStartScreen();
 }
 
 // автосохранение при уходе со страницы и периодически
