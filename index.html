@@ -1,0 +1,3229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Драконис · Кодекс Чешуи</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Spectral:ital,wght@0,400;0,500;1,400&display=swap');
+
+  :root{
+    --ink:#e9dcc3;          /* пергаментные чернила-светлые */
+    --ink-dim:#a8987a;
+    --vellum:#1a1410;       /* тёмный пергамент-фон */
+    --vellum2:#221a13;
+    --panel:#2b2018;
+    --panel2:#352718;
+    --edge:#5c4326;
+    --gold:#d9a441;
+    --gold-soft:#b78a3a;
+    --ember:#e0633a;        /* огонь */
+    --frost:#6db4d4;        /* лёд */
+    --venom:#7fb24a;        /* яд */
+    --storm:#b88adf;        /* буря */
+    --shade:#cf6e8f;        /* тень */
+    --hp:#c5544a;
+    --xp:#5fa3c0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #2a1f15 0%, transparent 60%),
+      radial-gradient(900px 600px at 90% 110%, #20170f 0%, transparent 55%),
+      var(--vellum);
+    color:var(--ink);
+    font-family:'Spectral',Georgia,serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    mix-blend-mode:overlay;
+  }
+  #app{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:18px 16px 90px}
+
+  /* Header */
+  header.crest{
+    text-align:center;padding:22px 8px 8px;position:relative;
+  }
+  .crest-frame{
+    display:inline-block;position:relative;padding:6px 54px;
+  }
+  .crest-frame::before,.crest-frame::after{
+    content:"";position:absolute;top:50%;width:42px;height:42px;transform:translateY(-50%);
+    background-size:contain;background-repeat:no-repeat;background-position:center;opacity:.85;
+  }
+  .crest-frame::before{left:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23caa14a'%3E%3Cpath d='M22 6c-3 0-6 2-8 5-1-2-3-3-5-3 1 2 1 4 0 6 2 0 4-1 5-3 1 3 3 5 6 5-2-1-3-3-3-5 2 1 4 1 5-1-2 0-3-1-3-3 2 0 4-1 6-3z'/%3E%3C/svg%3E");
+    transform:translateY(-50%) scaleX(-1)}
+  .crest-frame::after{right:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23caa14a'%3E%3Cpath d='M22 6c-3 0-6 2-8 5-1-2-3-3-5-3 1 2 1 4 0 6 2 0 4-1 5-3 1 3 3 5 6 5-2-1-3-3-3-5 2 1 4 1 5-1-2 0-3-1-3-3 2 0 4-1 6-3z'/%3E%3C/svg%3E")}
+  .crest h1{
+    font-family:'Cinzel',serif;font-weight:700;letter-spacing:.16em;
+    margin:0;font-size:clamp(28px,5.4vw,50px);
+    color:transparent;background:linear-gradient(180deg,#f8e2a0,#d9a441 48%,#9a7430);
+    -webkit-background-clip:text;background-clip:text;
+    text-shadow:0 2px 1px rgba(0,0,0,.5),0 0 22px rgba(217,164,65,.18);
+  }
+  .crest .sub{font-style:italic;color:var(--ink-dim);letter-spacing:.06em;margin-top:4px;font-size:14px}
+  .rule{height:2px;background:
+    radial-gradient(circle at center,var(--gold) 0,transparent 2px) center/8px 2px,
+    linear-gradient(90deg,transparent,var(--edge) 20%,var(--gold-soft) 50%,var(--edge) 80%,transparent);
+    margin:12px auto;max-width:640px;opacity:.9}
+
+  /* Resource bar */
+  .ledger{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:6px 0 4px}
+  .coin{
+    display:flex;align-items:center;gap:7px;
+    background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--edge);border-radius:4px;padding:7px 14px;font-family:'Cinzel';font-size:14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 3px 8px rgba(0,0,0,.3);
+  }
+  .coin b{color:var(--gold);font-weight:600}
+  .coin .ic{font-size:16px;filter:drop-shadow(0 1px 1px #000)}
+
+  /* Nav tabs */
+  nav.tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:16px 0 8px}
+  .tab{
+    font-family:'Cinzel';letter-spacing:.08em;font-size:13px;
+    background:linear-gradient(180deg,rgba(53,39,24,.5),transparent);
+    border:1px solid var(--edge);color:var(--ink-dim);
+    padding:9px 18px;border-radius:4px;cursor:pointer;transition:.18s;position:relative;
+  }
+  .tab:hover{color:var(--ink);border-color:var(--gold-soft);background:linear-gradient(180deg,rgba(91,67,38,.4),transparent)}
+  .tab.on{color:#1a1410;background:linear-gradient(180deg,var(--gold),var(--gold-soft));border-color:var(--gold);font-weight:600;
+    box-shadow:0 3px 10px rgba(217,164,65,.3)}
+
+  .view{display:none;animation:fade .35s ease}
+  .view.on{display:block}
+
+  /* ===== ХАБ (главный экран) ===== */
+  .hub-wrap{margin:10px 0}
+  .hub-stage{position:relative;width:100%;border:1px solid var(--gold-soft);border-radius:10px;overflow:hidden;
+    box-shadow:0 10px 36px rgba(0,0,0,.5),inset 0 0 60px rgba(0,0,0,.3);aspect-ratio:5/3;min-height:300px}
+  .hub-scene{position:absolute;inset:0;width:100%;height:100%}
+  .hub-title-plate{position:absolute;top:0;left:0;right:0;z-index:4;text-align:center;padding:12px 0 22px;
+    background:linear-gradient(180deg,rgba(20,12,8,.7),transparent);pointer-events:none}
+  .hub-title{font-family:'Cinzel';font-size:clamp(18px,3.4vw,28px);letter-spacing:.08em;color:#ffe9c0;
+    text-shadow:0 2px 8px rgba(0,0,0,.8)}
+  .hub-sub{font-family:'Cinzel';font-size:clamp(10px,1.8vw,13px);color:#ffd9a0;margin-top:3px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+  .hub-spot{position:absolute;transform:translate(-50%,-50%);z-index:5;cursor:pointer;background:none;border:none;
+    display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;transition:.16s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+  .hub-spot:hover{transform:translate(-50%,-50%) scale(1.12)}
+  .hub-spot-art{width:clamp(42px,8vw,68px);height:clamp(42px,8vw,68px);display:block}
+  .hub-spot-art svg{width:100%;height:100%;overflow:visible}
+  .hub-spot-label{font-family:'Cinzel';font-size:clamp(9px,1.6vw,12px);color:#fff;letter-spacing:.04em;
+    background:rgba(20,12,8,.7);border:1px solid rgba(217,164,65,.5);border-radius:10px;padding:1px 9px;white-space:nowrap;
+    opacity:0;transition:.16s;transform:translateY(-2px)}
+  .hub-spot:hover .hub-spot-label{opacity:1;transform:translateY(0)}
+  .hub-spot-badge{position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;border-radius:9px;
+    background:var(--ember);color:#fff;font-size:11px;font-family:'Cinzel';display:flex;align-items:center;justify-content:center;
+    padding:0 4px;box-shadow:0 2px 5px rgba(0,0,0,.5);animation:badgepulse 1.8s ease-in-out infinite}
+  @keyframes badgepulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+  .hub-hint{text-align:center;color:var(--ink-dim);font-style:italic;font-size:13px;margin-top:12px}
+  @media(max-width:560px){ .hub-spot-label{opacity:1;transform:none;font-size:9px;padding:1px 5px} }
+
+  /* шапка экрана с возвратом на хаб */
+  .screen-bar{display:flex;align-items:center;gap:12px;margin:10px 0 4px}
+  .home-btn{font-family:'Cinzel';font-size:13px;letter-spacing:.04em;cursor:pointer;
+    background:linear-gradient(180deg,rgba(91,67,38,.4),transparent);border:1px solid var(--gold-soft);
+    color:var(--gold);padding:8px 16px;border-radius:6px;transition:.16s;white-space:nowrap}
+  .home-btn:hover{background:linear-gradient(180deg,var(--gold),var(--gold-soft));color:#1a1410}
+  .screen-bar-title{font-family:'Cinzel';font-size:clamp(15px,2.6vw,20px);letter-spacing:.06em;color:var(--ink)}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+
+  .panel{
+    background:
+      radial-gradient(600px 200px at 50% -40%,rgba(217,164,65,.05),transparent),
+      linear-gradient(180deg,var(--panel),var(--vellum2));
+    border:1px solid var(--edge);border-radius:7px;padding:18px;margin-bottom:16px;position:relative;
+    box-shadow:0 14px 36px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .panel::before{content:"";position:absolute;inset:5px;border:1px solid rgba(217,164,65,.12);border-radius:4px;pointer-events:none}
+  .panel h2{font-family:'Cinzel';font-size:17px;letter-spacing:.1em;margin:0 0 4px;color:var(--gold);position:relative}
+  .panel .lede{font-style:italic;color:var(--ink-dim);margin:0 0 14px;font-size:14px;position:relative}
+
+  /* Dragon roster grid */
+  .roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .dcard{
+    background:radial-gradient(120px 80px at 50% 0,rgba(255,255,255,.05),transparent),var(--panel2);
+    border:1px solid var(--edge);border-radius:6px;padding:12px;text-align:center;cursor:pointer;
+    transition:.18s;position:relative;overflow:hidden;
+  }
+  .dcard:hover{transform:translateY(-3px);border-color:var(--gold-soft);box-shadow:0 8px 20px rgba(0,0,0,.4)}
+  .dcard.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 8px 20px rgba(0,0,0,.4)}
+  .sigil{font-size:54px;line-height:1;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6));margin:4px 0 6px}
+  /* рисованные SVG-драконы заполняют свой контейнер по размеру шрифта */
+  .dragon-wrap{display:inline-flex;align-items:center;justify-content:center}
+  .dragon-art{width:1.15em;height:1.15em;display:block;overflow:visible}
+  .dragon-photo{object-fit:contain;border-radius:6px}
+  .sigil .dragon-art{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5))}
+  .dname{font-family:'Cinzel';font-size:14px;letter-spacing:.04em}
+  .dmeta{font-size:12px;color:var(--ink-dim);margin-top:2px}
+  .elem-tag{display:inline-block;font-size:10px;letter-spacing:.08em;padding:1px 7px;border-radius:10px;margin-top:6px;font-family:'Cinzel';text-transform:uppercase}
+
+  /* Расцветки-морфы */
+  .morph-pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;letter-spacing:.04em;
+    padding:1px 8px 1px 5px;border-radius:10px;margin-top:6px;font-family:'Cinzel';
+    background:var(--vellum);border:1px solid var(--edge);color:var(--ink-dim)}
+  .morph-pill i{width:8px;height:8px;border-radius:50%;display:inline-block;box-shadow:0 0 3px rgba(0,0,0,.6)}
+  .morph-pill[data-shiny] {border-color:var(--gold);color:var(--gold);animation:shimmer 2.2s ease-in-out infinite}
+  .morph-pill.plain{opacity:.7}
+  @keyframes shimmer{0%,100%{filter:brightness(1)}50%{filter:brightness(1.5)}}
+  .sigil.shiny,.bigsigil.shiny,.fs.shiny{animation:shinypulse 2.4s ease-in-out infinite}
+  @keyframes shinypulse{0%,100%{filter:inherit}50%{transform:scale(1.05)}}
+
+  .mdots{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .mdot{width:9px;height:9px;border-radius:50%;border:1px solid;display:inline-block;transition:.15s}
+  .mdot.off{opacity:.28}
+  .mdot.shiny{box-shadow:0 0 4px rgba(231,181,59,.8)}
+
+  /* ===== АРТЕФАКТЫ И КУЗНИЦА ===== */
+  .artgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:6px}
+  .artcard{position:relative;background:radial-gradient(110px 70px at 50% 0,rgba(217,164,65,.07),transparent),var(--panel2);
+    border:1px solid var(--edge);border-radius:6px;padding:11px 10px;text-align:center;cursor:pointer;transition:.16s;overflow:hidden}
+  .artcard:hover{transform:translateY(-2px);border-color:var(--gold-soft);box-shadow:0 6px 16px rgba(0,0,0,.4)}
+  .artcard.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 6px 16px rgba(0,0,0,.4)}
+  .art-icon{font-size:36px;line-height:1;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6));margin:2px 0 5px}
+  .art-name{font-family:'Cinzel';font-size:13px;letter-spacing:.02em}
+  .art-slot{display:flex;align-items:center;gap:5px;justify-content:center;font-size:11px;color:var(--ink-dim);margin-top:4px;flex-wrap:wrap}
+  .art-bonus{font-size:12px;color:var(--gold);margin-top:6px;font-family:'Cinzel'}
+  .art-wearer{font-size:10.5px;color:var(--frost);font-style:italic;margin-top:4px}
+  .art-lvl{position:absolute;top:7px;left:7px;font-family:'Cinzel';font-size:11px;background:var(--vellum);
+    border:1px solid var(--gold-soft);border-radius:10px;padding:1px 7px;color:var(--gold)}
+  .art-star{font-size:11px;color:var(--gold);letter-spacing:-1px}
+  .artcard .art-star{position:absolute;top:7px;right:7px}
+
+  .forge-layout{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+  @media(max-width:680px){.forge-layout{grid-template-columns:1fr}}
+  .forge-anvil{background:radial-gradient(220px 160px at 50% 10%,rgba(224,99,58,.12),transparent),
+    linear-gradient(180deg,var(--panel2),var(--vellum2));
+    border:1px solid var(--edge);border-radius:8px;padding:18px 16px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 10px 26px rgba(0,0,0,.4)}
+  .anvil-art{position:relative;height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+  .anvil-glow{position:absolute;width:130px;height:130px;border-radius:50%;
+    background:radial-gradient(circle,rgba(224,99,58,.5),rgba(224,99,58,.12) 50%,transparent 70%);
+    animation:emberpulse 2.6s ease-in-out infinite}
+  @keyframes emberpulse{0%,100%{opacity:.55;transform:scale(.92)}50%{opacity:1;transform:scale(1.06)}}
+  .art-icon-big{font-size:80px;position:relative;z-index:1;filter:drop-shadow(0 6px 10px rgba(0,0,0,.7))}
+  .anvil-art.forging .art-icon-big{animation:forgehit .5s ease}
+  @keyframes forgehit{0%{transform:scale(1)}30%{transform:scale(1.22) rotate(-4deg);filter:drop-shadow(0 0 18px rgba(255,210,120,.9))}100%{transform:scale(1)}}
+  .forge-title{font-family:'Cinzel';font-size:17px;text-align:center;color:var(--gold)}
+  .art-lvl-inline{color:var(--ember);font-weight:600}
+  .forge-stats{display:flex;flex-direction:column;gap:4px;margin:12px 0}
+  .forge-stat{display:flex;justify-content:space-between;font-size:13px;border-bottom:1px dashed rgba(92,67,38,.4);padding:3px 2px}
+  .forge-stat b{font-family:'Cinzel';color:var(--ink)}
+  .forge-stat .up{color:var(--venom)}
+  .forge-sub{font-family:'Cinzel';font-size:14px;letter-spacing:.06em;color:var(--gold);margin:0 0 8px}
+
+  /* экипировка в свитке дракона */
+  .equip-block{margin:14px 0 6px;padding:12px;background:rgba(18,13,9,.5);border:1px solid var(--edge);border-radius:6px}
+  .equip-head{font-family:'Cinzel';font-size:13px;letter-spacing:.05em;color:var(--gold-soft);margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .equip-sum{font-family:'Spectral';font-size:12px;color:var(--gold);font-style:italic}
+  .equip-slots{display:flex;gap:10px}
+  .eslot{position:relative;flex:1;aspect-ratio:1/1;max-width:74px;border:1px solid var(--edge);border-radius:6px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:.15s;background:var(--panel2)}
+  .eslot:hover{border-color:var(--gold-soft);transform:translateY(-1px)}
+  .eslot.empty{border-style:dashed;opacity:.7}
+  .eslot.filled{background:radial-gradient(60px 40px at 50% 0,rgba(217,164,65,.12),transparent),var(--panel)}
+  .eslot-ic{font-size:26px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+  .eslot-lbl{font-size:9.5px;color:var(--ink-dim);font-family:'Cinzel';margin-top:2px}
+  .eslot-lvl{font-size:10px;color:var(--gold);font-family:'Cinzel'}
+  .eslot-x{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;border:1px solid var(--edge);
+    background:var(--vellum);color:var(--ink-dim);font-size:10px;line-height:1;cursor:pointer;padding:0}
+  .eslot-x:hover{color:var(--ember);border-color:var(--ember)}
+  .equip-picker{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(92,67,38,.5)}
+  .equip-picker-head{font-size:12px;color:var(--ink-dim);font-style:italic;margin-bottom:6px}
+
+  /* ===== ГЕНОМ И СЕЛЕКЦИЯ ===== */
+  .genome{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;justify-content:center}
+  .genome.compact{gap:5px;margin-top:7px;padding-top:7px;border-top:1px dashed rgba(92,67,38,.4)}
+  .gene{display:inline-flex;align-items:center;gap:3px;font-size:11px}
+  .gene b{font-size:12px}
+  .pips{display:inline-flex;gap:2px}
+  .pips i{width:5px;height:5px;border-radius:1px;background:#241a12;border:1px solid var(--edge);display:inline-block}
+  .pips i.on{background:linear-gradient(180deg,var(--gold),var(--gold-soft));border-color:var(--gold-soft);box-shadow:0 0 3px rgba(217,164,65,.5)}
+  .pips.big i{width:11px;height:8px;border-radius:2px}
+  .gene-spark{color:var(--gold);font-size:14px;animation:shimmer 2s ease-in-out infinite}
+  .gene-score{font-family:'Cinzel';font-size:11px;color:var(--frost);background:var(--vellum);border:1px solid var(--edge);border-radius:10px;padding:1px 8px}
+
+  .gene-block{margin:14px 0 6px;padding:12px;background:rgba(18,13,9,.5);border:1px solid var(--edge);border-radius:6px}
+  .gene-gen{font-family:'Spectral';font-style:italic;font-size:11px;color:var(--ink-dim);margin-left:6px}
+  .gene-rows{display:flex;flex-direction:column;gap:7px;margin:4px 0 10px}
+  .gene-row{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px}
+  .gene-name{font-family:'Cinzel';font-size:12px;white-space:nowrap}
+  .gene-val{font-family:'Cinzel';font-size:12px;color:var(--gold);min-width:32px;text-align:right}
+  .gene-mut{font-family:'Cinzel';font-size:11px;letter-spacing:.04em;cursor:pointer;
+    background:linear-gradient(180deg,rgba(184,138,223,.22),transparent);border:1px solid var(--storm);
+    color:#cdb1e8;border-radius:4px;padding:4px 9px;transition:.15s;white-space:nowrap}
+  .gene-mut:hover:not(:disabled){background:rgba(184,138,223,.35);color:#fff}
+  .gene-mut:disabled{opacity:.35;cursor:not-allowed}
+  .gene-foot{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .gene-spark-line{font-family:'Cinzel';font-size:12px;color:var(--gold);animation:shimmer 2s ease-in-out infinite}
+
+  /* сцена скрещивания */
+  .breed-stage{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch}
+  @media(max-width:680px){.breed-stage{grid-template-columns:1fr;gap:12px}}
+  .breed-parent{background:linear-gradient(180deg,var(--panel2),var(--vellum2));border:1px solid var(--edge);
+    border-radius:8px;padding:14px;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+  .breed-slot-label{font-family:'Cinzel';font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:8px}
+  .breed-empty{color:var(--ink-dim);font-style:italic;font-size:13px;padding:28px 6px}
+  .breed-card .sigil{font-size:52px}
+  .breed-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-width:200px}
+  .breed-cross{font-family:'Cinzel';font-size:26px;color:var(--ember);opacity:.7}
+  .breed-forecast{width:100%;background:rgba(18,13,9,.5);border:1px solid var(--edge);border-radius:6px;padding:10px 12px}
+  .breed-forecast .forge-stat{font-size:12px}
+
+  /* ===== ЕЖЕДНЕВНАЯ ПЕТЛЯ ===== */
+  .panel--daily{background:
+    radial-gradient(500px 180px at 50% -30%,rgba(224,99,58,.08),transparent),
+    linear-gradient(180deg,var(--panel),var(--vellum2));
+    border-color:var(--gold-soft)}
+  .daily-top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:6px}
+  .chest-wrap{flex:1;min-width:240px;display:flex;justify-content:center}
+  .chest-btn{font-size:14px;animation:chestbob 2.2s ease-in-out infinite}
+  @keyframes chestbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  .chest-done{font-size:13px;color:var(--ink-dim);font-style:italic;text-align:center;max-width:420px}
+  .quests{display:flex;flex-direction:column;gap:8px}
+  .quest{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--edge);
+    border-radius:6px;padding:9px 12px;transition:.15s}
+  .quest.done{border-color:var(--gold-soft);background:radial-gradient(120px 60px at 0 50%,rgba(217,164,65,.08),transparent),var(--panel2)}
+  .quest-ic{font-size:22px;width:30px;text-align:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+  .quest-main{flex:1;min-width:0}
+  .quest-text{font-size:13px;font-family:'Cinzel';letter-spacing:.02em}
+  .quest-prog{color:var(--ink-dim);font-family:'Spectral';font-size:12px}
+  .qbar{height:6px;background:#120d09;border:1px solid var(--edge);border-radius:5px;overflow:hidden;margin-top:5px}
+  .qbar > i{display:block;height:100%;background:linear-gradient(90deg,#b78a3a,var(--gold));border-radius:4px;transition:width .4s}
+  .quest-reward{font-size:12px;color:var(--ink-dim);font-family:'Cinzel';white-space:nowrap}
+  .quest-claim{font-size:12px;padding:6px 12px;white-space:nowrap;animation:chestbob 1.8s ease-in-out infinite}
+  .quest-claimed{color:var(--venom);font-size:18px;width:30px;text-align:center}
+  .save-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px dashed rgba(92,67,38,.5)}
+  .save-ok{font-size:11.5px;color:var(--ink-dim);font-style:italic}
+  .save-reset{background:none;border:none;color:var(--ink-dim);font-size:11px;cursor:pointer;text-decoration:underline;font-family:'Spectral';padding:2px 4px}
+  .save-reset:hover{color:var(--ember)}
+  .save-reset.arm{color:var(--ember);font-weight:600;text-decoration:none}
+  .quests-head{font-family:'Cinzel';font-size:13px;letter-spacing:.06em;color:var(--gold-soft);margin:14px 0 8px}
+
+  /* ===== ЗАБОТА О ДРАКОНАХ ===== */
+  .care-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px}
+  .happy-hearts{font-size:15px;letter-spacing:1px}
+  .care-btn{font-size:12px;padding:7px 13px;
+    background:linear-gradient(180deg,#e98aa8,#cf6e8f);border-color:#cf6e8f;color:#3a1420}
+  .care-btn:hover{filter:brightness(1.08)}
+  #feedBtn{background:linear-gradient(180deg,#9fcf6e,#7fb24a);border-color:#7fb24a;color:#1f3010}
+  .rename-btn{background:none;border:none;cursor:pointer;font-size:15px;padding:0 4px;opacity:.7;transition:.15s;filter:grayscale(.2)}
+  .rename-btn:hover{opacity:1;transform:scale(1.15)}
+  .dspecies{font-size:10.5px;opacity:.75;margin-top:1px}
+
+  /* ===== ШПИЛЬ МИРОЗДАНИЯ ===== */
+  .release-row{margin-top:10px}
+  .release-btn{font-size:12px;opacity:.85;background:linear-gradient(180deg,#8fc7e0,#6db4d4);border-color:#6db4d4;color:#10262f}
+  .release-btn.arm{background:linear-gradient(180deg,#e98aa8,#cf6e8f);border-color:#cf6e8f;color:#3a1420;font-weight:600;opacity:1}
+  .spire-pick{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+  .spire-chip{display:inline-flex;align-items:center;gap:6px;font-family:'Spectral';font-size:12.5px;cursor:pointer;
+    background:var(--panel2);border:1px solid var(--edge);color:var(--ink-dim);border-radius:20px;padding:5px 12px;transition:.15s;position:relative}
+  .spire-chip:hover{border-color:var(--gold-soft);color:var(--ink)}
+  .spire-chip.on{border-color:var(--gold);color:var(--ink);background:radial-gradient(60px 30px at 50% 0,rgba(217,164,65,.12),transparent),var(--panel)}
+  .spire-chip-lvl{font-family:'Cinzel';font-size:11px;color:var(--gold);background:var(--vellum);border-radius:10px;padding:0 6px}
+  .spire-chip-dot{color:var(--ember);font-size:9px;margin-left:-2px}
+  .spire-head{display:flex;align-items:center;gap:16px;background:radial-gradient(300px 120px at 20% 0,rgba(184,138,223,.1),transparent),linear-gradient(180deg,var(--panel2),var(--vellum2));
+    border:1px solid var(--edge);border-radius:8px;padding:14px 16px;margin-bottom:14px}
+  .spire-hero{font-size:62px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.6))}
+  .chip-art{display:inline-flex;font-size:20px;line-height:1}
+  .chip-art .dragon-art{width:1.2em;height:1.2em}
+  .spire-hero-info{flex:1}
+  .spire-hero-info h3{font-family:'Cinzel';margin:0 0 6px;font-size:18px}
+  .spire-lvl{color:var(--gold);font-size:13px;font-family:'Cinzel'}
+  .spire-xpbar{height:9px;background:#120d09;border:1px solid var(--edge);border-radius:6px;overflow:hidden;margin-bottom:5px}
+  .spire-xpbar > i{display:block;height:100%;background:linear-gradient(90deg,#74c0dc,#5fa3c0);border-radius:5px;transition:width .5s}
+  .spire-tabs{display:flex;gap:8px;margin-bottom:14px}
+  .spire-tab{font-family:'Cinzel';font-size:13px;letter-spacing:.04em;cursor:pointer;
+    background:transparent;border:1px solid var(--edge);color:var(--ink-dim);padding:8px 16px;border-radius:5px;transition:.15s}
+  .spire-tab:hover{color:var(--ink);border-color:var(--gold-soft)}
+  .spire-tab.on{color:#1a1410;background:linear-gradient(180deg,var(--gold),var(--gold-soft));border-color:var(--gold);font-weight:600}
+  .spire-badge{background:var(--ember);color:#fff;border-radius:10px;padding:0 6px;font-size:11px;margin-left:3px}
+
+  /* Древо */
+  .ttree{display:flex;flex-direction:column;gap:8px;position:relative}
+  .ttree::before{content:"";position:absolute;left:23px;top:10px;bottom:10px;width:2px;
+    background:linear-gradient(180deg,transparent,var(--edge),var(--gold-soft),var(--edge),transparent);z-index:0}
+  .trow{display:flex;align-items:stretch;gap:12px;position:relative;z-index:1}
+  .trow-lvl{flex:0 0 30px;height:30px;align-self:center;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:'Cinzel';font-size:12px;background:var(--panel);border:2px solid var(--gold-soft);color:var(--gold)}
+  .trow.locked .trow-lvl{border-color:var(--edge);color:var(--ink-dim);opacity:.6}
+  .trow-node{flex:1;min-width:0}
+  .tnode{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--edge);border-radius:7px;padding:10px 13px;transition:.15s}
+  .tnode.locked{opacity:.5}
+  .tnode.spell{border-color:rgba(109,180,212,.5)}
+  .tnode.ult{border-color:var(--gold);background:radial-gradient(120px 50px at 0 50%,rgba(217,164,65,.12),transparent),var(--panel2)}
+  .tnode.perk{border-color:rgba(127,178,74,.4)}
+  .tnode.fork.choose{border-color:var(--ember);box-shadow:0 0 0 1px var(--ember);animation:pulseborder 1.6s ease-in-out infinite}
+  @keyframes pulseborder{0%,100%{box-shadow:0 0 0 1px var(--ember)}50%{box-shadow:0 0 0 3px rgba(224,99,58,.4)}}
+  .tnode-ic{font-size:28px;flex:0 0 auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+  .tnode-body{flex:1;min-width:0}
+  .tnode-name{font-family:'Cinzel';font-size:13.5px}
+  .tnode-desc{font-size:12px;color:var(--ink-dim);margin-top:2px}
+  .ult-tag{font-size:9px;background:var(--gold);color:#1a1410;border-radius:8px;padding:1px 6px;font-family:'Cinzel';letter-spacing:.06em;vertical-align:middle}
+  .spell-tag{font-size:9px;background:rgba(109,180,212,.3);color:var(--frost);border-radius:8px;padding:1px 6px;font-family:'Cinzel';vertical-align:middle}
+  .choose-tag{font-size:9px;background:var(--ember);color:#fff;border-radius:8px;padding:1px 6px;font-family:'Cinzel';vertical-align:middle}
+  .fork-opts{display:flex;gap:8px;margin-top:7px;flex-wrap:wrap}
+  .fork-opt{flex:1;min-width:130px;text-align:left;cursor:pointer;background:var(--vellum);border:1px solid var(--edge);
+    border-radius:6px;padding:8px 10px;transition:.15s;display:flex;flex-direction:column;gap:1px}
+  .fork-opt:hover:not(:disabled){border-color:var(--gold-soft);transform:translateY(-1px)}
+  .fork-opt:disabled{opacity:.4;cursor:not-allowed}
+  .fork-opt.picked{border-color:var(--gold);background:radial-gradient(80px 40px at 0 0,rgba(217,164,65,.14),transparent),var(--panel)}
+  .fo-ic{font-size:20px}
+  .fo-name{font-family:'Cinzel';font-size:12.5px}
+  .fo-desc{font-size:11px;color:var(--ink-dim)}
+
+  /* Книга */
+  .book{background:linear-gradient(180deg,#2a2114,#1d160d);border:1px solid var(--edge);border-radius:8px;padding:4px 0;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+  .book-section{padding:13px 18px;border-bottom:1px solid rgba(92,67,38,.4)}
+  .book-section:last-of-type{border-bottom:none}
+  .book-section h4{font-family:'Cinzel';font-size:14px;letter-spacing:.05em;color:var(--gold);margin:0 0 9px}
+  .book-lore{font-style:italic;color:var(--ink);margin:0 0 6px;font-size:13.5px;line-height:1.5}
+  .book-meta{font-size:12.5px;color:var(--ink-dim);margin:3px 0}
+  .book-spell,.book-perk{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed rgba(92,67,38,.3)}
+  .book-spell:last-child,.book-perk:last-child{border-bottom:none}
+  .book-spell.ult{background:radial-gradient(120px 30px at 0 50%,rgba(217,164,65,.1),transparent);border-radius:5px;padding-left:6px}
+  .bs-ic{font-size:22px;flex:0 0 auto}
+  .bs-name{font-family:'Cinzel';font-size:13px;flex:0 0 auto}
+  .bs-lvl{font-size:10.5px;color:var(--gold);font-family:'Cinzel';background:var(--vellum);border-radius:8px;padding:0 6px}
+  .bs-desc{font-size:12px;color:var(--ink-dim);flex:1;text-align:right}
+  .book-next{padding:12px 18px;font-size:12.5px;color:var(--frost);font-style:italic;text-align:center}
+  .lvlpill{position:absolute;top:8px;left:8px;font-family:'Cinzel';font-size:11px;background:var(--vellum);border:1px solid var(--edge);border-radius:10px;padding:1px 7px;color:var(--gold)}
+  .star{position:absolute;top:8px;right:8px;font-size:12px;color:var(--gold);letter-spacing:-1px}
+
+  .el-fire{color:var(--ember);background:rgba(224,99,58,.12);border:1px solid rgba(224,99,58,.4)}
+  .el-frost{color:var(--frost);background:rgba(109,180,212,.12);border:1px solid rgba(109,180,212,.4)}
+  .el-venom{color:var(--venom);background:rgba(127,178,74,.12);border:1px solid rgba(127,178,74,.4)}
+  .el-storm{color:var(--storm);background:rgba(184,138,223,.12);border:1px solid rgba(184,138,223,.4)}
+  .el-shade{color:var(--shade);background:rgba(207,110,143,.12);border:1px solid rgba(207,110,143,.4)}
+
+  /* Stat bars */
+  .bar{height:8px;background:#120d09;border:1px solid var(--edge);border-radius:6px;overflow:hidden;margin-top:3px}
+  .bar > i{display:block;height:100%;border-radius:5px;transition:width .5s ease}
+  .bar.hp > i{background:linear-gradient(90deg,#e07a5f,var(--hp))}
+  .bar.xp > i{background:linear-gradient(90deg,#74c0dc,var(--xp))}
+  .statline{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-dim);margin-top:8px}
+  .statline b{color:var(--ink);font-family:'Cinzel'}
+
+  /* Detail drawer */
+  .detail{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:start}
+  @media(max-width:560px){.detail{grid-template-columns:1fr}}
+  .bigsigil{font-size:96px;text-align:center;filter:drop-shadow(0 6px 8px rgba(0,0,0,.6))}
+  .traits{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .trait{font-size:11px;background:var(--vellum);border:1px solid var(--edge);padding:3px 9px;border-radius:10px;color:var(--ink-dim)}
+
+  .btn{
+    font-family:'Cinzel';letter-spacing:.06em;font-size:13px;cursor:pointer;
+    background:linear-gradient(180deg,var(--gold),var(--gold-soft));color:#1a1410;font-weight:600;
+    border:1px solid var(--gold);border-radius:4px;padding:9px 16px;transition:.15s;
+  }
+  .btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--edge)}
+  .btn.ghost:hover{border-color:var(--gold-soft);color:var(--gold)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;filter:none}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+  /* Map / explore */
+  .map{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+  .region{
+    background:linear-gradient(180deg,var(--panel),var(--vellum2));
+    border:1px solid var(--edge);border-radius:8px;position:relative;overflow:hidden;
+    box-shadow:0 12px 30px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04);
+    transition:transform .2s,box-shadow .2s,border-color .2s;
+  }
+  .region:not(.locked):hover{transform:translateY(-4px);border-color:var(--gold-soft);
+    box-shadow:0 18px 42px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05)}
+  .region-art{position:relative;height:150px;overflow:hidden;border-bottom:1px solid var(--edge)}
+  .scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .region-art::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(0,0,0,.15),transparent 30%,transparent 70%,rgba(20,12,8,.85));
+    box-shadow:inset 0 0 50px rgba(0,0,0,.4);pointer-events:none}
+  .region-biome{position:absolute;left:10px;bottom:8px;z-index:2;font-family:'Cinzel';
+    font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);
+    background:rgba(14,9,6,.62);border:1px solid rgba(217,164,65,.35);border-radius:3px;
+    padding:2px 9px;backdrop-filter:blur(2px)}
+  .region-lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:34px;z-index:2;background:rgba(8,5,3,.55);backdrop-filter:grayscale(.4) blur(1px)}
+  .region-body{padding:14px 16px 16px}
+  .region-body h3{font-family:'Cinzel';margin:0 0 4px;font-size:16px;letter-spacing:.04em;
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .region-body p{font-size:13px;color:var(--ink-dim);font-style:italic;margin:0 0 12px;line-height:1.5}
+  .tier-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+  .tier{font-size:12px;font-family:'Cinzel';color:var(--ember);letter-spacing:.12em}
+  .tier-meta{font-size:12px;font-family:'Cinzel';color:var(--gold)}
+  .locked{opacity:.78}
+  .locked .scene{filter:grayscale(.55) brightness(.7)}
+  .region-body .btn{margin-top:4px;width:100%}
+
+  .exp-banner{position:relative;height:180px;overflow:hidden;border-bottom:1px solid var(--edge)}
+  .exp-banner .scene{position:absolute;inset:0;width:100%;height:100%}
+  .exp-banner::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(90deg,rgba(12,8,5,.85),rgba(12,8,5,.2) 60%,transparent),
+              linear-gradient(180deg,transparent 50%,rgba(20,12,8,.7))}
+  .exp-banner-text{position:absolute;left:20px;bottom:14px;z-index:2;max-width:70%}
+  .exp-banner-text h2{font-family:'Cinzel';margin:2px 0;font-size:22px;color:var(--gold);
+    text-shadow:0 2px 6px rgba(0,0,0,.8);letter-spacing:.04em}
+  .exp-banner-text p{margin:0;font-size:13px;font-style:italic;color:var(--ink);
+    text-shadow:0 1px 4px rgba(0,0,0,.9)}
+  .exp-biome{font-family:'Cinzel';font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-dim)}
+
+  /* ===== ПОЛЁТ-ИССЛЕДОВАНИЕ ===== */
+  .flight-stage{position:relative;width:100%;height:min(58vh,440px);overflow:hidden;border-bottom:1px solid var(--edge)}
+  .flight-stage .scene{position:absolute;inset:0;width:100%;height:100%}
+  @keyframes drift1{from{transform:translateX(0)}to{transform:translateX(140vw)}}
+  .flight-dragon{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    font-size:46px;z-index:4;filter:drop-shadow(0 6px 8px rgba(0,0,0,.6));
+    animation:flap 1.1s ease-in-out infinite;pointer-events:none}
+  @keyframes flap{0%,100%{margin-top:0}50%{margin-top:-7px}}
+  .poi{position:absolute;transform:translate(-50%,-50%);z-index:3;cursor:pointer;
+    background:none;border:none;padding:0;width:54px;height:54px;display:flex;align-items:center;justify-content:center}
+  .poi:disabled{cursor:default}
+  .poi-ic{font-size:30px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.7));z-index:2;animation:bob 2s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  .poi-ring{position:absolute;inset:4px;border-radius:50%;border:2px solid var(--gold);
+    animation:poipulse 1.8s ease-out infinite;z-index:1}
+  @keyframes poipulse{0%{transform:scale(.7);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+  .poi:not(:disabled):hover .poi-ic{transform:scale(1.18)}
+  .poi-done .poi-ic{font-size:24px;color:var(--venom);animation:none;opacity:.7}
+  .poi-done .poi-ring{display:none}
+  .flight-hud{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:10px 14px;pointer-events:none;
+    background:linear-gradient(0deg,rgba(12,8,5,.8),transparent);display:flex;justify-content:space-between;align-items:flex-end}
+  .flight-title{font-family:'Cinzel';font-size:12px;letter-spacing:.06em;color:var(--ink);text-shadow:0 1px 3px #000}
+  .flight-left{font-size:12px;color:var(--gold);font-family:'Cinzel';text-shadow:0 1px 3px #000}
+  .flight-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;flex-wrap:wrap}
+  .flight-tip{font-size:13px;color:var(--ink-dim);font-style:italic;flex:1;min-width:200px}
+  .poi-choice{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
+    background:rgba(10,6,4,.55);backdrop-filter:blur(2px);animation:fade .25s ease}
+  .poi-choice-card{background:linear-gradient(180deg,var(--panel),var(--vellum2));border:1px solid var(--gold-soft);
+    border-radius:10px;padding:18px 20px;max-width:340px;text-align:center;box-shadow:0 16px 40px rgba(0,0,0,.6)}
+  .poi-choice-q{font-family:'Cinzel';font-size:14px;margin-bottom:14px;line-height:1.4}
+  .poi-choice-opts{display:flex;flex-direction:column;gap:9px}
+  .poi-choice-opts .btn{font-size:13px}
+
+  /* Battle */
+  .arena{
+    background:linear-gradient(180deg,#241a12,#15100b);
+    border:1px solid var(--edge);border-radius:8px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden;
+    box-shadow:0 14px 36px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .arena-bg{position:absolute;inset:0;z-index:0;opacity:.5}
+  .arena-bg .scene{width:100%;height:100%}
+  .arena-bg::after{content:"";position:absolute;inset:0;
+    background:radial-gradient(120% 90% at 50% 40%,transparent 30%,rgba(12,8,5,.85)),
+              linear-gradient(180deg,rgba(20,12,8,.5),rgba(20,12,8,.2) 40%,rgba(20,12,8,.75))}
+  .arena .fighters{position:relative;z-index:1}
+  .fighters{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
+  @media(max-width:560px){.fighters{grid-template-columns:1fr;gap:18px}.versus{display:none}}
+  .fighter{text-align:center}
+  .fighter .fs{font-size:72px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.6));transition:transform .2s}
+  .fighter.hit .fs{animation:shake .35s}
+  .fighter.cast .fs{animation:lunge .3s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+  @keyframes lunge{50%{transform:scale(1.15) translateY(-6px)}}
+  .versus{font-family:'Cinzel';color:var(--gold);font-size:22px;opacity:.6}
+  .fname{font-family:'Cinzel';font-size:14px;margin-top:4px}
+  .hpwrap{max-width:200px;margin:6px auto 0}
+  .moves{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  @media(max-width:560px){.moves{grid-template-columns:1fr}}
+  .move{
+    text-align:left;background:var(--panel2);border:1px solid var(--edge);border-radius:5px;
+    padding:10px 12px;cursor:pointer;transition:.15s;
+  }
+  .move:hover:not(:disabled){border-color:var(--gold-soft);background:var(--panel)}
+  .move:disabled{opacity:.35;cursor:not-allowed}
+  .move .mn{font-family:'Cinzel';font-size:13px}
+  .move .md{font-size:11px;color:var(--ink-dim)}
+  .move-spell{border-color:rgba(109,180,212,.55);background:radial-gradient(80px 40px at 0 0,rgba(109,180,212,.12),transparent),var(--panel2)}
+  .move-spell:hover:not(:disabled){border-color:var(--frost)}
+  .move-ult{border-color:var(--gold);background:radial-gradient(90px 45px at 0 0,rgba(217,164,65,.18),transparent),var(--panel2)}
+  .move-ult:hover:not(:disabled){border-color:var(--gold);filter:brightness(1.08)}
+  .move-ult .mn{color:var(--gold)}
+
+  /* ===== АРКАДА: УДАР ПО ТАЙМИНГУ ===== */
+  .arcade-toggle{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-dim);margin:6px 0 12px;cursor:pointer}
+  .arcade-toggle input{width:16px;height:16px;accent-color:var(--gold);cursor:pointer}
+  .timing-overlay{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    background:rgba(10,6,4,.55);backdrop-filter:blur(2px);animation:fade .2s ease}
+  .timing-card{background:linear-gradient(180deg,var(--panel),var(--vellum2));border:1px solid var(--gold);
+    border-radius:12px;padding:18px 22px;width:min(90%,380px);text-align:center;box-shadow:0 16px 44px rgba(0,0,0,.6)}
+  .timing-title{font-family:'Cinzel';font-size:17px;color:var(--gold);letter-spacing:.04em}
+  .timing-sub{font-size:12px;color:var(--ink-dim);margin:4px 0 14px}
+  .timing-bar{position:relative;height:30px;background:#160d08;border:1px solid var(--edge);border-radius:8px;overflow:hidden;margin-bottom:14px}
+  .timing-zone{position:absolute;top:0;bottom:0}
+  .timing-zone.good{left:34%;width:32%;background:rgba(127,178,74,.4)}
+  .timing-zone.perfect{left:46%;width:8%;background:rgba(255,210,74,.7)}
+  .timing-marker{position:absolute;top:-2px;bottom:-2px;width:4px;left:0;background:#fff;
+    box-shadow:0 0 8px #fff,0 0 4px var(--ember);border-radius:2px}
+  .timing-btns{display:flex;gap:8px;justify-content:center}
+  .timing-btns .btn{min-width:90px}
+  #timingHit{font-size:15px}
+
+  /* ===== АРКАДА: ПОЙМАЙ ДОБЫЧУ ===== */
+  .catch-overlay{position:absolute;inset:0;z-index:15;background:rgba(10,6,4,.5);backdrop-filter:blur(1px);overflow:hidden}
+  .catch-head{position:absolute;top:10px;left:0;right:0;text-align:center;z-index:3;pointer-events:none}
+  .catch-title{font-family:'Cinzel';font-size:15px;color:#ffe9c0;text-shadow:0 2px 6px #000}
+  .catch-count{font-family:'Cinzel';font-size:13px;color:var(--gold);text-shadow:0 1px 4px #000;margin-top:2px}
+  .catch-spark{position:absolute;cursor:pointer;font-size:30px;user-select:none;transition:transform .08s;
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));animation:catchbob 1.4s ease-in-out infinite}
+  .catch-spark:active{transform:scale(.8)}
+  @keyframes catchbob{0%,100%{margin-top:0}50%{margin-top:-6px}}
+  .catch-foot{position:absolute;bottom:12px;left:0;right:0;text-align:center;z-index:3}
+  .log{
+    height:140px;overflow-y:auto;background:#120d09;border:1px solid var(--edge);border-radius:5px;
+    padding:10px 12px;font-size:13px;line-height:1.5;margin-top:12px;
+  }
+  .log p{margin:0 0 4px}
+  .log .gold{color:var(--gold)}
+  .log .dmg{color:var(--ember)}
+  .log .heal{color:var(--venom)}
+  .log .crit{color:#ffd27a;font-weight:600}
+
+  .float{position:fixed;left:50%;top:24%;transform:translateX(-50%);z-index:50;pointer-events:none;
+    font-family:'Cinzel';font-size:34px;font-weight:700;opacity:0;}
+  .float.go{animation:rise 1.1s ease forwards}
+  @keyframes rise{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-50px) scale(1.1)}}
+
+  .empty{text-align:center;color:var(--ink-dim);font-style:italic;padding:30px}
+
+  /* Toast */
+  #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--panel);border:1px solid var(--gold-soft);color:var(--ink);
+    padding:11px 20px;border-radius:4px;font-size:14px;opacity:0;transition:.3s;z-index:60;
+    box-shadow:0 8px 24px rgba(0,0,0,.5);max-width:90vw;text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast b{color:var(--gold)}
+
+  .hint{font-size:12px;color:var(--ink-dim);font-style:italic;margin-top:8px}
+  .codex-foot{text-align:center;color:var(--ink-dim);font-size:12px;font-style:italic;margin-top:20px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="crest">
+    <div class="crest-frame"><h1>Драконис</h1></div>
+    <div class="sub">Кодекс Чешуи · хроника драконоводов</div>
+  </header>
+
+  <div class="ledger">
+    <div class="coin"><span class="ic">🪙</span><span>Золото&nbsp;<b id="gold">0</b></span></div>
+    <div class="coin"><span class="ic">🥚</span><span>Яйца&nbsp;<b id="eggs">0</b></span></div>
+    <div class="coin"><span class="ic">🐉</span><span>Драконы&nbsp;<b id="count">0</b>/<span id="species">0</span></span></div>
+    <div class="coin"><span class="ic">💠</span><span>Реликвии&nbsp;<b id="relics">0</b></span></div>
+    <div class="coin"><span class="ic">✦</span><span>Пыль&nbsp;<b id="dust">0</b></span></div>
+  </div>
+  <div class="rule"></div>
+
+  <!-- HUB (главный экран) -->
+  <section class="view on" id="hub">
+    <div class="hub-wrap" id="hubWrap"></div>
+  </section>
+
+  <!-- LAIR -->
+  <section class="view" id="lair">
+    <div class="panel panel--daily">
+      <h2>Подарок и весёлые дела</h2>
+      <p class="lede">Каждый день тебя ждёт подарок и несколько забавных дел. Не успел сегодня — ничего страшного, они подождут!</p>
+      <div id="dailyPanel"></div>
+    </div>
+    <div class="panel">
+      <h2>Логово</h2>
+      <p class="lede">Твои крылатые подопечные. Нажми, чтобы открыть свиток дракона.</p>
+      <div class="roster" id="lairRoster"></div>
+    </div>
+    <div class="panel" id="detailPanel" style="display:none"></div>
+  </section>
+
+  <!-- HATCH -->
+  <section class="view" id="hatch">
+    <div class="panel">
+      <h2>Гнездо</h2>
+      <p class="lede">Из яиц проклёвываются новые драконы. Чем реже вид — тем сильнее зверь.</p>
+      <div style="text-align:center;padding:14px 0">
+        <div id="eggVisual" style="font-size:88px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.6))">🥚</div>
+        <div class="btnrow" style="justify-content:center">
+          <button class="btn" id="hatchBtn">Высидеть яйцо&nbsp;·&nbsp;🥚1</button>
+          <button class="btn ghost" id="buyEggBtn">Купить яйцо&nbsp;·&nbsp;🪙30</button>
+        </div>
+        <p class="hint">Из каждого яйца дракон рождается в случайном окрасе — багряном, изумрудном, лазурном, белоснежном и других. Редчайший — золотой ✨.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPLORE -->
+  <section class="view" id="explore">
+    <div class="panel">
+      <h2>Странствие</h2>
+      <p class="lede">Выбери землю и дракона — и отправляйся в полёт! Дракон будет парить над биомом, а ты находи и исследуй светящиеся точки: сокровища, яйца, реликвии и забавные встречи.</p>
+      <div class="map" id="map"></div>
+    </div>
+  </section>
+
+  <!-- ARENA -->
+  <section class="view" id="arena">
+    <div class="panel" id="arenaSetup">
+      <h2>Дружеский турнир</h2>
+      <p class="lede">Выбери своего дракона и соперника по силам. Подсказка: огонь сильнее льда, лёд сильнее бури, буря сильнее яда, яд сильнее тени, а тень сильнее огня! Никто по-настоящему не пострадает — это весёлое состязание.</p>
+      <label class="arcade-toggle"><input type="checkbox" id="arcadeChk" checked> ⚡ Мини-игра «Удар по таймингу» (можно выключить)</label>
+      <div id="arenaPicker"></div>
+    </div>
+    <div id="battleStage" style="display:none"></div>
+  </section>
+
+  <!-- ROOST / BREEDING -->
+  <section class="view" id="roost">
+    <div class="panel">
+      <h2>Гнездилище Рода</h2>
+      <p class="lede">Скрещивай драконов одного вида, чтобы потомок унаследовал лучшие гены родителей. Поколение за поколением выводи идеального дракона — все гены 6/6 и пылающая искра рода.</p>
+      <div id="roostBody"></div>
+    </div>
+  </section>
+
+  <!-- FORGE -->
+  <section class="view" id="forge">
+    <div class="panel">
+      <h2>Кузница Драконьего Огня</h2>
+      <p class="lede">Здесь древние реликвии раскрывают свою мощь. Куй их в пламени за золото — и каждый удар молота прибавляет силы.</p>
+      <div id="forgeBody"></div>
+    </div>
+  </section>
+
+  <!-- SPIRE -->
+  <section class="view" id="spire">
+    <div class="panel">
+      <h2>Шпиль Мироздания 🗼</h2>
+      <p class="lede">Древняя башня магии, где драконы растут в силе. Поднимаясь по уровням, твой дракон открывает заклинания, перки и грозные ультимативные способности. У каждого вида — свой неповторимый путь!</p>
+      <div id="spireBody"></div>
+    </div>
+  </section>
+
+  <!-- CODEX -->
+  <section class="view" id="codex">
+    <div class="panel">
+      <h2>Кодекс видов</h2>
+      <p class="lede">Все драконы мира. Открой каждого, поймав хотя бы одного.</p>
+      <div class="roster" id="codexGrid"></div>
+    </div>
+  </section>
+
+  <div class="codex-foot">«Кто приручит чешую — приручит и пламя.» — Старший драконовод Велла</div>
+</div>
+
+<div class="float" id="float"></div>
+<div id="toast"></div>
+
+<script>
+/* ======================= ДАННЫЕ ======================= */
+const ELEMENTS = {
+  fire:{name:'Огонь',cls:'el-fire',color:'#e0633a'},
+  frost:{name:'Лёд',cls:'el-frost',color:'#6db4d4'},
+  venom:{name:'Яд',cls:'el-venom',color:'#7fb24a'},
+  storm:{name:'Буря',cls:'el-storm',color:'#b88adf'},
+  shade:{name:'Тень',cls:'el-shade',color:'#cf6e8f'},
+};
+// Кольцо превосходства: ключ бьёт значение (x1.5)
+const ADVANTAGE = {fire:'frost', frost:'storm', storm:'venom', venom:'shade', shade:'fire'};
+
+/* ======================= РИСОВАННЫЕ ДРАКОНЫ (SVG) =======================
+   Милые округлые дракончики, нарисованные кодом. Цвет — по стихии,
+   набор черт (рога, крылья, гребень, хвост, глаза) — по виду (узнаваемость).
+   Окрасы-морфы накладываются CSS-фильтром поверх, как и раньше. */
+const DRAGON_COLORS={
+  fire:{body:'#e0633a',body2:'#b8431f',belly:'#f5b35a',dark:'#7a2a12',spike:'#ffd86b',eye:'#ffe14a'},
+  frost:{body:'#6db4d4',body2:'#3f87a8',belly:'#cfeaf5',dark:'#1f4a60',spike:'#eaf7ff',eye:'#aef0ff'},
+  venom:{body:'#7fb24a',body2:'#557d2c',belly:'#c8e89a',dark:'#2f4a18',spike:'#d4ff8a',eye:'#c6ff5a'},
+  storm:{body:'#9d6fd0',body2:'#6e44a0',belly:'#d8c4ef',dark:'#3c2458',spike:'#e8d6ff',eye:'#e0b0ff'},
+  shade:{body:'#6a5a8a',body2:'#3f3458',belly:'#4a3f66',dark:'#1a1226',spike:'#b89ad8',eye:'#cf6e8f'},
+};
+// архетип силуэта для каждого вида: 'chinese' (змей), 'lizard' (ящер), 'winged' (крылатый)
+const DRAGON_ARCH={
+  ember:'lizard', glacier:'winged', sporewing:'chinese', tempest:'winged', umbra:'lizard',
+  magma:'lizard', aurora:'winged', voidmaw:'chinese', cinderpup:'lizard', permafrost:'lizard',
+  blightfang:'chinese', thundercall:'winged', nightwyrm:'lizard', pyrelord:'winged', worldserpent:'chinese',
+};
+// корона для легендарных (4) и мифических (5)
+function crownSVG(c,x,y){return `<path d='M${x-9} ${y} L${x-9} ${y-9} L${x-4} ${y-4} L${x} ${y-12} L${x+4} ${y-4} L${x+9} ${y-9} L${x+9} ${y}Z' fill='#ffd24a' stroke='#d9a441' stroke-width='0.6'/><circle cx='${x}' cy='${y-14}' r='1.6' fill='#ff5a7a'/>`;}
+
+function dragonChinese(c,royal){
+  return `<path d='M18 78 Q14 58 30 54 Q48 50 44 36 Q41 24 56 22 Q72 20 74 34' fill='none' stroke='${c.body2}' stroke-width='15' stroke-linecap='round'/>
+  <path d='M18 78 Q14 58 30 54 Q48 50 44 36 Q41 24 56 22 Q72 20 74 34' fill='none' stroke='${c.body}' stroke-width='10' stroke-linecap='round'/>
+  <path d='M30 47 l-3 -7 l6 1 M42 44 l-3 -7 l6 1 M44 28 l-3 -7 l6 1 M58 22 l-2 -7 l6 2' fill='${c.spike}'/>
+  <path d='M18 78 l-7 5 l3 -8 l-7 1' fill='${c.spike}'/>
+  <path d='M26 64 l-6 6 m6 -6 l-2 8 m2 -8 l4 7' stroke='${c.dark}' stroke-width='2' fill='none' stroke-linecap='round'/>
+  <ellipse cx='76' cy='34' rx='13' ry='10' fill='${c.body}'/>
+  ${royal?crownSVG(c,76,22):`<path d='M70 28 Q66 18 74 16 Q72 24 78 28Z' fill='${c.spike}'/><path d='M82 28 Q86 18 80 16 Q82 24 80 28Z' fill='${c.spike}'/>`}
+  <path d='M84 38 Q96 36 92 48' fill='none' stroke='${c.spike}' stroke-width='1.6'/>
+  <path d='M84 40 Q94 44 88 54' fill='none' stroke='${c.spike}' stroke-width='1.6'/>
+  <ellipse cx='80' cy='32' rx='3' ry='3.5' fill='#fff'/><circle cx='81' cy='32' r='1.8' fill='#111'/>`;
+}
+function dragonLizard(c,royal){
+  return `<path d='M22 64 Q6 64 4 50 Q12 58 22 56Z' fill='${c.body2}'/>
+  <ellipse cx='48' cy='62' rx='30' ry='18' fill='${c.body}'/>
+  <ellipse cx='48' cy='66' rx='22' ry='11' fill='${c.belly}'/>
+  <path d='M30 48 l-3 -8 l7 3 M40 44 l-2 -9 l7 4 M52 44 l0 -9 l6 5 M64 48 l3 -8 l5 6' fill='${c.spike}'/>
+  <path d='M36 78 l-1 7 m-3 -2 l4 2 l3 -2 M58 78 l1 7 m-3 -1 l3 1 l3 -2' stroke='${c.dark}' stroke-width='2.4' fill='none' stroke-linecap='round'/>
+  <ellipse cx='76' cy='56' rx='16' ry='13' fill='${c.body}'/>
+  <path d='M86 50 Q92 44 96 50 Q90 52 88 56Z' fill='${c.body}'/>
+  ${royal?crownSVG(c,76,44):`<path d='M70 46 l-3 -10 l6 6Z' fill='${c.spike}'/><path d='M80 45 l1 -11 l5 8Z' fill='${c.spike}'/>`}
+  <ellipse cx='80' cy='54' rx='4' ry='4.5' fill='${c.eye}'/><ellipse cx='81' cy='54' rx='1.4' ry='3' fill='#111'/>
+  <path d='M74 49 l9 2' stroke='${c.dark}' stroke-width='1.5'/>
+  <path d='M88 58 Q92 60 88 62' stroke='${c.dark}' stroke-width='1.4' fill='none'/>`;
+}
+function dragonWinged(c,royal){
+  return `<path d='M50 46 Q16 26 8 46 L19 47 Q13 39 24 43 L21 52 Q22 45 33 50 L29 59 Q34 50 50 54Z' fill='${c.body2}'/>
+  <path d='M50 46 Q84 26 92 46 L81 47 Q87 39 76 43 L79 52 Q78 45 67 50 L71 59 Q66 50 50 54Z' fill='${c.body2}'/>
+  <path d='M50 70 Q56 92 70 88 Q60 84 58 70Z' fill='${c.body}'/>
+  <path d='M70 88 l8 3 l-4 -7Z' fill='${c.spike}'/>
+  <ellipse cx='50' cy='60' rx='15' ry='22' fill='${c.body}'/>
+  <ellipse cx='50' cy='64' rx='9' ry='15' fill='${c.belly}'/>
+  <path d='M50 40 l-4 -8 l8 0Z M50 50 l-3 -6 l6 0Z' fill='${c.spike}'/>
+  <path d='M44 80 l-2 6 m-2 0 l2 1 l2 -1 M56 80 l2 6 m-2 1 l2 0 l2 -1' stroke='${c.dark}' stroke-width='2.2' fill='none' stroke-linecap='round'/>
+  <path d='M50 44 Q50 32 58 26' stroke='${c.body}' stroke-width='9' fill='none' stroke-linecap='round'/>
+  <ellipse cx='60' cy='24' rx='10' ry='8' fill='${c.body}'/>
+  ${royal?crownSVG(c,60,14):`<path d='M66 20 l4 -8 l1 8Z' fill='${c.spike}'/><path d='M58 18 l1 -8 l4 7Z' fill='${c.spike}'/>`}
+  <ellipse cx='63' cy='23' rx='3' ry='3.5' fill='${c.eye}'/><circle cx='64' cy='23' r='1.5' fill='#111'/>`;
+}
+function dragonArt(speciesId){
+  const sp=speciesById(speciesId);
+  const c=DRAGON_COLORS[sp.el];
+  const arch=DRAGON_ARCH[speciesId]||'lizard';
+  const royal=sp.rarity>=4;
+  let inner;
+  if(arch==='chinese') inner=dragonChinese(c,royal);
+  else if(arch==='winged') inner=dragonWinged(c,royal);
+  else inner=dragonLizard(c,royal);
+  return `<svg class="dragon-art" viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'>${inner}</svg>`;
+}
+
+/* ===== ФОТО-ДРАКОНЫ С ЭВОЛЮЦИЕЙ ПО УРОВНЮ =====
+   Картинки лежат в папке images/ рядом с HTML, имена вида {id}_{стадия}.png
+   (стадии 1/25/60/100). Если файла нет — показываем рисованного SVG-дракона.
+   Чтобы отключить фото целиком, поставь USE_PHOTO_DRAGONS=false. */
+const USE_PHOTO_DRAGONS=true;
+const DRAGON_STAGES=[1,25,60,100];
+// какая стадия соответствует уровню
+function stageForLevel(level){
+  let st=DRAGON_STAGES[0];
+  for(const s of DRAGON_STAGES){ if(level>=s) st=s; }
+  return st;
+}
+// визуал дракона: <img> фото с авто-фолбэком на SVG, либо сразу SVG
+function dragonVisual(speciesId, level){
+  const svg=dragonArt(speciesId);
+  if(!USE_PHOTO_DRAGONS) return svg;
+  const stage=stageForLevel(level||1);
+  const src=`images/${speciesId}_${stage}.png`;
+  // если картинка не загрузится — onerror подменит контейнер на SVG
+  const svgEsc=svg.replace(/"/g,'&quot;');
+  return `<img class="dragon-art dragon-photo" src="${src}" alt=""
+     onerror="this.outerHTML=this.getAttribute('data-fallback')"
+     data-fallback="${svgEsc}">`;
+}
+
+
+
+// Виды драконов: базовые статы на 1 уровне
+const SPECIES = [
+  {id:'ember',  name:'Эмберлинг',  sigil:'🐲', el:'fire',  rarity:1, hp:48, atk:12, def:6,  spd:9,  traits:['Тёплая чешуя','Дитя углей'], lore:'Малый дракон-искра, что греет кузни деревень.'},
+  {id:'glacier',name:'Гляциар',    sigil:'🐉', el:'frost', rarity:2, hp:60, atk:11, def:10, spd:6,  traits:['Ледяной панцирь','Дыхание метели'], lore:'Парит над замёрзшими пиками, оставляя иней.'},
+  {id:'sporewing',name:'Спорокрыл',sigil:'🦎', el:'venom', rarity:1, hp:52, atk:13, def:5,  spd:11, traits:['Споровый шлейф','Болотный охотник'], lore:'Скользит сквозь топи, сея ядовитую пыльцу.'},
+  {id:'tempest',name:'Темпестар',  sigil:'🐦‍⬛',el:'storm', rarity:2, hp:50, atk:14, def:6,  spd:13, traits:['Громовое сердце','Седлок ветров'], lore:'Седлает грозовые фронты и бьёт молнией.'},
+  {id:'umbra',  name:'Умбракс',    sigil:'🦇', el:'shade', rarity:3, hp:55, atk:16, def:7,  spd:12, traits:['Тенеход','Пожиратель света'], lore:'Скользит меж теней, его почти не видно днём.'},
+  {id:'magma',  name:'Магмарок',   sigil:'🦖', el:'fire',  rarity:3, hp:78, atk:18, def:12, spd:5,  traits:['Лавовое нутро','Сокрушитель скал'], lore:'Древний колосс, ступающий по расплавленным жилам.'},
+  {id:'aurora', name:'Аврорин',    sigil:'🌀', el:'frost', rarity:4, hp:70, atk:17, def:11, spd:10, traits:['Северное сияние','Хладный венец'], lore:'Легендарный страж полюса, чьё дыхание — северный свет.'},
+  {id:'voidmaw',name:'Бездномор',  sigil:'🌑', el:'shade', rarity:5, hp:92, atk:22, def:13, spd:11, traits:['Беззвёздная пасть','Эхо пустоты'], lore:'Миф из мифов. Говорят, он старше самих гор.'},
+  {id:'cinderpup',name:'Жарёныш',  sigil:'🔥', el:'fire',  rarity:1, hp:44, atk:14, def:4,  spd:12, traits:['Шустрый','Хвост-факел'], lore:'Юркий выводок углей, что носится по кузням и поджигает солому.'},
+  {id:'permafrost',name:'Вечнолёд',sigil:'❄️', el:'frost', rarity:3, hp:74, atk:14, def:14, spd:5,  traits:['Несокрушимый','Стужа веков'], lore:'Дремлет в ледниках столетиями, пробуждаясь лишь в самые лютые зимы.'},
+  {id:'blightfang',name:'Гнилоклык',sigil:'🐍',el:'venom', rarity:2, hp:58, atk:15, def:7,  spd:10, traits:['Гнилое дыхание','Терпеливый'], lore:'Прячется под палой листвой, отравляя всё, к чему прикоснётся.'},
+  {id:'thundercall',name:'Громозов',sigil:'⚡', el:'storm', rarity:3, hp:62, atk:19, def:8,  spd:14, traits:['Скорость молнии','Раскат грома'], lore:'Голос его — гроза; крылья рассекают воздух с громовым треском.'},
+  {id:'nightwyrm',name:'Сумрачник',sigil:'🐈‍⬛',el:'shade', rarity:2, hp:54, atk:15, def:8,  spd:13, traits:['Бесшумный','Глаза-уголья'], lore:'Охотится в новолуние, и жертва не слышит его до последнего мига.'},
+  {id:'pyrelord',name:'Пламевластец',sigil:'☄️',el:'fire', rarity:4, hp:80, atk:20, def:12, spd:9,  traits:['Венец пламени','Испепеляющий'], lore:'Древний владыка вулканов, чей рёв плавит сталь на расстоянии.'},
+  {id:'worldserpent',name:'Мирозмей',sigil:'🐉', el:'venom', rarity:5, hp:96, atk:21, def:15, spd:8,  traits:['Кольца мира','Яд первотворения'], lore:'Сказывают, его тело опоясывает корни всех земель.'},
+];
+const RARITY_NAME = {1:'Обычный',2:'Необычный',3:'Редкий',4:'Легендарный',5:'Мифический'};
+const RARITY_STAR = r => '★'.repeat(r)+'☆'.repeat(5-r);
+
+/* ======================= ШПИЛЬ МИРОЗДАНИЯ: ДРЕВО ТАЛАНТОВ =======================
+   Уникальное дерево для каждого вида, до 100 уровня, генерируется детерминированно.
+   - Заклинания: на 10,20,...,100 (10 шт.) — новые боевые приёмы.
+   - Ультимативки: на 50 и 100 — мощные особые удары.
+   - Перки/пассивки: на каждом 5-м уровне (5,15,25,...) — бонусы к статам/эффекты.
+   - Развилки: некоторые узлы предлагают выбор A/B (даёт уникальность каждому дракону). */
+
+// Тематические заклинания по стихиям (имена/иконки/описания берутся по индексу прогрессии)
+const SPELL_POOLS = {
+  fire:  [['Искра','✨','лёгкий ожог'],['Огненный коготь','🔥','жжёт врага'],['Жар-волна','🌋','опаляет всё вокруг'],['Пепельный вихрь','🌀','слепит врага пеплом'],['Лавовый плевок','🟠','тяжёлый урон'],['Огненный шторм','☄️','шквал пламени'],['Пламенный щит','🛡️','жжёт того, кто бьёт'],['Жар недр','🟥','растёт с каждым ходом'],['Фениксов жар','🦅','лечит и жжёт'],['Солнечный взрыв','💥','ослепительный удар']],
+  frost: [['Снежинка','❄️','лёгкий холод'],['Ледяной коготь','🧊','морозит врага'],['Стужа','🥶','замедляет врага'],['Иней','💎','покрывает льдом'],['Ледяной шип','🔹','пронзает броню'],['Метельный вихрь','🌬️','буря снега'],['Морозный панцирь','🛡️','твёрдая защита'],['Хрустальный взор','👁️','точный удар'],['Сердце зимы','💙','лечит на холоде'],['Вечная мерзлота','🏔️','сковывает врага']],
+  venom: [['Брызги','💧','лёгкий яд'],['Ядовитый коготь','🟢','отравляет'],['Спора','🍄','яд растёт со временем'],['Кислота','🧪','разъедает броню'],['Гнилое облако','☁️','травит каждый ход'],['Лозы','🌿','опутывают врага'],['Шипастый покров','🌵','колет атакующего'],['Зелёная кровь','💚','лечит ядом'],['Тлен','🟩','усиливает весь яд'],['Цветение бездны','🌺','взрыв спор']],
+  storm: [['Искорка','⚡','лёгкий разряд'],['Грозовой коготь','🌩️','бьёт током'],['Порыв','💨','быстрый удар'],['Раскат','🔊','оглушает врага'],['Молния','⚡','точный сильный удар'],['Шквал','🌪️','буря ветра'],['Громовой щит','🛡️','бьёт током в ответ'],['Скорость бури','🏃','лишний ход'],['Сердце грозы','💜','лечит молнией'],['Небесный гнев','🌠','удар с небес']],
+  shade: [['Тенька','🌑','лёгкая тень'],['Тёмный коготь','🦇','ранит из тьмы'],['Морок','😶‍🌫️','сбивает врага'],['Тень-двойник','👥','уклоняется'],['Поглощение','🕳️','бьёт и лечит'],['Сумрак','🌚','скрывает дракона'],['Покров ночи','🛡️','прячет от ударов'],['Пожиратель света','⚫','растёт во тьме'],['Сердце тьмы','💜','лечит тенью'],['Затмение','🌘','гасит силы врага']],
+};
+// Ультимативки по стихиям (на 50 и 100)
+const ULT_POOLS = {
+  fire:  [['Извержение','🌋','Чудовищный огненный взрыв по врагу'],['Гнев Солнца','☀️','Сжигает врага дотла, лечит дракона']],
+  frost: [['Ледниковый раскол','🏔️','Сковывает врага вечным льдом'],['Сердце Зимы','💙','Замораживает поле, мощно лечит']],
+  venom: [['Чумной шторм','☣️','Накрывает врага облаком яда'],['Древо Жизни','🌳','Яд врагу, исцеление дракону']],
+  storm: [['Буря Тысячи Молний','⚡','Шквал молний по врагу'],['Длань Небес','🌩️','Громовой удар и второй ход']],
+  shade: [['Беззвёздная Ночь','🌑','Поглощает врага тьмой'],['Сердце Пустоты','🕳️','Урон врагу, полное исцеление']],
+};
+// Перки/пассивки (общий пул, иконка+название+что даёт). delta — бонус к статам в %.
+const PERK_POOLS = [
+  ['Крепкая чешуя','🛡️',{def:0.10},'защита +10%'],
+  ['Острый коготь','⚔️',{atk:0.10},'атака +10%'],
+  ['Большое сердце','❤️',{hp:0.12},'здоровье +12%'],
+  ['Быстрые крылья','💨',{spd:0.12},'прыть +12%'],
+  ['Боевой дух','🔥',{atk:0.08,hp:0.06},'атака и здоровье'],
+  ['Толстокожесть','🪨',{def:0.12,hp:0.06},'защита и здоровье'],
+  ['Хищник','🐾',{atk:0.10,spd:0.06},'атака и прыть'],
+  ['Живучесть','🌟',{hp:0.10,def:0.06},'здоровье и защита'],
+  ['Ярость','😤',{atk:0.14},'атака +14%'],
+  ['Гранитная шкура','⛰️',{def:0.14},'защита +14%'],
+];
+
+// детерминированный «случайный» выбор по строке-семени
+function hashSeed(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0);}
+function seededPick(arr, seedNum){ return arr[seedNum % arr.length]; }
+
+// Построить полное дерево для вида (массив узлов по уровням 5..100)
+function buildTalentTree(sp){
+  const el=sp.el;
+  const spells=SPELL_POOLS[el], ults=ULT_POOLS[el];
+  const nodes=[];
+  let spellIdx=0;
+  for(let lvl=5; lvl<=100; lvl+=5){
+    const seed=hashSeed(sp.id+'_'+lvl);
+    if(lvl===50 || lvl===100){
+      // ультимативка
+      const u=ults[lvl===50?0:1];
+      nodes.push({lvl, kind:'ult', icon:u[1], name:u[0], desc:u[2]});
+    } else if(lvl%10===0){
+      // заклинание (10,20,30,40,60,70,80,90)
+      const s=spells[spellIdx % spells.length];
+      nodes.push({lvl, kind:'spell', icon:s[1], name:s[0], desc:s[2]});
+      spellIdx++;
+    } else {
+      // перк на каждом 5-м; иногда развилка (выбор A/B)
+      const isFork = (lvl%15===0) || (seed%3===0);
+      if(isFork){
+        const a=seededPick(PERK_POOLS, seed);
+        const b=seededPick(PERK_POOLS, seed+7+ (a===PERK_POOLS[(seed+7)%PERK_POOLS.length]?3:0));
+        const bb = (b===a)? PERK_POOLS[(seed+11)%PERK_POOLS.length] : b;
+        nodes.push({lvl, kind:'fork', options:[
+          {icon:a[1],name:a[0],mods:a[2],desc:a[3]},
+          {icon:bb[1],name:bb[0],mods:bb[2],desc:bb[3]},
+        ]});
+      } else {
+        const p=seededPick(PERK_POOLS, seed);
+        nodes.push({lvl, kind:'perk', icon:p[1], name:p[0], mods:p[2], desc:p[3]});
+      }
+    }
+    // ранний бонусный заклин на 10-м уже учтён; добавим первый заклин-узел на ур.10
+  }
+  return nodes;
+}
+// кэш деревьев по виду
+const TREE_CACHE={};
+function treeOf(speciesId){
+  if(!TREE_CACHE[speciesId]) TREE_CACHE[speciesId]=buildTalentTree(speciesById(speciesId));
+  return TREE_CACHE[speciesId];
+}
+// суммарный множитель статов от выбранных перков дракона
+function talentMods(d){
+  const out={atk:0,def:0,hp:0,spd:0};
+  const tree=treeOf(d.id);
+  const picks=d.talentPicks||{};
+  for(const node of tree){
+    if(node.lvl>d.level) continue;
+    if(node.kind==='perk'){
+      for(const k in node.mods) out[k]+=node.mods[k];
+    } else if(node.kind==='fork'){
+      const choice=picks[node.lvl];
+      const opt = choice!=null ? node.options[choice] : null;
+      if(opt) for(const k in opt.mods) out[k]+=opt.mods[k];
+    }
+  }
+  return out;
+}
+// список открытых заклинаний/ультимативок дракона (для боя и книги)
+function unlockedSpells(d){
+  const tree=treeOf(d.id);
+  return tree.filter(n=>(n.kind==='spell'||n.kind==='ult') && n.lvl<=d.level);
+}
+// есть ли неразобранные развилки (узлы выбора, доступные по уровню, но ещё не выбраны)
+function pendingForks(d){
+  const tree=treeOf(d.id);
+  const picks=d.talentPicks||{};
+  return tree.filter(n=>n.kind==='fork' && n.lvl<=d.level && picks[n.lvl]==null);
+}
+
+/* Расцветки (морфы). Каждый дракон рождается в одном из окрасов.
+   weight — вероятность, mods — небольшие бонусы к статам, hue/sat/bri — окрашивание силуэта. */
+const MORPHS = [
+  {id:'common', name:'Обычный',    weight:46, swatch:'#9c8b6a', filter:'',                                              mods:{}},
+  {id:'crimson',name:'Багряный',   weight:11, swatch:'#d23b2e', filter:'hue-rotate(-18deg) saturate(1.8) brightness(1.05)', mods:{atk:2}, gloss:'огненно-красный'},
+  {id:'emerald',name:'Изумрудный', weight:11, swatch:'#3bb24a', filter:'hue-rotate(75deg) saturate(1.7)', mods:{def:2}, gloss:'ядовито-зелёный'},
+  {id:'azure',  name:'Лазурный',   weight:11, swatch:'#3f8fd6', filter:'hue-rotate(165deg) saturate(1.7) brightness(1.05)', mods:{spd:2}, gloss:'голубой'},
+  {id:'frostwhite',name:'Белоснежный',weight:8, swatch:'#e8eef2', filter:'saturate(0.25) brightness(1.45)',            mods:{hp:6}, gloss:'ледяной белый'},
+  {id:'obsidian',name:'Обсидиановый',weight:6, swatch:'#2c2630', filter:'saturate(0.5) brightness(0.62) contrast(1.2)', mods:{def:3}, gloss:'чёрный'},
+  {id:'amethyst',name:'Аметистовый',weight:5, swatch:'#a861d8', filter:'hue-rotate(230deg) saturate(1.6) brightness(1.1)', mods:{atk:2,spd:1}, gloss:'фиолетовый'},
+  {id:'golden', name:'Золотой',    weight:2, swatch:'#e7b53b', filter:'hue-rotate(20deg) saturate(2) brightness(1.2) drop-shadow(0 0 6px rgba(231,181,59,.7))', mods:{atk:2,def:2,hp:4}, gloss:'сияюще-золотой', shiny:true},
+];
+const morphById = id => MORPHS.find(m=>m.id===id) || MORPHS[0];
+function rollMorph(){
+  const total=MORPHS.reduce((a,m)=>a+m.weight,0);
+  let r=Math.random()*total;
+  for(const m of MORPHS){if((r-=m.weight)<=0)return m.id;}
+  return 'common';
+}
+
+const REGIONS = [
+  {id:'emberreach', scene:'fire',  name:'Жерло Карн-Вулака', el:'fire',  tier:1, gold:[18,34], xp:[14,26], eggChance:.28, unlock:0,
+   desc:'Реки лавы вьются меж чёрных вулканов. Воздух дрожит от жара.',
+   biome:'Вулканы и лава'},
+  {id:'mirelot',    scene:'jungle',name:'Чащоба Зелёных Озёр', el:'venom', tier:2, gold:[30,52], xp:[24,40], eggChance:.34, unlock:2,
+   desc:'Исполинские деревья смыкают кроны над тёмной водой. Тут дышит сама зелень.',
+   biome:'Деревья и озёра'},
+  {id:'glacior',    scene:'ice',   name:'Пики Хладного Безмолвия', el:'frost', tier:3, gold:[46,74], xp:[36,56], eggChance:.42, unlock:4,
+   desc:'Ледяные пики режут небо, а замёрзшие озёра хранят то, что вмёрзло века назад.',
+   biome:'Ледяные пики и замёрзшие озёра'},
+  {id:'voidedge',   scene:'shade', name:'Беззвёздный Предел', el:'shade', tier:4, gold:[72,122],xp:[56,92], eggChance:.5,  unlock:6,
+   desc:'Где гаснет последний свет. Сюда идут лишь те, кто не боится тьмы.',
+   biome:'Бездна и тени'},
+];
+
+/* ======================= ТОЧКИ ИНТЕРЕСА (ПОЛЁТ-ИССЛЕДОВАНИЕ) =======================
+   При каждом заходе на карте биома появляется 3-4 случайные точки.
+   kind определяет, что произойдёт, когда дракон долетит:
+   - treasure: сразу награда золотом/пылью
+   - egg: находит яйцо
+   - relic: находит реликвию
+   - choice: добрый выбор из двух (каждый даёт разную награду)
+   - beast: лёгкая стычка (переходит в обычный бой), победа = крупная награда
+   - friend: дружелюбная встреча, дарит немного всего и радость */
+const POI_TYPES = [
+  {kind:'treasure', icon:'💎', label:'Блестящая находка', weight:24},
+  {kind:'treasure', icon:'🪙', label:'Мешочек золота',    weight:20},
+  {kind:'egg',      icon:'🥚', label:'Брошенное яйцо',    weight:16},
+  {kind:'relic',    icon:'📦', label:'Старый сундучок',   weight:14},
+  {kind:'choice',   icon:'❓', label:'Загадочное место',  weight:16},
+  {kind:'beast',    icon:'👹', label:'Чьё-то логово',     weight:12},
+  {kind:'friend',   icon:'🐣', label:'Дружелюбный зверёк',weight:12},
+];
+// добрые выборы для точек kind:'choice' (две опции с разными наградами)
+const POI_CHOICES = [
+  {q:'Тёмная пещера манит вглубь. Что сделать?',
+   a:{t:'🔦 Осмотреть пещеру', reward:'gold'}, b:{t:'💎 Поискать кристаллы', reward:'dust'}},
+  {q:'У ручья лежит что-то блестящее.',
+   a:{t:'🪙 Взять монетки', reward:'gold'}, b:{t:'🥚 Заглянуть в гнездо рядом', reward:'egg'}},
+  {q:'Старое дерево с дуплом.',
+   a:{t:'🍯 Достать сладость', reward:'gold'}, b:{t:'📦 Пошарить в дупле', reward:'relic'}},
+  {q:'Странный светящийся гриб.',
+   a:{t:'✨ Собрать спор', reward:'dust'}, b:{t:'🪙 Обойти и найти клад', reward:'gold'}},
+];
+
+/* ======================= АРТЕФАКТЫ ======================= */
+/* Каждый артефакт даёт баффы к статам. Бонус растёт с уровнем ковки.
+   base — бонус на 1 уровне; per — прибавка за каждый уровень ковки.
+   slot — гнездо экипировки (на драконе по одному артефакту каждого типа). */
+const ARTIFACTS = [
+  {id:'emberfang',  name:'Клык Жароеда',     icon:'🦷', slot:'weapon', rarity:1, el:'fire',
+   base:{atk:3}, per:{atk:2}, lore:'Клык древнего дракона, что вечно тлеет изнутри.'},
+  {id:'frostshard', name:'Осколок Вечнольда', icon:'🔹', slot:'armor', rarity:2, el:'frost',
+   base:{def:3,hp:6}, per:{def:2,hp:4}, lore:'Льдина, не тающая даже в пламени горна.'},
+  {id:'venomidol',  name:'Идол Гнили',        icon:'🗿', slot:'charm', rarity:2, el:'venom',
+   base:{atk:2,spd:2}, per:{atk:1,spd:2}, lore:'Каменный истукан, источающий ядовитую дымку.'},
+  {id:'stormcrest', name:'Гребень Грозы',     icon:'⚜️', slot:'charm', rarity:3, el:'storm',
+   base:{spd:4,atk:2}, per:{spd:3,atk:1}, lore:'Венец, в котором заперта пойманная молния.'},
+  {id:'shadeplate', name:'Латы Безмолвия',    icon:'🛡️', slot:'armor', rarity:3, el:'shade',
+   base:{def:5,hp:8}, per:{def:3,hp:6}, lore:'Доспех, сотканный из самой ночной тьмы.'},
+  {id:'pyreblade',  name:'Клинок Пламевластца',icon:'🗡️', slot:'weapon', rarity:4, el:'fire',
+   base:{atk:6,spd:1}, per:{atk:3,spd:1}, lore:'Меч, выкованный в жерле спящего вулкана.'},
+  {id:'worldheart', name:'Сердце Мироздания', icon:'💠', slot:'charm', rarity:5, el:'venom',
+   base:{hp:14,atk:3,def:3,spd:2}, per:{hp:8,atk:2,def:2,spd:1}, lore:'Осколок первотворения. Дарует силу всем чешуйкам разом.'},
+];
+const SLOT_NAME = {weapon:'Оружие', armor:'Броня', charm:'Талисман'};
+const SLOT_ICON = {weapon:'⚔️', armor:'🛡️', charm:'🔮'};
+const artifactById = id => ARTIFACTS.find(a=>a.id===id);
+
+// стоимость ковки артефакта со своего текущего уровня на следующий (мягкая, без долгого гринда)
+function forgeCost(art, level){
+  return Math.round((15 + art.rarity*8) * Math.pow(1.32, level-1));
+}
+const FORGE_MAX = 8;
+
+// суммарные бонусы конкретного экземпляра артефакта с учётом уровня ковки
+function artifactBonus(inst){
+  const art=artifactById(inst.id); if(!art) return {};
+  const lvl=inst.level;
+  const out={};
+  for(const k of ['hp','atk','def','spd']){
+    const b=(art.base[k]||0) + (art.per[k]||0)*(lvl-1);
+    if(b) out[k]=b;
+  }
+  return out;
+}
+
+/* ======================= СОСТОЯНИЕ ======================= */
+let S = {
+  gold:300, eggs:4, dust:0,
+  dragons:[],      // {uid,id,level,xp,curHp,morph,equip,genes,gen}
+  discovered:{},   // species id -> true
+  morphsSeen:{},   // species id -> {morphId:true}
+  artifacts:[],    // {invUid,id,level}  — экземпляры в инвентаре
+  artifactsSeen:{},// artifact id -> true
+  nextUid:1,
+  nextArt:1,
+  sel:null,        // выбранный в логове uid
+  arenaPick:null,  // выбранный боец uid
+  forgeSel:null,   // выбранный артефакт в кузнице (invUid)
+  breedA:null,     // первый родитель для скрещивания (uid)
+  breedB:null,     // второй родитель (uid)
+  farewellSel:{},  // выбранные для проводов {uid:true}
+  // === ежедневная петля и idle ===
+  lastSeen:0,      // время последнего визита (мс) — для idle-дохода
+  lastDaily:'',    // дата последнего входа (YYYY-MM-DD) — для стрика
+  streak:0,        // текущая серия дней подряд
+  chestReady:false,// готов ли ежедневный сундук к получению
+  quests:[],       // [{id,goal,prog,done,claimed}]
+  questDay:'',     // дата, на которую сгенерированы квесты
+};
+
+/* ===== ЕЖЕДНЕВНЫЕ КВЕСТЫ ===== */
+// шаблоны дейликов; goal масштабируется, выдаём 3 случайных в день
+const QUEST_POOL = [
+  {id:'win_arena', icon:'⚔️', text:'Победи в дружеском поединке', goalBase:2,  unit:'побед',  reward:{gold:120}},
+  {id:'explore',   icon:'🗺️', text:'Сходи в путешествие', goalBase:2, unit:'походов', reward:{gold:120}},
+  {id:'hatch',     icon:'🥚', text:'Высиди яйцо', goalBase:1, unit:'яиц', reward:{eggs:2}},
+  {id:'forge',     icon:'🔨', text:'Улучши реликвию в кузнице', goalBase:2, unit:'ковок', reward:{dust:30}},
+  {id:'recycle',   icon:'✦',  text:'Преврати реликвию в пыль', goalBase:1, unit:'шт.', reward:{dust:30}},
+  {id:'breed',     icon:'🥚', text:'Выведи дракончика', goalBase:1, unit:'раз', reward:{gold:150}},
+  {id:'mutate',    icon:'⟳',  text:'Поколдуй над геном', goalBase:2, unit:'мутаций', reward:{dust:30}},
+  {id:'feed',      icon:'🍖', text:'Покорми дракона', goalBase:2, unit:'раз', reward:{gold:90}},
+  {id:'pet',       icon:'💖', text:'Погладь дракона', goalBase:2, unit:'раз', reward:{gold:90}},
+];
+const IDLE_RATE_PER_DRAGON = 0.6; // золота в минуту с каждого уровня суммарно — приятный бонус за возвращение
+const IDLE_CAP_HOURS = 8;         // максимум накопления offline
+
+/* ===== ГЕНЕТИКА =====
+   У каждого дракона геном из 4 статовых генов (атка/защ/жизнь/прыть).
+   Аллель — целое 0..6: чем выше, тем мощнее множитель к этому стату.
+   Плюс редкий ген «искра» (spark): true даёт +8% ко всем статам и сияние.
+   Идеальный дракон — все гены 6 и активная искра. */
+const GENE_KEYS=['atk','def','hp','spd'];
+const GENE_LABEL={atk:'Сила',def:'Стойкость',hp:'Живучесть',spd:'Резвость'};
+const GENE_ICON={atk:'⚔️',def:'🛡️',hp:'❤️',spd:'💨'};
+const GENE_MAX=6;
+// множитель стата от аллели: 0 -> 0.85, 3 -> 1.0, 6 -> 1.30
+const geneMult=allele=>0.85 + allele*0.075;
+const SPARK_BONUS=0.08;
+
+function randomGenes(floor=0,ceil=3){
+  const g={};
+  for(const k of GENE_KEYS) g[k]=rnd(floor,ceil);
+  g.spark = Math.random()<0.04; // 4% дикая искра
+  return g;
+}
+// оценка «чистоты» генома 0..100 — насколько близок к идеалу
+function genomeScore(genes){
+  if(!genes) return 0;
+  const sum=GENE_KEYS.reduce((a,k)=>a+(genes[k]||0),0);
+  let pct = sum/(GENE_KEYS.length*GENE_MAX)*100;
+  if(genes.spark) pct=Math.min(100,pct+8);
+  return Math.round(pct);
+}
+function isPerfect(genes){
+  return genes && genes.spark && GENE_KEYS.every(k=>genes[k]>=GENE_MAX);
+}
+// средний множитель генома (для краткой подписи)
+function genomeAvgMult(genes){
+  if(!genes) return 1;
+  let m=GENE_KEYS.reduce((a,k)=>a+geneMult(genes[k]||0),0)/GENE_KEYS.length;
+  if(genes.spark) m*=1+SPARK_BONUS;
+  return m;
+}
+
+// пологая кривая: до ур.100 реально дойти (~линейный рост требований)
+const xpToNext = lvl => 30 + lvl*12;
+const speciesById = id => SPECIES.find(s=>s.id===id);
+
+// найти экземпляр артефакта в инвентаре по invUid
+const artInst = invUid => S.artifacts.find(a=>a.invUid===invUid);
+// какой дракон носит данный артефакт (или null)
+function wearerOf(invUid){
+  return S.dragons.find(d=>d.equip && Object.values(d.equip).includes(invUid)) || null;
+}
+// суммарные бонусы всех надетых на дракона артефактов
+function equipBonus(d){
+  const out={hp:0,atk:0,def:0,spd:0};
+  if(!d.equip) return out;
+  for(const invUid of Object.values(d.equip)){
+    const inst=artInst(invUid); if(!inst) continue;
+    const b=artifactBonus(inst);
+    for(const k in b) out[k]+=b[k];
+  }
+  return out;
+}
+
+function statsOf(d){
+  const sp = speciesById(d.id);
+  const m = morphById(d.morph).mods || {};
+  const eq = equipBonus(d);
+  const gn = d.genes || {};
+  const spark = gn.spark ? (1+SPARK_BONUS) : 1;
+  const tal = talentMods(d); // множители от древа талантов (в долях)
+  const g = (lvl,base,grow)=> base + (lvl-1)*grow;
+  // геном и таланты множат "природную" часть стата, затем добавляются окрас и реликвии
+  const natural=(lvl,base,grow,key)=> Math.round( g(lvl,base,grow) * geneMult(gn[key]!=null?gn[key]:3) * spark * (1+(tal[key]||0)) );
+  return {
+    maxHp: natural(d.level, sp.hp, sp.hp*0.16, 'hp') + (m.hp||0) + eq.hp,
+    atk:   natural(d.level, sp.atk, sp.atk*0.14, 'atk') + (m.atk||0) + eq.atk,
+    def:   natural(d.level, sp.def, sp.def*0.12, 'def') + (m.def||0) + eq.def,
+    spd:   natural(d.level, sp.spd, sp.spd*0.08, 'spd') + (m.spd||0) + eq.spd,
+  };
+}
+
+function addDragon(speciesId, level=1, morph=null, genes=null, gen=1){
+  const sp=speciesById(speciesId);
+  const d={uid:S.nextUid++, id:speciesId, level, xp:0, curHp:0,
+           morph: morph || rollMorph(), genes: genes || randomGenes(0,3), gen,
+           name:null, happy:5, lastFed:0, talentPicks:{}};
+  d.curHp=statsOf(d).maxHp;
+  S.dragons.push(d);
+  if(!S.discovered[speciesId]){S.discovered[speciesId]=true;}
+  S.morphsSeen[speciesId] = S.morphsSeen[speciesId] || {};
+  S.morphsSeen[speciesId][d.morph] = true;
+  return d;
+}
+// отображаемое имя дракона: данное ребёнком или название вида
+function dragonName(d){ return d.name || speciesById(d.id).name; }
+
+/* ===== ЗАБОТА О ДРАКОНАХ ===== */
+const HAPPY_MAX=5;
+const FOOD_COST=10;
+// случайные ласковые реакции
+const PET_REACTIONS=['довольно урчит','прижимается к тебе','машет крылышками','пускает колечко дыма','щурится от удовольствия','тихонько мурлычет'];
+const FEED_REACTIONS=['с аппетитом уплетает','довольно облизывается','просит добавки','счастливо рычит','машет хвостом'];
+
+function feedDragon(d){
+  if(S.gold<FOOD_COST){toast('Нужно немного золота на угощение. Сходи в путешествие!');return;}
+  S.gold-=FOOD_COST;
+  d.happy=Math.min(HAPPY_MAX,(d.happy||0)+1);
+  // сытый дракон чуть подлечивается
+  d.curHp=Math.min(statsOf(d).maxHp, d.curHp+Math.round(statsOf(d).maxHp*0.2));
+  floatText('🍖 ням!','#7fb24a');
+  toast(`<b>${dragonName(d)}</b> ${pick(FEED_REACTIONS)}! ${'💖'.repeat(d.happy)}`);
+  questEvent('feed'); persist();
+  renderLedger(); renderLair();
+}
+function petDragon(d){
+  d.happy=Math.min(HAPPY_MAX,(d.happy||0)+1);
+  floatText('💖','#cf6e8f');
+  toast(`<b>${dragonName(d)}</b> ${pick(PET_REACTIONS)}! ${'💖'.repeat(d.happy)}`);
+  questEvent('pet'); persist();
+  renderLair();
+}
+function renameDragon(d){
+  const cur=d.name||'';
+  const name=prompt(`Как назвать твоего дракона (${speciesById(d.id).name})?`, cur);
+  if(name===null) return;
+  const clean=name.trim().slice(0,18);
+  d.name = clean || null;
+  if(clean) toast(`Теперь этого дракона зовут <b>${clean}</b>! 🐉`);
+  persist(); renderLair();
+}
+
+/* ===== ПРОВОДЫ: ОТПУСТИТЬ ДРАКОНА НА ВОЛЮ ===== */
+// Дракон улетает в родные земли и в благодарность оставляет золото и пыль.
+// Награда тем больше, чем выше уровень, реже окрас и чище геном.
+function farewellGift(d){
+  const sp=speciesById(d.id);
+  const m=morphById(d.morph);
+  const morphBonus = m.id==='common' ? 1 : (m.shiny ? 2.2 : 1.5);
+  const gene = 1 + genomeScore(d.genes)/100;       // 1.0 .. 2.0
+  const gold = Math.round((20 + d.level*8 + sp.rarity*10) * morphBonus * gene);
+  const dust = Math.round((6 + d.level*1.5 + sp.rarity*3) * (m.shiny?1.6:1) * gene);
+  return {gold, dust};
+}
+// можно ли отпустить: нельзя оставить логово пустым
+function canRelease(uids){
+  return S.dragons.length - uids.length >= 1;
+}
+function releaseDragons(uids){
+  if(!uids.length) return;
+  if(!canRelease(uids)){ toast('Нельзя отпустить всех — хотя бы один дракон должен остаться в логове 🐉'); return; }
+  doRelease(uids);
+}
+function doRelease(uids){
+  let gold=0, dust=0, names=[];
+  uids.forEach(uid=>{
+    const d=S.dragons.find(x=>x.uid===uid); if(!d) return;
+    const g=farewellGift(d); gold+=g.gold; dust+=g.dust; names.push(dragonName(d));
+    if(d.equip){ d.equip={}; }
+    if(S.sel===uid) S.sel=null;
+    if(S.breedA===uid) S.breedA=null;
+    if(S.breedB===uid) S.breedB=null;
+  });
+  S.dragons = S.dragons.filter(d=>!uids.includes(d.uid));
+  if(!S.sel && S.dragons.length) S.sel=S.dragons[0].uid;
+  S.gold+=gold; S.dust+=dust;
+  floatText('🕊️ +'+gold+'🪙','#d9a441');
+  const who = names.length===1 ? `<b>${names[0]}</b> улетел` : `<b>${names.length} драконов</b> улетели`;
+  toast(`${who} на волю и оставил${names.length===1?'':'и'} в благодарность <b>${gold}🪙</b> и <b>${dust}✦</b> 🕊️`);
+  persist();
+  renderAll();
+}
+
+const MAX_LEVEL=100;
+function grantXp(d, amount){
+  if(d.level>=MAX_LEVEL){ d.xp=0; return false; }
+  d.xp += amount;
+  let leveled=false;
+  const before=d.level;
+  while(d.level<MAX_LEVEL && d.xp >= xpToNext(d.level)){
+    d.xp -= xpToNext(d.level);
+    d.level++; leveled=true;
+    d.curHp = statsOf(d).maxHp; // на новом уровне исцеляется
+  }
+  if(d.level>=MAX_LEVEL) d.xp=0;
+  // оповестить об открытии новых талантов в Шпиле
+  if(leveled){
+    const tree=treeOf(d.id);
+    const fresh=tree.filter(n=>n.lvl>before && n.lvl<=d.level);
+    if(fresh.length){
+      const hasUlt=fresh.some(n=>n.kind==='ult');
+      const hasSpell=fresh.some(n=>n.kind==='spell');
+      const hasFork=fresh.some(n=>n.kind==='fork');
+      let what = hasUlt?'⭐ Ультимативная сила!':hasSpell?'✨ Новое заклинание!':hasFork?'🌟 Новый талант на выбор!':'🌟 Новый талант!';
+      setTimeout(()=>toast(`<b>${dragonName(d)}</b> поднялся в Шпиле Мироздания — ${what} Загляни в его развитие.`), 400);
+    }
+  }
+  return leveled;
+}
+
+/* ======================= УТИЛИТЫ ======================= */
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+function toast(html){const t=$('#toast');t.innerHTML=html;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+function floatText(txt,color){const f=$('#float');f.textContent=txt;f.style.color=color;f.classList.remove('go');void f.offsetWidth;f.classList.add('go');}
+
+function weightedSpecies(){
+  // вес обратно растёт с редкостью
+  const weights=SPECIES.map(s=>({s,w:Math.pow(0.34, s.rarity-1)*100}));
+  const total=weights.reduce((a,b)=>a+b.w,0);
+  let r=Math.random()*total;
+  for(const x of weights){if((r-=x.w)<=0)return x.s;}
+  return SPECIES[0];
+}
+
+/* ===== АРТЕФАКТЫ: выдача и дроп ===== */
+function addArtifact(artId, level=1){
+  const inst={invUid:S.nextArt++, id:artId, level};
+  S.artifacts.push(inst);
+  S.artifactsSeen[artId]=true;
+  return inst;
+}
+function weightedArtifact(maxRarity){
+  const pool=ARTIFACTS.filter(a=>a.rarity<=maxRarity);
+  const weights=pool.map(a=>({a,w:Math.pow(0.45, a.rarity-1)*100}));
+  const total=weights.reduce((s,x)=>s+x.w,0);
+  let r=Math.random()*total;
+  for(const x of weights){if((r-=x.w)<=0)return x.a;}
+  return pool[0];
+}
+function bonusText(b){
+  const lab={hp:'жизни',atk:'атк',def:'защ',spd:'прыть'};
+  return Object.entries(b).filter(([k,v])=>v).map(([k,v])=>`+${v} ${lab[k]}`).join(' · ');
+}
+
+/* ===== ПЕРЕРАБОТКА АРТЕФАКТОВ В ПЫЛЬ ===== */
+// сколько пыли даёт распыление: зависит от редкости и вложенной ковки
+function recycleYield(inst){
+  const art=artifactById(inst.id);
+  const base=4 + art.rarity*4;
+  const forged=(inst.level-1)*3;          // часть вложенного золота возвращается пылью
+  return base+forged;
+}
+function recycleArtifact(invUid){
+  const idx=S.artifacts.findIndex(a=>a.invUid===invUid);
+  if(idx<0) return;
+  const inst=S.artifacts[idx];
+  // снять с дракона, если надет
+  const w=wearerOf(invUid);
+  if(w){ for(const s in w.equip){ if(w.equip[s]===invUid) delete w.equip[s]; } }
+  const gain=recycleYield(inst);
+  S.dust+=gain;
+  S.artifacts.splice(idx,1);
+  if(S.forgeSel===invUid) S.forgeSel=null;
+  const art=artifactById(inst.id);
+  floatText('+'+gain+' пыли','#b88adf');
+  toast(`<b>${art.name}</b> распылён в прах. +${gain} ✦ пыли.`);
+  questEvent('recycle'); persist();
+  renderLedger();renderForge();renderLair();
+}
+
+/* ===== СЕЛЕКЦИЯ: СКРЕЩИВАНИЕ И МУТАЦИЯ ===== */
+const BREED_GOLD=40;      // золота за скрещивание (по карману ребёнку)
+const BREED_DUST=10;      // пыли за скрещивание
+const MUTATE_DUST=8;      // пыли за точечную мутацию одного гена
+
+// можно ли скрестить двух драконов: один вид (для чистой линии)
+function canBreed(a,b){
+  return a&&b&&a.uid!==b.uid&&a.id===b.id;
+}
+// наследование генома: для каждого гена берём аллель одного из родителей,
+// затем шанс мутации (±1, редко +2). Искра наследуется или вспыхивает мутацией.
+function breedGenes(ga,gb){
+  const child={};
+  for(const k of GENE_KEYS){
+    let v = Math.random()<0.5 ? ga[k] : gb[k];
+    // лёгкий уклон к лучшему родителю
+    if(Math.random()<0.25) v=Math.max(ga[k],gb[k]);
+    const roll=Math.random();
+    if(roll<0.16) v+=1;                 // благоприятная мутация
+    else if(roll<0.22) v+=2;            // редкий скачок
+    else if(roll<0.32) v-=1;            // неблагоприятная
+    child[k]=Math.max(0,Math.min(GENE_MAX,v));
+  }
+  // искра: наследуется если есть у родителя; иначе редкий шанс вспыхнуть
+  if(ga.spark||gb.spark) child.spark = Math.random()<0.6;
+  else child.spark = Math.random()<0.05;
+  return child;
+}
+function breedDragons(a,b){
+  if(!canBreed(a,b)){toast('Скрещивать можно лишь двух разных драконов одного вида.');return null;}
+  if(S.gold<BREED_GOLD){toast('Недостаёт золота для ритуала селекции.');return null;}
+  if(S.dust<BREED_DUST){toast('Недостаёт пыли для ритуала. Распыли лишние реликвии.');return null;}
+  S.gold-=BREED_GOLD; S.dust-=BREED_DUST;
+  const childGenes=breedGenes(a.genes,b.genes);
+  // окрас потомка: чаще от одного из родителей, иногда новый бросок
+  const childMorph = Math.random()<0.7 ? (Math.random()<0.5?a.morph:b.morph) : rollMorph();
+  const gen=Math.max(a.gen||1,b.gen||1)+1;
+  const child=addDragon(a.id,1,childMorph,childGenes,gen);
+  questEvent('breed'); persist();
+  return child;
+}
+// точечная мутация одного гена за пыль (±, с уклоном вверх)
+function mutateGene(d,key){
+  if(S.dust<MUTATE_DUST){toast('Недостаёт пыли для мутации.');return;}
+  S.dust-=MUTATE_DUST;
+  const roll=Math.random();
+  let delta;
+  if(roll<0.55) delta=1;          // чаще улучшение
+  else if(roll<0.70) delta=2;     // редкий скачок
+  else if(roll<0.90) delta=0;     // ген устойчив
+  else delta=-1;                  // откат
+  const old=d.genes[key]||0;
+  d.genes[key]=Math.max(0,Math.min(GENE_MAX,old+delta));
+  d.curHp=Math.min(d.curHp,statsOf(d).maxHp);
+  const diff=d.genes[key]-old;
+  floatText(diff>0?`${GENE_LABEL[key]} ↑`:(diff<0?`${GENE_LABEL[key]} ↓`:'без эффекта'),
+            diff>0?'#7fb24a':(diff<0?'#c5544a':'#a8987a'));
+  toast(diff>0?`Мутация удалась! <b>${GENE_LABEL[key]}</b> вырос до ${d.genes[key]}/${GENE_MAX}.`
+       :diff<0?`Мутация откатила <b>${GENE_LABEL[key]}</b> до ${d.genes[key]}/${GENE_MAX}.`
+       :`Ген <b>${GENE_LABEL[key]}</b> устоял.`);
+  questEvent('mutate'); persist();
+  renderLedger();renderLair();
+}
+// редкая искусственная искра за много пыли
+const SPARK_DUST=30;
+function igniteSpark(d){
+  if(d.genes.spark){toast('Искра уже горит в этом драконе.');return;}
+  if(S.dust<SPARK_DUST){toast(`Нужно ${SPARK_DUST} ✦ пыли, чтобы зажечь искру.`);return;}
+  S.dust-=SPARK_DUST;
+  if(Math.random()<0.55){
+    d.genes.spark=true;
+    d.curHp=Math.min(d.curHp,statsOf(d).maxHp);
+    floatText('✦ ИСКРА ✦','#ffd27a');
+    toast(`В <b>${speciesById(d.id).name}</b> вспыхнула <span style="color:var(--gold)">искра рода</span>! +8% ко всем статам.`);
+  } else {
+    floatText('искра угасла','#a8987a');
+    toast('Искра не прижилась. Пыль развеяна. Попробуй снова.');
+  }
+  renderLedger();renderLair();persist();
+}
+
+/* ======================= РЕНДЕР ======================= */
+function renderLedger(){
+  $('#gold').textContent=S.gold;
+  $('#eggs').textContent=S.eggs;
+  $('#count').textContent=S.dragons.length;
+  $('#species').textContent=SPECIES.length;
+  $('#relics').textContent=S.artifacts.length;
+  $('#dust').textContent=S.dust;
+  $('#hatchBtn').disabled = S.eggs<1;
+  $('#buyEggBtn').disabled = S.gold<30;
+}
+
+function elTag(el){const e=ELEMENTS[el];return `<span class="elem-tag ${e.cls}">${e.name}</span>`;}
+
+// окрашенный рисованный дракон согласно морфу
+function sigilHTML(sp, morphId, cls, level){
+  const m=morphById(morphId);
+  const sh=m.shiny?' shiny':'';
+  return `<div class="${cls} dragon-wrap${sh}" style="filter:${m.filter||'none'}">${dragonVisual(sp.id, level)}</div>`;
+}
+function morphBadge(morphId){
+  const m=morphById(morphId);
+  if(m.id==='common') return '';
+  return `<span class="morph-pill"${m.shiny?' data-shiny="1"':''}><i style="background:${m.swatch}"></i>${m.name}</span>`;
+}
+
+function dragonCard(d,{selectable,onclick}={}){
+  const sp=speciesById(d.id), st=statsOf(d);
+  const hpPct=Math.max(0,Math.round(d.curHp/st.maxHp*100));
+  const div=document.createElement('div');
+  div.className='dcard'+(selectable&&S.sel===d.uid?' sel':'');
+  div.innerHTML=`
+    <span class="lvlpill">ур.${d.level}</span>
+    <span class="star">${'★'.repeat(sp.rarity)}</span>
+    ${sigilHTML(sp, d.morph, 'sigil', d.level)}
+    <div class="dname">${dragonName(d)}</div>
+    ${d.name?`<div class="dmeta dspecies">${sp.name}</div>`:''}
+    ${elTag(sp.el)} ${morphBadge(d.morph)}
+    <div class="bar hp" style="margin-top:8px"><i style="width:${hpPct}%"></i></div>
+    <div class="dmeta">${d.curHp}/${st.maxHp} жизни · ${'💖'.repeat(d.happy||0)||'🤍'}</div>`;
+  if(onclick) div.onclick=()=>onclick(d);
+  return div;
+}
+
+function renderLair(){
+  if(typeof renderDaily==='function' && $('#dailyPanel')) renderDaily();
+  const wrap=$('#lairRoster'); wrap.innerHTML='';
+  if(!S.dragons.length){wrap.innerHTML='<div class="empty">Логово пустует. Высиди яйцо в Гнезде, чтобы обрести первого дракона.</div>';$('#detailPanel').style.display='none';return;}
+  S.dragons.forEach(d=>wrap.appendChild(dragonCard(d,{selectable:true,onclick:selectDragon})));
+  if(S.sel && S.dragons.some(d=>d.uid===S.sel)) renderDetail(S.dragons.find(d=>d.uid===S.sel));
+  else $('#detailPanel').style.display='none';
+}
+
+function selectDragon(d){S.sel=d.uid;renderLair();}
+
+function renderDetail(d){
+  const sp=speciesById(d.id), st=statsOf(d);
+  const need=xpToNext(d.level);
+  const xpPct=Math.round(d.xp/need*100);
+  const hpPct=Math.round(d.curHp/st.maxHp*100);
+  const adv=ELEMENTS[ADVANTAGE[sp.el]].name;
+  const m=morphById(d.morph);
+  const morphLine = m.id==='common'
+    ? '<span style="color:var(--ink-dim)">Окрас: обычный.</span>'
+    : `<span style="color:var(--ink-dim)">Окрас: <b style="color:${m.swatch}">${m.name}</b> (${m.gloss||''})${m.shiny?' ✨':''}.</span>`;
+  const modBits=Object.entries(m.mods||{}).map(([k,v])=>{
+    const lab={hp:'жизнь',atk:'атака',def:'защита',spd:'прыть'}[k];
+    return `+${v} ${lab}`;
+  }).join(', ');
+  const p=$('#detailPanel'); p.style.display='block';
+  p.innerHTML=`
+    <div class="detail">
+      <div>
+        ${sigilHTML(sp, d.morph, 'bigsigil', d.level)}
+        <div style="text-align:center">${elTag(sp.el)}</div>
+        <div style="text-align:center;margin-top:6px">${morphBadge(d.morph)||'<span class="morph-pill plain"><i style="background:#9c8b6a"></i>Обычный</span>'}</div>
+        <div style="text-align:center;color:var(--gold);font-family:Cinzel;font-size:13px;margin-top:6px">${RARITY_STAR(sp.rarity)}</div>
+      </div>
+      <div>
+        <h2 style="margin-bottom:2px">${dragonName(d)}
+          <button class="rename-btn" id="renameBtn" title="Дать имя">✏️</button>
+          <span style="color:var(--ink-dim);font-size:13px;font-family:Spectral">· ур. ${d.level}</span>
+        </h2>
+        <div class="care-row">
+          <span class="happy-hearts" title="Настроение">${'💖'.repeat(d.happy||0)}${'🤍'.repeat(HAPPY_MAX-(d.happy||0))}</span>
+          <button class="btn care-btn" id="feedBtn">🍖 Покормить · 🪙${FOOD_COST}</button>
+          <button class="btn care-btn" id="petBtn">💖 Погладить</button>
+        </div>
+        <p class="lede" style="margin-bottom:10px">${d.name?`<b>${d.name}</b> — это ${sp.name.toLowerCase()}. `:''}${sp.lore} <br>${morphLine}${modBits?` <span style="color:var(--gold)">(${modBits})</span>`:''}<br><span style="color:var(--ink-dim)">Сильнее против стихии: <b style="color:${ELEMENTS[ADVANTAGE[sp.el]].color}">${adv}</b>.</span></p>
+        <div class="statline"><span>Жизнь</span><b>${d.curHp} / ${st.maxHp}</b></div>
+        <div class="bar hp"><i style="width:${hpPct}%"></i></div>
+        <div class="statline"><span>Опыт</span><b>${d.xp} / ${need}</b></div>
+        <div class="bar xp"><i style="width:${xpPct}%"></i></div>
+        <div class="statline" style="margin-top:12px">
+          <span>⚔️ Атака <b>${st.atk}</b></span>
+          <span>🛡️ Защита <b>${st.def}</b></span>
+          <span>💨 Прыть <b>${st.spd}</b></span>
+        </div>
+        <div class="traits">${sp.traits.map(t=>`<span class="trait">${t}</span>`).join('')}</div>
+        <div class="equip-block">
+          <div class="equip-head">Реликвии ${equipBonus(d).atk||equipBonus(d).def||equipBonus(d).hp||equipBonus(d).spd?`<span class="equip-sum">${bonusText(equipBonus(d))}</span>`:''}</div>
+          <div class="equip-slots">${['weapon','armor','charm'].map(slot=>{
+            const invUid=d.equip&&d.equip[slot];
+            const inst=invUid?artInst(invUid):null;
+            if(inst){
+              const art=artifactById(inst.id);
+              return `<div class="eslot filled" data-slot="${slot}" title="${art.name} +${inst.level}">
+                <div class="eslot-ic">${art.icon}</div>
+                <div class="eslot-lvl">+${inst.level}</div>
+                <button class="eslot-x" data-unequip="${slot}" title="Снять">✕</button></div>`;
+            }
+            return `<div class="eslot empty" data-slot="${slot}" title="${SLOT_NAME[slot]}">
+              <div class="eslot-ic">${SLOT_ICON[slot]}</div><div class="eslot-lbl">${SLOT_NAME[slot]}</div></div>`;
+          }).join('')}</div>
+          <div id="equipPicker"></div>
+        </div>
+        <div class="gene-block">
+          <div class="equip-head">Геном
+            <span class="gene-gen">поколение ${d.gen||1}</span>
+            <span class="equip-sum">чистота ${genomeScore(d.genes)}%${isPerfect(d.genes)?' · <b style="color:var(--gold)">ИДЕАЛ ✦</b>':''}</span>
+          </div>
+          <div class="gene-rows">
+            ${GENE_KEYS.map(k=>{
+              const v=d.genes[k]||0;
+              const pips=Array.from({length:GENE_MAX},(_,i)=>`<i class="${i<v?'on':''}"></i>`).join('');
+              return `<div class="gene-row">
+                <span class="gene-name">${GENE_ICON[k]} ${GENE_LABEL[k]}</span>
+                <span class="pips big">${pips}</span>
+                <span class="gene-val">${v}/${GENE_MAX}</span>
+                <button class="gene-mut" data-mut="${k}" ${S.dust<MUTATE_DUST||v>=GENE_MAX?'disabled':''} title="Мутировать ген за ${MUTATE_DUST} пыли">⟳ ${MUTATE_DUST}✦</button>
+              </div>`;
+            }).join('')}
+          </div>
+          <div class="gene-foot">
+            ${d.genes.spark
+              ? '<span class="gene-spark-line">✦ Искра рода горит — +8% ко всем статам</span>'
+              : `<button class="btn ghost gene-spark-btn" id="sparkBtn" ${S.dust<SPARK_DUST?'disabled':''}>Зажечь искру&nbsp;·&nbsp;${SPARK_DUST}✦</button>`}
+            <button class="btn ghost" id="toRoostBtn">В Гнездилище →</button>
+          </div>
+        </div>
+        <div class="btnrow">
+          <button class="btn ghost" id="restBtn" ${d.curHp>=st.maxHp?'disabled':''}>Отдых&nbsp;·&nbsp;🪙${restCost(d)}</button>
+          <button class="btn ghost" id="toArenaBtn">На турнир →</button>
+          <button class="btn ghost" id="toSpireBtn">🗼 Шпиль${pendingForks(d).length?` <span class="spire-badge">${pendingForks(d).length}</span>`:''}</button>
+        </div>
+        ${S.dragons.length>1?`<div class="release-row"><button class="btn ghost release-btn" id="releaseBtn">Отпустить на волю 🕊️</button></div>`:''}
+        <p class="hint">Уровень растёт в боях и странствиях. В 🗼 Шпиле дракон открывает заклинания и таланты — у каждого свой путь!</p>
+      </div>
+    </div>`;
+  $('#restBtn').onclick=()=>restDragon(d);
+  $('#toArenaBtn').onclick=()=>{S.arenaPick=d.uid;switchView('arena');};
+  $('#toRoostBtn').onclick=()=>{S.breedA=d.uid;switchView('roost');};
+  $('#renameBtn').onclick=()=>renameDragon(d);
+  $('#feedBtn').onclick=()=>feedDragon(d);
+  $('#petBtn').onclick=()=>petDragon(d);
+  $('#toSpireBtn').onclick=()=>{S.sel=d.uid;spireTab='tree';switchView('spire');};
+  const relb=$('#releaseBtn'); if(relb) relb.onclick=()=>confirmReleaseOne(d);
+  const sb=$('#sparkBtn'); if(sb) sb.onclick=()=>igniteSpark(d);
+  p.querySelectorAll('[data-mut]').forEach(btn=>btn.onclick=()=>mutateGene(d, btn.dataset.mut));
+  // снятие
+  p.querySelectorAll('[data-unequip]').forEach(btn=>btn.onclick=e=>{
+    e.stopPropagation(); unequipArtifact(d, btn.dataset.unequip);
+  });
+  // открыть выбор артефакта для гнезда
+  p.querySelectorAll('.eslot').forEach(el=>el.onclick=e=>{
+    if(e.target.closest('[data-unequip]'))return;
+    openEquipPicker(d, el.dataset.slot);
+  });
+}
+
+// показать список доступных артефактов нужного типа
+function openEquipPicker(d, slot){
+  const box=$('#equipPicker'); if(!box) return;
+  const options=S.artifacts.filter(a=>artifactById(a.id).slot===slot);
+  const equippedHere = d.equip&&d.equip[slot];
+  if(!options.length){
+    box.innerHTML=`<div class="equip-picker"><p class="hint" style="margin:0">Нет реликвий типа «${SLOT_NAME[slot]}». Ищи их в странствиях и боях.</p></div>`;
+    return;
+  }
+  box.innerHTML=`<div class="equip-picker">
+    <div class="equip-picker-head">Выбери ${SLOT_NAME[slot].toLowerCase()}:</div>
+    <div class="artgrid" id="pickGrid"></div>
+  </div>`;
+  const grid=$('#pickGrid');
+  options.forEach(a=>{
+    const chip=artChip(a,{showWearer:true,onclick:i=>{equipArtifact(d,i.invUid);}});
+    if(equippedHere===a.invUid) chip.classList.add('sel');
+    grid.appendChild(chip);
+  });
+}
+
+function restCost(d){const st=statsOf(d);const missing=st.maxHp-d.curHp;return Math.max(5,Math.ceil(missing*1.2));}
+function restDragon(d){
+  const cost=restCost(d);
+  if(S.gold<cost){toast('Недостаёт золота на лекарей.');return;}
+  S.gold-=cost; d.curHp=statsOf(d).maxHp;
+  toast(`<b>${speciesById(d.id).name}</b> полностью восстановлен.`);
+  renderLedger();renderLair();persist();
+}
+
+/* ===== ГНЕЗДО ===== */
+function hatchEgg(){
+  if(S.eggs<1)return;
+  S.eggs--;
+  const sp=weightedSpecies();
+  const ev=$('#eggVisual');
+  ev.textContent='🥚';ev.style.animation='shake .4s 2';ev.style.filter='';
+  setTimeout(()=>{
+    const wasNew=!S.discovered[sp.id];
+    const d=addDragon(sp.id,1);
+    const m=morphById(d.morph);
+    ev.style.animation='';ev.innerHTML=dragonVisual(sp.id, 1);ev.style.filter=m.filter||'none';
+    renderAll();
+    floatText('🎉',ELEMENTS[sp.el].color);
+    const morphTxt = m.id==='common' ? '' : ` <span style="color:${m.swatch}">· окрас «${m.name}»${m.shiny?' ✨':''}</span>`;
+    toast(`Вылупился <b>${sp.name}</b>! ${RARITY_STAR(sp.rarity)}${morphTxt} ${wasNew?'<span style="color:var(--gold)">· новый вид!</span>':''}`);
+    questEvent('hatch'); persist();
+  },820);
+}
+function buyEgg(){
+  if(S.gold<30){toast('Маловато золота. Сходи в путешествие или загляни за подарком дня!');return;}
+  S.gold-=30;S.eggs++;renderLedger();persist();toast('Куплено яйцо! Оно ждёт в Гнезде 🥚');
+}
+
+/* ===== СТРАНСТВИЕ ===== */
+/* ===== РИСОВАННЫЕ СЦЕНЫ БИОМОВ (SVG) ===== */
+// небольшая псевдослучайность, стабильная для каждого региона
+function seeded(seed){let s=seed;return ()=>{s=(s*9301+49297)%233280;return s/233280;};}
+
+function sceneSVG(scene, id){
+  const W=400,H=220;
+  const open=`<svg class="scene" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">`;
+  const close=`</svg>`;
+  if(scene==='fire')   return open+fireScene(W,H,id)+close;
+  if(scene==='jungle') return open+jungleScene(W,H,id)+close;
+  if(scene==='ice')    return open+iceScene(W,H,id)+close;
+  return open+shadeScene(W,H,id)+close;
+}
+
+/* ===== ПЕРГАМЕНТНАЯ КАРТА МЕСТНОСТИ (для режима полёта) ===== */
+function mapSVG(scene, id){
+  const W=400,H=240;
+  const r=seeded((id||scene).length*131+ (scene.charCodeAt(0)||7));
+  const P={
+    fire:{paper:'#3a2418',paper2:'#2a1810',ink:'#7a3a1e',land:'#6e3a1e',water:'#b8542a',accent:'#e0633a'},
+    jungle:{paper:'#23301f',paper2:'#1a2417',ink:'#3a5a2e',land:'#3f6b34',water:'#2f7d6a',accent:'#7fb24a'},
+    ice:{paper:'#2a3744',paper2:'#1e2a36',ink:'#4a6f88',land:'#5a7e96',water:'#6fa8c4',accent:'#6db4d4'},
+    shade:{paper:'#241a30',paper2:'#180f22',ink:'#5a4080',land:'#3f3458',water:'#7a3a86',accent:'#b88adf'},
+  }[scene]||{paper:'#2a1810',paper2:'#1a100a',ink:'#7a3a1e',land:'#6e3a1e',water:'#b8542a',accent:'#e0633a'};
+  let s=`<svg class="scene" viewBox='0 0 ${W} ${H}' preserveAspectRatio='xMidYMid slice' xmlns='http://www.w3.org/2000/svg'>`;
+  s+=`<rect width='${W}' height='${H}' fill='${P.paper}'/>`;
+  s+=`<rect width='${W}' height='${H}' fill='${P.paper2}' opacity='0.4'/>`;
+  // участки суши
+  for(let i=0;i<7;i++){const cx=r()*W,cy=r()*H,rad=30+r()*50;
+    s+=`<ellipse cx='${cx.toFixed(0)}' cy='${cy.toFixed(0)}' rx='${rad.toFixed(0)}' ry='${(rad*0.7).toFixed(0)}' fill='${P.land}' opacity='0.45'/>`;}
+  // река
+  s+=`<path d='M-10 ${(60+r()*40)|0} Q${W*0.3} ${(40+r()*60)|0} ${W*0.5} ${(120+r()*30)|0} T${W+10} ${(150+r()*40)|0}' fill='none' stroke='${P.water}' stroke-width='${(6+r()*4)|0}' opacity='0.55' stroke-linecap='round'/>`;
+  // горы
+  for(let i=0;i<6;i++){const x=20+i*65+r()*20,y=40+r()*30;
+    s+=`<path d='M${x.toFixed(0)} ${y.toFixed(0)} l8 -12 l8 12Z' fill='none' stroke='${P.ink}' stroke-width='1.5'/>`;}
+  // деревья
+  for(let i=0;i<10;i++){const x=r()*W,y=120+r()*100;
+    s+=`<circle cx='${x.toFixed(0)}' cy='${y.toFixed(0)}' r='4' fill='none' stroke='${P.ink}' stroke-width='1.2'/><line x1='${x.toFixed(0)}' y1='${(y+4).toFixed(0)}' x2='${x.toFixed(0)}' y2='${(y+8).toFixed(0)}' stroke='${P.ink}' stroke-width='1.2'/>`;}
+  // пунктирная тропа
+  s+=`<path d='M40 200 Q120 150 180 170 T340 120' fill='none' stroke='${P.accent}' stroke-width='2.5' stroke-dasharray='2 6' stroke-linecap='round' opacity='0.8'/>`;
+  // компас
+  s+=`<g transform='translate(360 42)'><circle r='16' fill='none' stroke='${P.ink}' stroke-width='1.5'/><path d='M0 -14 L4 0 L0 14 L-4 0Z' fill='${P.accent}'/><text x='0' y='-19' font-size='8' fill='${P.ink}' text-anchor='middle' font-family='serif'>С</text></g>`;
+  // рамка карты
+  s+=`<rect x='6' y='6' width='${W-12}' height='${H-12}' fill='none' stroke='${P.ink}' stroke-width='3'/>`;
+  s+=`<rect x='11' y='11' width='${W-22}' height='${H-22}' fill='none' stroke='${P.ink}' stroke-width='1' opacity='0.6'/>`;
+  s+=`<path d='M6 22 L6 6 L22 6 M${W-22} 6 L${W-6} 6 L${W-6} 22 M6 ${H-22} L6 ${H-6} L22 ${H-6} M${W-22} ${H-6} L${W-6} ${H-6} L${W-6} ${H-22}' fill='none' stroke='${P.accent}' stroke-width='2'/>`;
+  s+='</svg>';
+  return s;
+}
+
+/* ===== ХАБ «ДРАКОНЬИ ЗЕМЛИ» (главный экран) ===== */
+function hubSceneSVG(){
+  const W=800,H=480;
+  return `<svg class="hub-scene" viewBox='0 0 ${W} ${H}' preserveAspectRatio='xMidYMid slice' xmlns='http://www.w3.org/2000/svg'>
+    <defs>
+      <linearGradient id='hubsky' x1='0' y1='0' x2='0' y2='1'>
+        <stop offset='0' stop-color='#3a2450'/><stop offset='0.4' stop-color='#8a4a52'/>
+        <stop offset='0.7' stop-color='#d97a42'/><stop offset='1' stop-color='#f0a850'/></linearGradient>
+      <radialGradient id='hubsun' cx='0.5' cy='0.5' r='0.5'>
+        <stop offset='0' stop-color='#ffe9a0'/><stop offset='0.5' stop-color='#ffce6a' stop-opacity='0.8'/><stop offset='1' stop-color='#ffce6a' stop-opacity='0'/></radialGradient>
+      <linearGradient id='hubhill' x1='0' y1='0' x2='0' y2='1'>
+        <stop offset='0' stop-color='#3a4a2e'/><stop offset='1' stop-color='#24301c'/></linearGradient>
+    </defs>
+    <rect width='${W}' height='${H}' fill='url(#hubsky)'/>
+    <circle cx='400' cy='300' r='180' fill='url(#hubsun)'/><circle cx='400' cy='300' r='55' fill='#ffe9a0' opacity='0.9'/>
+    <path d='M0 300 L120 220 L240 290 L360 210 L480 285 L620 215 L800 290 L800 480 L0 480Z' fill='#5a3a5a' opacity='0.55'/>
+    <ellipse cx='150' cy='90' rx='40' ry='16' fill='#ffd9b0' opacity='0.28'/><ellipse cx='620' cy='70' rx='50' ry='20' fill='#ffd9b0' opacity='0.28'/>
+    <path d='M250 120 q8 -6 16 0 q8 -6 16 0' stroke='#3a2450' stroke-width='2' fill='none'/><path d='M520 150 q6 -5 12 0 q6 -5 12 0' stroke='#3a2450' stroke-width='2' fill='none'/>
+    <path d='M0 360 Q200 320 400 350 T800 340 L800 480 L0 480Z' fill='url(#hubhill)'/>
+    <path d='M0 420 Q250 390 500 415 T800 405 L800 480 L0 480Z' fill='#1c2614'/>
+  </svg>`;
+}
+// постройки-ссылки: иконка-рисунок, подпись, позиция (% сцены), экран
+const HUB_SPOTS=[
+  {v:'lair',   label:'Логово',     x:13, y:64, art:'castle'},
+  {v:'hatch',  label:'Гнездо',     x:33, y:80, art:'nest'},
+  {v:'forge',  label:'Кузница',    x:52, y:72, art:'forge'},
+  {v:'spire',  label:'Шпиль',      x:70, y:48, art:'tower'},
+  {v:'arena',  label:'Турнир',     x:86, y:76, art:'arena'},
+  {v:'explore',label:'Странствия', x:24, y:40, art:'portal'},
+  {v:'roost',  label:'Гнездилище', x:46, y:42, art:'altar'},
+  {v:'codex',  label:'Кодекс',     x:64, y:80, art:'book'},
+];
+function hubSpotArt(art){
+  switch(art){
+    case 'castle': return `<svg viewBox='0 0 60 60'><rect x='8' y='24' width='44' height='34' fill='#4a3a4e'/><rect x='2' y='14' width='14' height='44' fill='#564050'/><rect x='44' y='14' width='14' height='44' fill='#564050'/><path d='M2 14 l7 -10 l7 10Z M44 14 l7 -10 l7 10Z' fill='#7a3a42'/><rect x='24' y='38' width='12' height='20' fill='#2a1f2e'/><rect x='5' y='24' width='6' height='8' fill='#ffce6a'/><rect x='49' y='24' width='6' height='8' fill='#ffce6a'/></svg>`;
+    case 'nest': return `<svg viewBox='0 0 60 60'><ellipse cx='30' cy='44' rx='26' ry='12' fill='#5a4326'/><ellipse cx='30' cy='40' rx='20' ry='8' fill='#3a2c18'/><ellipse cx='22' cy='38' rx='7' ry='9' fill='#f0d8b0'/><ellipse cx='36' cy='40' rx='7' ry='9' fill='#e8c8a0'/><ellipse cx='30' cy='34' rx='7' ry='9' fill='#fff0d0'/></svg>`;
+    case 'forge': return `<svg viewBox='0 0 60 60'><rect x='8' y='28' width='44' height='28' fill='#3a2c20'/><path d='M5 28 l25 -14 l25 14Z' fill='#5a3a28'/><rect x='40' y='6' width='9' height='24' fill='#4a3424'/><path d='M44 4 q-6 -8 1 -16 q-5 8 4 12' fill='none' stroke='#ccc' stroke-width='2' opacity='0.5'/><rect x='20' y='40' width='18' height='16' fill='#e0633a'/><rect x='24' y='44' width='10' height='10' fill='#ffce6a'/></svg>`;
+    case 'tower': return `<svg viewBox='0 0 60 60'><rect x='20' y='14' width='22' height='44' fill='#46506a'/><rect x='16' y='14' width='30' height='8' fill='#566080'/><path d='M16 14 l15 -12 l15 12Z' fill='#6e5aa0'/><rect x='27' y='28' width='8' height='10' fill='#ffce6a'/><rect x='27' y='44' width='8' height='10' fill='#aef0ff'/><circle cx='31' cy='-2' r='3' fill='#aef0ff'/></svg>`;
+    case 'arena': return `<svg viewBox='0 0 60 60'><ellipse cx='30' cy='42' rx='28' ry='12' fill='#6a4a2e'/><ellipse cx='30' cy='38' rx='22' ry='9' fill='#8a6038'/><rect x='8' y='20' width='6' height='18' fill='#5a3a22'/><rect x='46' y='20' width='6' height='18' fill='#5a3a22'/><path d='M14 22 l5 -10 M41 22 l5 -10' stroke='#e0633a' stroke-width='2'/></svg>`;
+    case 'portal': return `<svg viewBox='0 0 60 60'><ellipse cx='30' cy='34' rx='20' ry='24' fill='#2a1f3a'/><ellipse cx='30' cy='34' rx='20' ry='24' fill='none' stroke='#b88adf' stroke-width='3'/><ellipse cx='30' cy='34' rx='11' ry='15' fill='#6e44a0' opacity='0.7'/><path d='M30 18 l3 8 l-3 -2 l-3 2Z' fill='#e8d6ff'/></svg>`;
+    case 'altar': return `<svg viewBox='0 0 60 60'><rect x='18' y='34' width='24' height='20' fill='#4a3a52'/><rect x='14' y='30' width='32' height='6' fill='#5a4660'/><circle cx='30' cy='20' r='10' fill='none' stroke='#7fb24a' stroke-width='3'/><circle cx='30' cy='20' r='4' fill='#c8e89a'/><path d='M30 30 l0 4' stroke='#7fb24a' stroke-width='2'/></svg>`;
+    case 'book': return `<svg viewBox='0 0 60 60'><path d='M10 22 L30 28 L30 54 L10 48Z' fill='#7a3a2a'/><path d='M50 22 L30 28 L30 54 L50 48Z' fill='#8a4a32'/><path d='M30 28 L30 54' stroke='#3a1a12' stroke-width='2'/><path d='M14 30 l12 3 M14 38 l12 3 M34 33 l12 -3 M34 41 l12 -3' stroke='#e8d0b0' stroke-width='1.5' opacity='0.6'/><circle cx='30' cy='18' r='4' fill='#ffce6a'/></svg>`;
+  }
+  return '';
+}
+// бейджи-уведомления на постройках
+function hubBadge(v){
+  if(v==='lair' && S.chestReady) return '🎁';
+  if(v==='spire'){ const n=S.dragons.reduce((a,d)=>a+pendingForks(d).length,0); if(n) return '●'; }
+  if(v==='hatch' && S.eggs>0) return String(S.eggs);
+  return '';
+}
+function renderHub(){
+  const wrap=$('#hubWrap');
+  if(!wrap) return;
+  const spots=HUB_SPOTS.map(sp=>{
+    const badge=hubBadge(sp.v);
+    return `<button class="hub-spot" data-go="${sp.v}" style="left:${sp.x}%;top:${sp.y}%">
+      <span class="hub-spot-art">${hubSpotArt(sp.art)}</span>
+      <span class="hub-spot-label">${sp.label}</span>
+      ${badge?`<span class="hub-spot-badge">${badge}</span>`:''}
+    </button>`;
+  }).join('');
+  wrap.innerHTML=`
+    <div class="hub-stage">
+      ${hubSceneSVG()}
+      <div class="hub-title-plate">
+        <div class="hub-title">Драконьи Земли</div>
+        <div class="hub-sub">🪙 ${S.gold} · 🥚 ${S.eggs} · 🐉 ${S.dragons.length} · ✦ ${S.dust}</div>
+      </div>
+      ${spots}
+    </div>
+    <p class="hub-hint">Нажми на любое строение, чтобы отправиться туда. Драконьи земли ждут тебя!</p>`;
+  wrap.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>switchView(b.dataset.go));
+}
+
+/* ОГНЕННАЯ: вулканы, потоки лавы, искры */
+function fireScene(W,H,id){
+  const r=seeded(101);
+  let s=`<defs>
+    <linearGradient id="fsky${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a1410"/><stop offset="0.55" stop-color="#702016"/><stop offset="1" stop-color="#c23c1e"/>
+    </linearGradient>
+    <radialGradient id="fglow${id}" cx="0.5" cy="1" r="0.9">
+      <stop offset="0" stop-color="#ffb23e" stop-opacity="0.9"/><stop offset="0.5" stop-color="#e0633a" stop-opacity="0.35"/><stop offset="1" stop-color="#e0633a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="flava${id}" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffd86b"/><stop offset="0.5" stop-color="#ff7a2e"/><stop offset="1" stop-color="#d8341a"/>
+    </linearGradient>
+  </defs>
+  <rect width="${W}" height="${H}" fill="url(#fsky${id})"/>
+  <ellipse cx="200" cy="220" rx="240" ry="120" fill="url(#fglow${id})"/>`;
+  // дальние вулканы
+  s+=`<path d="M0,150 L70,80 L120,150 Z" fill="#2a1410"/>
+      <path d="M300,150 L360,70 L400,120 L400,150 Z" fill="#33180f"/>`;
+  // главный вулкан
+  s+=`<path d="M120,165 L200,55 L290,165 Z" fill="#1c0d08"/>
+      <path d="M170,100 L200,55 L235,100 L218,118 L200,108 L182,118 Z" fill="#ff7a2e"/>
+      <path d="M186,95 Q200,80 216,95 L210,118 L200,110 L192,118 Z" fill="#ffd86b"/>`;
+  // извержение-искры
+  for(let i=0;i<14;i++){const x=200+(r()-0.5)*70,y=70-r()*46,rad=1+r()*2.4;
+    s+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${rad.toFixed(1)}" fill="${r()>0.5?'#ffd86b':'#ff7a2e'}" opacity="${(0.5+r()*0.5).toFixed(2)}"/>`;}
+  // потоки лавы вниз по склону
+  s+=`<path d="M200,108 Q205,135 196,165 L210,165 Q214,135 208,108 Z" fill="url(#flava${id})"/>`;
+  // передний план — растрескавшаяся корка с лавовыми жилами
+  s+=`<path d="M0,170 Q100,160 200,172 T400,168 L400,220 L0,220 Z" fill="#160b07"/>`;
+  // лавовые озёра/жилы
+  s+=`<path d="M-10,196 Q80,186 150,198 Q220,210 320,196 Q380,189 410,198 L410,206 Q330,212 250,204 Q160,196 60,206 Q10,210 -10,204 Z" fill="url(#flava${id})" opacity="0.95"/>`;
+  for(let i=0;i<5;i++){const x=30+i*80+r()*30;
+    s+=`<path d="M${x},172 q4,14 -2,28 q-5,12 3,20" stroke="#ff7a2e" stroke-width="${(1+r()*1.5).toFixed(1)}" fill="none" opacity="0.8"/>`;}
+  // тлеющие угольки в воздухе
+  for(let i=0;i<10;i++){s+=`<circle cx="${(r()*W).toFixed(0)}" cy="${(40+r()*120).toFixed(0)}" r="${(0.6+r()*1).toFixed(1)}" fill="#ffb23e" opacity="${(0.3+r()*0.5).toFixed(2)}"/>`;}
+  return s;
+}
+
+/* ДЖУНГЛИ: исполинские деревья, озёра, лианы, туман */
+function jungleScene(W,H,id){
+  const r=seeded(202);
+  let s=`<defs>
+    <linearGradient id="jsky${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16352a"/><stop offset="0.6" stop-color="#1d4634"/><stop offset="1" stop-color="#26543b"/>
+    </linearGradient>
+    <radialGradient id="jbeam${id}" cx="0.35" cy="0" r="0.9">
+      <stop offset="0" stop-color="#c8e89a" stop-opacity="0.4"/><stop offset="1" stop-color="#c8e89a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="jlake${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a7d6a"/><stop offset="1" stop-color="#1c4a3c"/>
+    </linearGradient>
+  </defs>
+  <rect width="${W}" height="${H}" fill="url(#jsky${id})"/>
+  <polygon points="120,0 200,0 90,220 -10,220" fill="url(#jbeam${id})"/>`;
+  // дальняя стена листвы
+  let canopy='<path d="M0,90';
+  for(let x=0;x<=W;x+=28){canopy+=` Q${x+14},${56+r()*40} ${x+28},${78+r()*26}`;}
+  s+=canopy+` L${W},0 L0,0 Z" fill="#0f2a1f"/>`;
+  // второй ярус листвы
+  let canopy2='<path d="M0,108';
+  for(let x=0;x<=W;x+=34){canopy2+=` Q${x+17},${82+r()*30} ${x+34},${100+r()*20}`;}
+  s+=canopy2+` L${W},40 L0,40 Z" fill="#1a3d2c" opacity="0.85"/>`;
+  // крупные деревья-стволы
+  const trunks=[40,150,300,370];
+  trunks.forEach(tx=>{
+    const lean=(r()-0.5)*16;
+    s+=`<path d="M${tx-9},220 Q${tx-4+lean},120 ${tx+lean},40 L${tx+10+lean},40 Q${tx+6+lean},120 ${tx+9},220 Z" fill="#2e2016"/>`;
+    s+=`<path d="M${tx-9},220 Q${tx-4+lean},120 ${tx+lean},40" stroke="#3f2c1d" stroke-width="2" fill="none" opacity="0.7"/>`;
+    // кроны
+    for(let k=0;k<3;k++){const cx=tx+lean+(r()-0.5)*30,cy=40-k*14+r()*10;
+      s+=`<ellipse cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" rx="${(30+r()*16).toFixed(0)}" ry="${(16+r()*8).toFixed(0)}" fill="${k%2?'#2c6b45':'#357a4f'}" opacity="0.95"/>`;}
+  });
+  // лианы
+  for(let i=0;i<4;i++){const x=30+i*100+r()*30;
+    s+=`<path d="M${x},42 q6,40 -3,80 q-6,28 4,60" stroke="#3d6b3a" stroke-width="2" fill="none" opacity="0.7"/>
+        <circle cx="${x-2}" cy="${(120+r()*40).toFixed(0)}" r="2.5" fill="#7fb24a"/>`;}
+  // озеро на переднем плане
+  s+=`<path d="M0,200 L400,200 L400,220 L0,220 Z" fill="#143027"/>`;
+  s+=`<ellipse cx="200" cy="206" rx="210" ry="20" fill="url(#jlake${id})"/>`;
+  // блики на воде
+  for(let i=0;i<6;i++){const x=40+i*60+r()*30;
+    s+=`<ellipse cx="${x}" cy="${(204+r()*6).toFixed(0)}" rx="${(8+r()*10).toFixed(0)}" ry="1.6" fill="#a7e0c6" opacity="0.35"/>`;}
+  // кувшинки
+  for(let i=0;i<4;i++){const x=70+i*80+r()*20,y=205+r()*6;
+    s+=`<circle cx="${x}" cy="${y}" r="5" fill="#357a4f"/><circle cx="${x+1}" cy="${y-1}" r="1.8" fill="#cf6e8f"/>`;}
+  // туман
+  s+=`<ellipse cx="120" cy="150" rx="120" ry="18" fill="#bfe0c8" opacity="0.06"/>
+      <ellipse cx="300" cy="170" rx="140" ry="20" fill="#bfe0c8" opacity="0.05"/>`;
+  return s;
+}
+
+/* ЛЕДЯНАЯ: пики, замёрзшие озёра, северное сияние, снег */
+function iceScene(W,H,id){
+  const r=seeded(303);
+  let s=`<defs>
+    <linearGradient id="isky${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d2436"/><stop offset="0.5" stop-color="#234a63"/><stop offset="1" stop-color="#5e8fa8"/>
+    </linearGradient>
+    <linearGradient id="ipeak${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eaf4fb"/><stop offset="1" stop-color="#9cc2d8"/>
+    </linearGradient>
+    <linearGradient id="ilake${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#bfe3f0"/><stop offset="1" stop-color="#6fa8c4"/>
+    </linearGradient>
+    <linearGradient id="iaur${id}" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6db4d4" stop-opacity="0"/><stop offset="0.5" stop-color="#8fe6c4" stop-opacity="0.5"/><stop offset="1" stop-color="#b88adf" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="${W}" height="${H}" fill="url(#isky${id})"/>`;
+  // северное сияние
+  s+=`<path d="M0,60 Q120,20 200,55 T400,40 L400,90 Q260,70 180,95 T0,95 Z" fill="url(#iaur${id})" opacity="0.7"/>
+      <path d="M0,80 Q140,50 220,80 T400,70" stroke="#8fe6c4" stroke-width="2" fill="none" opacity="0.4"/>`;
+  // звёзды
+  for(let i=0;i<22;i++){s+=`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*70).toFixed(0)}" r="${(0.5+r()*0.9).toFixed(1)}" fill="#dff0f8" opacity="${(0.4+r()*0.6).toFixed(2)}"/>`;}
+  // дальние пики
+  s+=`<path d="M0,150 L60,80 L110,150 Z" fill="#3c637c" opacity="0.8"/>
+      <path d="M250,150 L320,70 L400,150 Z" fill="#3c637c" opacity="0.8"/>`;
+  // главные ледяные пики
+  s+=`<path d="M40,165 L130,55 L210,165 Z" fill="url(#ipeak${id})"/>
+      <path d="M130,55 L150,90 L130,100 L115,86 Z" fill="#cfe5f2"/>
+      <path d="M190,165 L280,75 L370,165 Z" fill="url(#ipeak${id})"/>
+      <path d="M280,75 L298,108 L280,116 L266,100 Z" fill="#cfe5f2"/>`;
+  // снежные шапки-блики
+  s+=`<path d="M130,55 L160,98 L130,90 L108,100 Z" fill="#ffffff" opacity="0.6"/>`;
+  // замёрзшее озеро
+  s+=`<path d="M0,180 L400,180 L400,220 L0,220 Z" fill="#3f6f88"/>`;
+  s+=`<ellipse cx="200" cy="200" rx="210" ry="22" fill="url(#ilake${id})"/>`;
+  // трещины во льду
+  for(let i=0;i<4;i++){const x=60+i*90+r()*20;
+    s+=`<path d="M${x},190 l${(8+r()*14).toFixed(0)},${(4+r()*8).toFixed(0)} l${(-6-r()*8).toFixed(0)},${(6+r()*6).toFixed(0)}" stroke="#dff0f8" stroke-width="1" fill="none" opacity="0.55"/>`;}
+  // вмёрзшие глыбы льда
+  for(let i=0;i<3;i++){const x=90+i*110+r()*20,y=198+r()*6;
+    s+=`<path d="M${x},${y} l8,-8 l8,8 l-4,7 l-8,0 Z" fill="#cfe5f2" opacity="0.85"/>`;}
+  // падающий снег
+  for(let i=0;i<24;i++){s+=`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(0.7+r()*1.1).toFixed(1)}" fill="#eaf4fb" opacity="${(0.3+r()*0.5).toFixed(2)}"/>`;}
+  return s;
+}
+
+/* ТЕНЕВАЯ: бездна, разломы, тёмные шпили */
+function shadeScene(W,H,id){
+  const r=seeded(404);
+  let s=`<defs>
+    <radialGradient id="ssky${id}" cx="0.5" cy="0.4" r="0.8">
+      <stop offset="0" stop-color="#2a1830"/><stop offset="0.6" stop-color="#160d1c"/><stop offset="1" stop-color="#0a060d"/>
+    </radialGradient>
+    <linearGradient id="srift${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cf6e8f"/><stop offset="0.5" stop-color="#7a3a86"/><stop offset="1" stop-color="#2a1830"/>
+    </linearGradient>
+  </defs>
+  <rect width="${W}" height="${H}" fill="url(#ssky${id})"/>`;
+  // далёкое кольцо-портал
+  s+=`<circle cx="200" cy="92" r="46" fill="none" stroke="#b88adf" stroke-width="1.5" opacity="0.35"/>
+      <circle cx="200" cy="92" r="30" fill="none" stroke="#cf6e8f" stroke-width="1" opacity="0.3"/>`;
+  // тёмные шпили
+  s+=`<path d="M30,180 L60,60 L90,180 Z" fill="#0d0712"/>
+      <path d="M300,180 L340,50 L380,180 Z" fill="#0d0712"/>
+      <path d="M150,185 L185,90 L210,185 Z" fill="#120a18"/>`;
+  // разлом-озеро света внизу
+  s+=`<path d="M0,182 Q120,172 200,184 T400,180 L400,220 L0,220 Z" fill="#0a060d"/>`;
+  s+=`<path d="M30,200 Q200,186 370,202 Q200,214 30,200 Z" fill="url(#srift${id})" opacity="0.8"/>`;
+  // парящие осколки
+  for(let i=0;i<10;i++){const x=r()*W,y=40+r()*150;
+    s+=`<path d="M${x.toFixed(0)},${y.toFixed(0)} l4,-2 l2,4 l-4,2 Z" fill="#b88adf" opacity="${(0.25+r()*0.5).toFixed(2)}"/>`;}
+  // звёздная пыль
+  for(let i=0;i<18;i++){s+=`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(0.5+r()*0.8).toFixed(1)}" fill="#e0c8ef" opacity="${(0.2+r()*0.5).toFixed(2)}"/>`;}
+  return s;
+}
+
+function renderMap(){
+  const m=$('#map');m.innerHTML='';
+  REGIONS.forEach(r=>{
+    const locked=S.dragons.length<r.unlock || maxLevel()<r.unlock;
+    const el=ELEMENTS[r.el];
+    const div=document.createElement('div');
+    div.className='region region--'+r.scene+(locked?' locked':'');
+    div.innerHTML=`
+      <div class="region-art">${sceneSVG(r.scene, r.id)}
+        ${locked?'<div class="region-lock">🔒</div>':''}
+        <div class="region-biome">${r.biome}</div>
+      </div>
+      <div class="region-body">
+        <h3>${r.name} ${elTag(r.el)}</h3>
+        <p>${r.desc}</p>
+        <div class="tier-row">
+          <span class="tier">Опасность ${'◆'.repeat(r.tier)}${'◇'.repeat(4-r.tier)}</span>
+          <span class="tier-meta">🪙${r.gold[0]}–${r.gold[1]} · 🥚${Math.round(r.eggChance*100)}%</span>
+        </div>
+        <div class="btnrow">${locked
+          ? `<span class="hint">Откроется, когда драконов станет ${r.unlock} и появится дракон ур. ${r.unlock}+</span>`
+          : `<button class="btn">Отправить в странствие</button>`}</div>
+      </div>`;
+    if(!locked) div.querySelector('button').onclick=()=>openExpedition(r);
+    m.appendChild(div);
+  });
+}
+function maxLevel(){return S.dragons.reduce((a,d)=>Math.max(a,d.level),0);}
+function highestDragonLevel(){return maxLevel();}
+
+function openExpedition(region){
+  const avail=S.dragons.filter(d=>d.curHp>0);
+  if(!avail.length){toast('Нет драконов в силах странствовать.');return;}
+  switchView('explore');
+  const m=$('#map');
+  m.innerHTML=`<div class="panel exp-panel" style="grid-column:1/-1;padding:0;overflow:hidden">
+    <div class="exp-banner">${sceneSVG(region.scene, region.id+'-exp')}
+      <div class="exp-banner-text">
+        <div class="exp-biome">${region.biome}</div>
+        <h2>${region.name}</h2>
+        <p>${region.desc}</p>
+      </div>
+    </div>
+    <div style="padding:16px">
+      <p class="lede" style="margin-top:0">Кого отправишь в путь? Сильный дракон вернётся с большей добычей, слабого ждут раны.</p>
+      <div class="roster" id="expRoster"></div>
+      <div class="btnrow"><button class="btn ghost" id="backMap">← Назад к карте</button></div>
+    </div>
+  </div>`;
+  const rr=$('#expRoster');
+  avail.forEach(d=>rr.appendChild(dragonCard(d,{onclick:()=>startFlight(region,d)})));
+  $('#backMap').onclick=renderMap;
+}
+
+/* ===== ПОЛЁТ-ИССЛЕДОВАНИЕ ===== */
+let flight=null; // {region, d, pois:[{x,y,kind,icon,label,done}], busy}
+
+function rollPOIs(region){
+  const n=rnd(3,4);
+  const pois=[];
+  // позиции точек: распределяем по сцене, избегая краёв и зоны старта
+  const slots=[[22,38],[44,30],[66,42],[80,62],[34,64],[58,66]];
+  // перемешиваем слоты
+  for(let i=slots.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[slots[i],slots[j]]=[slots[j],slots[i]];}
+  for(let i=0;i<n;i++){
+    // взвешенный выбор типа
+    const total=POI_TYPES.reduce((a,t)=>a+t.weight,0);
+    let r=Math.random()*total, pick=POI_TYPES[0];
+    for(const t of POI_TYPES){ if((r-=t.weight)<=0){pick=t;break;} }
+    const [x,y]=slots[i];
+    pois.push({x,y,kind:pick.kind,icon:pick.icon,label:pick.label,done:false});
+  }
+  return pois;
+}
+
+function startFlight(region,d){
+  flight={region, d, pois:rollPOIs(region), busy:false};
+  switchView('explore'); // switchView сам вызовет renderFlight, т.к. flight установлен
+}
+
+function renderFlight(){
+  const f=flight;
+  const m=$('#map');
+  const region=f.region;
+  const left=f.pois.filter(p=>!p.done).length;
+  m.innerHTML=`<div class="panel flight-panel" style="grid-column:1/-1;padding:0;overflow:hidden">
+    <div class="flight-stage" id="flightStage">
+      ${mapSVG(region.scene, region.id+'-fly')}
+      <div class="flight-dragon" id="flightDragon" style="filter:${morphById(f.d.morph).filter||'none'}">${dragonVisual(f.d.id, f.d.level)}</div>
+      ${f.pois.map((p,i)=>`<button class="poi${p.done?' poi-done':''}" data-poi="${i}"
+          style="left:${p.x}%;top:${p.y}%" ${f.busy||p.done?'disabled':''}>
+          <span class="poi-ic">${p.done?'✓':p.icon}</span>
+          <span class="poi-ring"></span></button>`).join('')}
+      <div class="flight-hud">
+        <div class="flight-title">${region.biome} · ${dragonName(f.d)}</div>
+        <div class="flight-left">Осталось точек: ${left}</div>
+      </div>
+    </div>
+    <div class="flight-foot">
+      <div class="flight-tip" id="flightTip">${left? '✨ Нажми на светящуюся точку — дракон подлетит и исследует её!' : '🏁 Все точки исследованы!'}</div>
+      <button class="btn ghost" id="flightDone">${left?'Закончить полёт':'Вернуться к карте'}</button>
+    </div>
+  </div>`;
+  // позиция дракона: у первой неисследованной или в центре
+  positionDragon(50, 50, true);
+  $$('#flightStage .poi').forEach(btn=>btn.onclick=()=>flyTo(+btn.dataset.poi));
+  $('#flightDone').onclick=()=>endFlight();
+}
+
+// мгновенно/плавно поставить дракона в координаты (% сцены)
+function positionDragon(xPct, yPct, instant){
+  const dr=$('#flightDragon'); if(!dr) return;
+  if(instant) dr.style.transition='none'; else dr.style.transition='left .9s ease, top .9s ease, transform .3s';
+  dr.style.left=xPct+'%'; dr.style.top=yPct+'%';
+  // лёгкий разворот по направлению
+  dr.style.transform=`translate(-50%,-50%) scaleX(${xPct<50?-1:1})`;
+  if(instant){ void dr.offsetWidth; dr.style.transition='left .9s ease, top .9s ease, transform .3s'; }
+}
+
+function flyTo(idx){
+  const f=flight; if(f.busy) return;
+  const p=f.pois[idx]; if(p.done) return;
+  f.busy=true;
+  // блокируем кнопки на время полёта
+  $$('#flightStage .poi').forEach(b=>b.disabled=true);
+  $('#flightTip').textContent='🐉 Дракон летит...';
+  positionDragon(p.x, p.y);
+  setTimeout(()=>resolvePOI(idx), 950);
+}
+
+function resolvePOI(idx){
+  const f=flight, p=f.pois[idx], d=f.d, region=f.region;
+  // у точки появляется вспышка
+  floatText(p.icon, '#d9a441');
+  if(p.kind==='beast'){
+    // лёгкая стычка — переходим в обычный бой; награда уже «забрана» как опыт исследования
+    p.done=true; f.busy=false;
+    const lvl=Math.max(1, d.level + rnd(-1,1));
+    const sp=weightedSpecies();
+    const foeMorph=rollMorph();
+    const reward=Math.round(lvl*(10+sp.rarity*4));
+    toast(`👹 Из логова выходит дикий ${sp.name}! Защити себя в бою.`);
+    // небольшой опыт за саму встречу
+    grantXp(d, rnd(region.xp[0],region.xp[1])/2|0);
+    setTimeout(()=>{ flight=null; S.arenaPick=d.uid; switchView('arena'); startBattle(d,{id:sp.id,level:lvl,morph:foeMorph},reward); }, 600);
+    return;
+  }
+  if(p.kind==='choice'){
+    showPOIChoice(idx);
+    return; // выбор продолжит f.busy до решения
+  }
+  // обычные находки
+  let msg='';
+  const xp=rnd(region.xp[0],region.xp[1])/2|0;
+  const leveled=grantXp(d,xp);
+  if(p.kind==='treasure'){
+    const g=rnd(region.gold[0],region.gold[1]);
+    S.gold+=g; msg=`Найдено <b>${g}🪙</b>!`;
+  } else if(p.kind==='egg'){
+    S.eggs++; msg='Найдено <b>🥚 яйцо</b>!';
+  } else if(p.kind==='relic'){
+    const art=weightedArtifact(region.tier+1);
+    addArtifact(art.id,1); msg=`Внутри реликвия <b>${art.icon} ${art.name}</b>!`;
+  } else if(p.kind==='friend'){
+    const g=rnd(region.gold[0],region.gold[1])/2|0;
+    S.gold+=g; if(Math.random()<0.4)S.eggs++;
+    d.happy=Math.min(HAPPY_MAX,(d.happy||0)+1);
+    msg=`Зверёк подружился с драконом! +${g}🪙 и капелька радости 💖`;
+  }
+  const sub=`+${xp} опыта`+(leveled?' · <span style="color:var(--gold)">новый уровень!</span>':'');
+  // мини-игра «поймай добычу» (если включена) — даёт бонусное золото
+  if(arcadeEnabled()){
+    startCatchGame(region, (bonus)=>{
+      if(bonus>0){ S.gold+=bonus; msg+=` <span style="color:var(--gold)">+${bonus}🪙 за ловкость!</span>`; }
+      finishPOI(idx, msg, sub);
+    });
+  } else {
+    finishPOI(idx, msg, sub);
+  }
+}
+
+/* ===== МИНИ-ИГРА: ПОЙМАЙ ДОБЫЧУ ===== */
+function startCatchGame(region, done){
+  const stage=$('#flightStage'); if(!stage){done(0);return;}
+  const overlay=document.createElement('div');
+  overlay.className='catch-overlay';
+  const total=rnd(4,6);
+  let caught=0, spawned=0, remaining=total;
+  const perSpark=Math.max(3, Math.round((region.gold[0]+region.gold[1])/2/6));
+  overlay.innerHTML=`
+    <div class="catch-head"><div class="catch-title">✨ Лови добычу!</div><div class="catch-count" id="catchCount">Поймано: 0</div></div>
+    <div class="catch-foot"><button class="btn ghost" id="catchSkip">Пропустить</button></div>`;
+  stage.appendChild(overlay);
+  function finishGame(){
+    overlay.remove();
+    done(caught*perSpark);
+  }
+  $('#catchSkip').onclick=()=>finishGame();
+  function spawnSpark(){
+    if(spawned>=total) return;
+    spawned++;
+    const sp=document.createElement('div');
+    sp.className='catch-spark';
+    const icons=['💎','🪙','✨','⭐','🟡'];
+    sp.textContent=icons[Math.floor(Math.random()*icons.length)];
+    const x=10+Math.random()*78, y=24+Math.random()*56;
+    sp.style.left=x+'%'; sp.style.top=y+'%';
+    let alive=true;
+    const ttl=setTimeout(()=>{ if(alive){alive=false;sp.remove();checkDone();} }, 1100+Math.random()*700);
+    sp.onclick=()=>{
+      if(!alive)return; alive=false; clearTimeout(ttl);
+      caught++;
+      floatText('+'+perSpark+'🪙','#ffd24a');
+      const cc=$('#catchCount'); if(cc)cc.textContent='Поймано: '+caught;
+      sp.remove(); checkDone();
+    };
+    overlay.appendChild(sp);
+    if(spawned<total) setTimeout(spawnSpark, 350+Math.random()*350);
+  }
+  function checkDone(){
+    remaining--;
+    if(remaining<=0) setTimeout(finishGame, 250);
+  }
+  spawnSpark();
+}
+
+function showPOIChoice(idx){
+  const f=flight, region=f.region;
+  const ch=pick(POI_CHOICES);
+  f._choice={idx, ch};
+  const stage=$('#flightStage');
+  const box=document.createElement('div');
+  box.className='poi-choice';
+  box.innerHTML=`<div class="poi-choice-card">
+    <div class="poi-choice-q">${ch.q}</div>
+    <div class="poi-choice-opts">
+      <button class="btn" data-c="a">${ch.a.t}</button>
+      <button class="btn" data-c="b">${ch.b.t}</button>
+    </div></div>`;
+  stage.appendChild(box);
+  box.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+    const opt = b.dataset.c==='a'?ch.a:ch.b;
+    box.remove();
+    applyChoiceReward(idx, opt.reward);
+  });
+}
+
+function applyChoiceReward(idx, reward){
+  const f=flight, region=f.region, d=f.d;
+  let msg='';
+  const xp=rnd(region.xp[0],region.xp[1])/2|0;
+  const leveled=grantXp(d,xp);
+  if(reward==='gold'){const g=rnd(region.gold[0],region.gold[1]);S.gold+=g;msg=`+<b>${g}🪙</b>!`;}
+  else if(reward==='dust'){const du=rnd(8,18);S.dust+=du;msg=`+<b>${du}✦ пыли</b>!`;}
+  else if(reward==='egg'){S.eggs++;msg='Найдено <b>🥚 яйцо</b>!';}
+  else if(reward==='relic'){const art=weightedArtifact(region.tier+1);addArtifact(art.id,1);msg=`Реликвия <b>${art.icon} ${art.name}</b>!`;}
+  finishPOI(idx, msg, `+${xp} опыта`+(leveled?' · <span style="color:var(--gold)">новый уровень!</span>':''));
+}
+
+function finishPOI(idx, msg, sub){
+  const f=flight;
+  f.pois[idx].done=true;
+  f.busy=false;
+  floatText('+'+'🪙','#d9a441');
+  toast(`${msg} <span style="color:var(--ink-dim)">${sub}</span>`);
+  questEvent('explore'); persist();
+  renderFlight();
+  // если всё исследовано — мягко подсветим завершение
+  const left=f.pois.filter(p=>!p.done).length;
+  if(left===0){ setTimeout(()=>{ const t=$('#flightTip'); if(t) t.textContent='🏁 Молодец! Все точки исследованы.'; }, 100); }
+}
+
+function endFlight(){
+  flight=null;
+  renderAll();
+  renderMap();
+}
+
+/* ===== АРЕНА ===== */
+let battle=null;
+function arcadeEnabled(){ return S.arcadeOn!==false; } // по умолчанию включено
+
+function renderArenaPicker(){
+  const chk=$('#arcadeChk');
+  if(chk){ chk.checked=arcadeEnabled(); chk.onchange=()=>{S.arcadeOn=chk.checked;persist();}; }
+  const wrap=$('#arenaPicker');
+  const ready=S.dragons.filter(d=>d.curHp>0);
+  if(!ready.length){wrap.innerHTML='<div class="empty">Нет бойцов в силах. Дай им отдохнуть в Логове.</div>';return;}
+  wrap.innerHTML='<p class="hint">Твой чемпион:</p><div class="roster" id="myFighters"></div>';
+  const mf=$('#myFighters');
+  ready.forEach(d=>{
+    const c=dragonCard(d,{onclick:()=>{S.arenaPick=d.uid;renderArenaPicker();}});
+    if(S.arenaPick===d.uid)c.classList.add('sel');
+    mf.appendChild(c);
+  });
+  if(S.arenaPick && ready.some(d=>d.uid===S.arenaPick)){
+    const me=S.dragons.find(d=>d.uid===S.arenaPick);
+    wrap.innerHTML+=`<div class="rule"></div><p class="hint">Выбери противника:</p>`;
+    const foes=document.createElement('div');foes.className='roster';
+    [-1,0,1].forEach(delta=>{
+      const lvl=Math.max(1,me.level+delta);
+      const sp=weightedSpecies();
+      const foeMorph=rollMorph();
+      const reward=Math.round(lvl* (8+sp.rarity*4) * (morphById(foeMorph).id==='common'?1:1.2));
+      const card=document.createElement('div');
+      card.className='dcard';
+      card.innerHTML=`
+        <span class="lvlpill">ур.${lvl}</span>
+        <span class="star">${'★'.repeat(sp.rarity)}</span>
+        ${sigilHTML(sp,foeMorph,'sigil',lvl)}
+        <div class="dname">Дикий ${sp.name}</div>
+        ${elTag(sp.el)} ${morphBadge(foeMorph)}
+        <div class="dmeta" style="margin-top:8px;color:var(--gold)">Награда 🪙${reward}</div>`;
+      card.onclick=()=>startBattle(me,{id:sp.id,level:lvl,morph:foeMorph},reward);
+      foes.appendChild(card);
+    });
+    wrap.appendChild(foes);
+  } else {
+    wrap.innerHTML+='<p class="hint">Выбери чемпиона, чтобы вызвать противников.</p>';
+  }
+}
+
+function makeCombatant(d,isFoe){
+  const sp=speciesById(d.id),st=statsOf(d);
+  // лучшее открытое заклинание и ультимативка из древа талантов
+  const unlocked = unlockedSpells(d);
+  const spells = unlocked.filter(n=>n.kind==='spell');
+  const ults = unlocked.filter(n=>n.kind==='ult');
+  const topSpell = spells.length? spells[spells.length-1] : null;
+  const topUlt = ults.length? ults[ults.length-1] : null;
+  return {uid:d.uid,ref:isFoe?null:d,sp,el:sp.el,morph:d.morph||'common',
+    level:d.level,maxHp:st.maxHp,hp:isFoe?st.maxHp:d.curHp,
+    atk:st.atk,def:st.def,spd:st.spd,isFoe,
+    spell: topSpell? {n:topSpell.name, icon:topSpell.icon, pow:1.45, t:topSpell.desc, isSpell:true} : null,
+    ult: topUlt? {n:topUlt.name, icon:topUlt.icon, pow:2.4, t:topUlt.desc, isUlt:true, heal: topUlt.lvl===100} : null,
+    ultUsed:false};
+}
+
+function startBattle(myDragon,foeSpec,reward){
+  const foeDragon={id:foeSpec.id,level:foeSpec.level,xp:0,curHp:0,morph:foeSpec.morph||'common'};
+  foeDragon.curHp=statsOf(foeDragon).maxHp;
+  battle={
+    me:makeCombatant(myDragon,false),
+    foe:makeCombatant(foeDragon,true),
+    reward, log:[], turn:0, over:false
+  };
+  $('#arenaSetup').style.display='none';
+  $('#battleStage').style.display='block';
+  renderBattle();
+  pushLog(`<span class="gold">Бой начинается!</span> ${battle.me.sp.name} против дикого ${battle.foe.sp.name}.`);
+}
+
+const MOVES = {
+  fire:  [{n:'Огненный плевок',pow:1.0,t:'Базовый урон стихии огня'},{n:'Залп углей',pow:1.5,t:'Сильный удар, ×0.7 шанс попасть'}],
+  frost: [{n:'Ледяной шип',pow:1.0,t:'Базовый урон стихии льда'},{n:'Метель',pow:1.5,t:'Сильный удар, ×0.7 шанс попасть'}],
+  venom: [{n:'Кислотный укус',pow:1.0,t:'Базовый урон яда'},{n:'Споровая буря',pow:1.5,t:'Сильный удар, ×0.7 шанс попасть'}],
+  storm: [{n:'Громовой разряд',pow:1.0,t:'Базовый урон бури'},{n:'Шторм молний',pow:1.5,t:'Сильный удар, ×0.7 шанс попасть'}],
+  shade: [{n:'Теневой коготь',pow:1.0,t:'Базовый урон тени'},{n:'Поглощение',pow:1.3,t:'Бьёт и лечит на 40% урона'}],
+};
+const GUARD={n:'Защита',pow:0,t:'Готовится: следующий удар по тебе слабее, лечит немного'};
+
+function renderBattle(){
+  const b=battle;
+  const stage=$('#battleStage');
+  const hpBar=c=>`<div class="hpwrap"><div class="bar hp"><i style="width:${Math.max(0,c.hp/c.maxHp*100)}%"></i></div></div>
+    <div class="dmeta" style="margin-top:3px">${Math.max(0,c.hp)}/${c.maxHp}</div>`;
+  const moves = MOVES[b.me.el].map((m,i)=>({...m,key:'m'+i}));
+  const elScene={fire:'fire',venom:'jungle',frost:'ice',storm:'ice',shade:'shade'}[b.foe.el]||'shade';
+  stage.innerHTML=`
+  <div class="arena">
+    <div class="arena-bg">${sceneSVG(elScene,'battle')}</div>
+    <div class="fighters">
+      <div class="fighter" id="fMe">
+        ${sigilHTML(b.me.sp,b.me.morph,'fs',b.me.level)}
+        <div class="fname">${b.me.sp.name} <span style="color:var(--ink-dim)">ур.${b.me.level}</span></div>
+        ${elTag(b.me.el)} ${morphBadge(b.me.morph)}
+        ${hpBar(b.me)}
+      </div>
+      <div class="versus">⚔</div>
+      <div class="fighter" id="fFoe">
+        ${sigilHTML(b.foe.sp,b.foe.morph,'fs',b.foe.level)}
+        <div class="fname">Дикий ${b.foe.sp.name} <span style="color:var(--ink-dim)">ур.${b.foe.level}</span></div>
+        ${elTag(b.foe.el)} ${morphBadge(b.foe.morph)}
+        ${hpBar(b.foe)}
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Приёмы</h2>
+    <div class="moves" id="moveBox">
+      ${moves.map(m=>`<button class="move" data-k="${m.key}" ${b.over?'disabled':''}>
+        <div class="mn">${m.n}</div><div class="md">${m.t}</div></button>`).join('')}
+      <button class="move" data-k="guard" ${b.over?'disabled':''}>
+        <div class="mn">${GUARD.n}</div><div class="md">${GUARD.t}</div></button>
+      ${b.me.spell?`<button class="move move-spell" data-k="spell" ${b.over?'disabled':''}>
+        <div class="mn">${b.me.spell.icon} ${b.me.spell.n}</div><div class="md">заклинание · ${b.me.spell.t}</div></button>`:''}
+      ${b.me.ult?`<button class="move move-ult" data-k="ult" ${b.over||b.me.ultUsed?'disabled':''}>
+        <div class="mn">⭐ ${b.me.ult.icon} ${b.me.ult.n}</div><div class="md">${b.me.ultUsed?'уже применена':'УЛЬТА · '+b.me.ult.t}</div></button>`:''}
+    </div>
+    <div class="log" id="battleLog">${b.log.map(l=>`<p>${l}</p>`).join('')}</div>
+    <div class="btnrow" id="battleEnd"></div>
+  </div>`;
+  $$('#moveBox .move').forEach(btn=>btn.onclick=()=>{
+    const k=btn.dataset.k;
+    let move;
+    if(k==='guard') move=GUARD;
+    else if(k==='spell') move=b.me.spell;
+    else if(k==='ult'){ move=b.me.ult; b.me.ultUsed=true; }
+    else move=MOVES[b.me.el][+k.slice(1)];
+    playerMove(move);
+  });
+  const lg=$('#battleLog');lg.scrollTop=lg.scrollHeight;
+}
+
+function pushLog(html){battle.log.push(html);const lg=$('#battleLog');if(lg){lg.innerHTML=battle.log.map(l=>`<p>${l}</p>`).join('');lg.scrollTop=lg.scrollHeight;}}
+
+function advMult(attEl,defEl){
+  if(ADVANTAGE[attEl]===defEl)return 1.25;
+  if(ADVANTAGE[defEl]===attEl)return 0.85;
+  return 1;
+}
+
+function doStrike(att,def,move,labelClass,accMult){
+  accMult = accMult||1;
+  // ультимативка и заклинания не промахиваются; сильные обычные приёмы — могут
+  if(move.pow>=1.5 && !move.isUlt && !move.isSpell && Math.random()>0.7){
+    pushLog(`<span>${att.sp.name} промахнулся «${move.n}».</span>`);
+    return {dmg:0,miss:true};
+  }
+  const base = att.atk*move.pow*0.7 - def.def*0.6;
+  let dmg = Math.max(1, Math.round(base * (rnd(85,115)/100)));
+  dmg=Math.round(dmg*accMult); // бонус/штраф от мини-игры тайминга
+  const mult=advMult(att.el,def.el);
+  dmg=Math.round(dmg*mult);
+  if(def.guarding){dmg=Math.round(dmg*0.55);def.guarding=false;}
+  const crit=(accMult>=2)|| Math.random()<0.12;
+  if(crit && accMult<2)dmg=Math.round(dmg*1.6);
+  def.hp-=dmg;
+  let extra='';
+  if(mult>1)extra=' <span class="gold">(стихия превосходит!)</span>';
+  else if(mult<1)extra=' <span style="color:var(--ink-dim)">(стихия слаба)</span>';
+  const label = move.isUlt?'⭐ применяет УЛЬТУ':(move.isSpell?'колдует':'применяет');
+  pushLog(`${att.sp.name} ${label} <b>${move.n}</b> — <span class="dmg">${dmg} урона</span>${crit?' <span class="crit">КРИТ!</span>':''}${extra}`);
+  // лечение от тени/поглощения и от лечащих ульт
+  if(move.n==='Поглощение'){const heal=Math.round(dmg*0.4);att.hp=Math.min(att.maxHp,att.hp+heal);pushLog(`<span class="heal">${att.sp.name} впитывает ${heal} жизни.</span>`);}
+  if(move.heal){const heal=Math.round(att.maxHp*0.5);att.hp=Math.min(att.maxHp,att.hp+heal);pushLog(`<span class="heal">${att.sp.name} исцеляется на ${heal}!</span>`);}
+  return {dmg,crit,mult};
+}
+
+function animate(which,kind){
+  const id=which==='me'?'#fMe':'#fFoe';
+  const el=$(id);if(!el)return;
+  el.classList.add(kind);setTimeout(()=>el.classList.remove(kind),360);
+}
+
+function playerMove(move){
+  const b=battle;if(b.over)return;
+  $$('#moveBox .move').forEach(x=>x.disabled=true);
+
+  if(move===GUARD){
+    b.me.guarding=true;
+    const heal=Math.round(b.me.maxHp*0.08);
+    b.me.hp=Math.min(b.me.maxHp,b.me.hp+heal);
+    animate('me','cast');
+    pushLog(`${b.me.sp.name} <b>встаёт в защиту</b> и восстанавливает <span class="heal">${heal}</span> жизни.`);
+    afterPlayerMove();
+    return;
+  }
+  // атакующий приём — запускаем мини-игру тайминга (если включена)
+  if(arcadeEnabled()){
+    startTimingStrike(move);
+  } else {
+    resolvePlayerStrike(move, 1);
+  }
+}
+// выполнить удар игрока с множителем точности из мини-игры
+function resolvePlayerStrike(move, accMult){
+  const b=battle;
+  animate('me','cast');animate('foe','hit');
+  const r=doStrike(b.me,b.foe,move,null,accMult);
+  if(r.dmg&&r.mult>1)floatText('стихия!',ELEMENTS[b.me.el].color);
+  afterPlayerMove();
+}
+function afterPlayerMove(){
+  const b=battle;
+  renderHpOnly();
+  if(b.foe.hp<=0){return endBattle(true);}
+  setTimeout(foeTurn,650);
+}
+
+/* ===== МИНИ-ИГРА: УДАР ПО ТАЙМИНГУ ===== */
+let timingState=null;
+function startTimingStrike(move){
+  const stage=$('#battleStage'); if(!stage){resolvePlayerStrike(move,1);return;}
+  const box=document.createElement('div');
+  box.className='timing-overlay';
+  box.innerHTML=`
+    <div class="timing-card">
+      <div class="timing-title">⚡ Удар по таймингу!</div>
+      <div class="timing-sub">Нажми, когда стрелка в золотой зоне</div>
+      <div class="timing-bar" id="timingBar">
+        <div class="timing-zone good"></div>
+        <div class="timing-zone perfect"></div>
+        <div class="timing-marker" id="timingMarker"></div>
+      </div>
+      <div class="timing-btns">
+        <button class="btn" id="timingHit">БЕЙ!</button>
+        <button class="btn ghost" id="timingSkip">Пропустить</button>
+      </div>
+    </div>`;
+  stage.appendChild(box);
+  // позиции зон (в % ширины)
+  const perfStart=46, perfEnd=54, goodStart=34, goodEnd=66;
+  let pos=0, dir=1, raf=null, speed=1.7;
+  const marker=box.querySelector('#timingMarker');
+  function tick(){
+    pos+=dir*speed;
+    if(pos>=100){pos=100;dir=-1;} if(pos<=0){pos=0;dir=1;}
+    marker.style.left=pos+'%';
+    raf=requestAnimationFrame(tick);
+  }
+  tick();
+  function finish(accMult,label,color){
+    cancelAnimationFrame(raf);
+    box.remove();
+    if(label) floatText(label,color);
+    resolvePlayerStrike(move, accMult);
+  }
+  box.querySelector('#timingHit').onclick=()=>{
+    if(pos>=perfStart&&pos<=perfEnd) finish(2.0,'⭐ ИДЕАЛЬНО!','#ffd24a');
+    else if(pos>=goodStart&&pos<=goodEnd) finish(1.4,'✯ Точно!','#7fb24a');
+    else finish(0.8,'промах…','#c5544a');
+  };
+  box.querySelector('#timingSkip').onclick=()=>finish(1.0,null,null);
+}
+
+function foeTurn(){
+  const b=battle;if(b.over)return;
+  const moves=MOVES[b.foe.el];
+  // ИИ: иногда защищается на низком HP
+  let move;
+  if(b.foe.hp/b.foe.maxHp<0.25 && Math.random()<0.3){
+    b.foe.guarding=true;
+    const heal=Math.round(b.foe.maxHp*0.07);b.foe.hp=Math.min(b.foe.maxHp,b.foe.hp+heal);
+    animate('foe','cast');
+    pushLog(`Дикий ${b.foe.sp.name} <b>защищается</b> (+${heal} жизни).`);
+  } else {
+    move = Math.random()<0.4?moves[1]:moves[0];
+    animate('foe','cast');animate('me','hit');
+    doStrike(b.foe,b.me,move);
+  }
+  renderHpOnly();
+  if(b.me.hp<=0){return endBattle(false);}
+  $$('#moveBox .move').forEach(x=>x.disabled=false);
+}
+
+function renderHpOnly(){
+  const b=battle;
+  const bars=$$('#battleStage .hpwrap');
+  if(bars[0]){bars[0].querySelector('i').style.width=Math.max(0,b.me.hp/b.me.maxHp*100)+'%';bars[0].next? null:null;}
+  // проще перерисовать метки
+  const metas=$$('#battleStage .fighter .dmeta');
+  if(metas[0])metas[0].textContent=`${Math.max(0,Math.round(b.me.hp))}/${b.me.maxHp}`;
+  if(bars[1])bars[1].querySelector('i').style.width=Math.max(0,b.foe.hp/b.foe.maxHp*100)+'%';
+  if(metas[1])metas[1].textContent=`${Math.max(0,Math.round(b.foe.hp))}/${b.foe.maxHp}`;
+}
+
+function endBattle(win){
+  const b=battle;b.over=true;
+  const me=b.me.ref; // настоящий дракон
+  me.curHp=Math.max(0,Math.round(b.me.hp));
+  $$('#moveBox .move').forEach(x=>x.disabled=true);
+  if(win){
+    const gold=b.reward;
+    const xp=Math.round(b.reward*0.9 + b.foe.level*6);
+    S.gold+=gold;
+    const leveled=grantXp(me,xp);
+    let eggMsg='';
+    if(Math.random()<0.3){S.eggs++;eggMsg=' Враг обронил <b>🥚 яйцо</b>!';}
+    let artMsg='';
+    if(Math.random()<0.22){
+      const maxR=Math.min(5, Math.max(1, Math.ceil(b.foe.level/3)+1));
+      const art=weightedArtifact(maxR);
+      addArtifact(art.id,1);
+      artMsg=` Среди добычи — реликвия <b>${art.icon} ${art.name}</b>!`;
+    }
+    pushLog(`<span class="gold">Победа!</span> +${gold}🪙 · +${xp} опыта.${eggMsg}${artMsg}${leveled?' <span class="crit">Новый уровень!</span>':''}`);
+    floatText('ПОБЕДА',' #d9a441');
+    questEvent('win_arena');
+  } else {
+    pushLog(`<span class="dmg">Ох!</span> ${dragonName(b.me.ref)} устал и сдался. Покорми его и дай отдохнуть в Логове — и снова в бой!`);
+    floatText('УВЫ…','#c5544a');
+  }
+  const end=$('#battleEnd');
+  end.innerHTML=`<button class="btn" id="againBtn">К арене</button>
+    <button class="btn ghost" id="lairBtn">В Логово</button>`;
+  $('#againBtn').onclick=()=>{battle=null;$('#battleStage').style.display='none';$('#arenaSetup').style.display='block';renderArenaPicker();renderAll();};
+  $('#lairBtn').onclick=()=>{battle=null;$('#battleStage').style.display='none';$('#arenaSetup').style.display='block';switchView('lair');renderAll();};
+  renderLedger(); persist();
+}
+
+/* ===== ГЕНОМ: ВИЗУАЛИЗАЦИЯ ===== */
+// компактная полоска генов (для карточек)
+function genomeBar(genes, compact){
+  if(!genes) return '';
+  const dots=GENE_KEYS.map(k=>{
+    const v=genes[k]||0;
+    const pips=Array.from({length:GENE_MAX},(_,i)=>`<i class="${i<v?'on':''}"></i>`).join('');
+    return `<span class="gene" title="${GENE_LABEL[k]} ${v}/${GENE_MAX}"><b>${GENE_ICON[k]}</b><span class="pips">${pips}</span></span>`;
+  }).join('');
+  const score=genomeScore(genes);
+  const spark=genes.spark?`<span class="gene-spark" title="Искра рода: +8% ко всем статам">✦</span>`:'';
+  return `<div class="genome${compact?' compact':''}">${dots}${spark}
+    <span class="gene-score" title="Чистота генома">${score}%</span></div>`;
+}
+
+/* ===== ГНЕЗДИЛИЩЕ РОДА (СКРЕЩИВАНИЕ) ===== */
+function renderRoost(){
+  const body=$('#roostBody');
+  if(S.dragons.length<2){
+    body.innerHTML=`<div class="empty">Для селекции нужно хотя бы два дракона одного вида. Высиди ещё яйца в Гнезде.</div>`;
+    return;
+  }
+  const A=S.breedA?S.dragons.find(d=>d.uid===S.breedA):null;
+  const B=S.breedB?S.dragons.find(d=>d.uid===S.breedB):null;
+  const ready=canBreed(A,B);
+  const sameSpeciesHint = A&&B&&A.id!==B.id;
+
+  // прогноз: лучший из родителей по каждому гену
+  let forecast='';
+  if(A&&B){
+    forecast=GENE_KEYS.map(k=>{
+      const lo=Math.min(A.genes[k],B.genes[k]), hi=Math.max(A.genes[k],B.genes[k]);
+      return `<div class="forge-stat"><span>${GENE_ICON[k]} ${GENE_LABEL[k]}</span><b>${lo===hi?lo:lo+'–'+hi} <span class="up">±мут.</span></b></div>`;
+    }).join('');
+  }
+
+  body.innerHTML=`
+    <div class="breed-stage">
+      <div class="breed-parent" id="slotA">
+        <div class="breed-slot-label">Родитель I</div>
+        ${A?breedParentCard(A):'<div class="breed-empty">Выбери дракона ниже</div>'}
+      </div>
+      <div class="breed-mid">
+        <div class="breed-cross">✕</div>
+        <div class="breed-forecast">
+          ${A&&B?`<div class="forge-sub">Прогноз потомка</div>${forecast}
+             <div class="hint" style="margin-top:6px">Искра: ${A.genes.spark||B.genes.spark?'<b style="color:var(--gold)">вероятна</b>':'редкий шанс'}</div>`
+            :'<div class="hint">Выбери двух родителей одного вида.</div>'}
+        </div>
+        <button class="btn" id="breedBtn" ${ready&&S.gold>=BREED_GOLD&&S.dust>=BREED_DUST?'':'disabled'}>
+          Скрестить&nbsp;·&nbsp;🪙${BREED_GOLD} ✦${BREED_DUST}</button>
+        ${sameSpeciesHint?'<p class="hint" style="color:var(--ember);text-align:center">Родители должны быть одного вида.</p>':''}
+        ${ready&&(S.gold<BREED_GOLD||S.dust<BREED_DUST)?'<p class="hint" style="text-align:center">Не хватает золота или пыли.</p>':''}
+      </div>
+      <div class="breed-parent" id="slotB">
+        <div class="breed-slot-label">Родитель II</div>
+        ${B?breedParentCard(B):'<div class="breed-empty">Выбери дракона ниже</div>'}
+      </div>
+    </div>
+    <h3 class="forge-sub" style="margin-top:18px">Стая <span class="dmeta">(нажми, чтобы назначить родителем)</span></h3>
+    <div class="roster" id="roostRoster"></div>
+    <p class="hint">Пыль ✦ добывается переработкой реликвий в Кузнице. Чем чище геном родителей, тем мощнее потомство — но мутации могут как улучшить, так и подпортить гены.</p>`;
+
+  const rr=$('#roostRoster');
+  S.dragons.forEach(d=>{
+    const card=dragonCard(d,{onclick:dd=>assignBreed(dd)});
+    if(d.uid===S.breedA||d.uid===S.breedB) card.classList.add('sel');
+    // мини-геном на карточке
+    const gw=document.createElement('div'); gw.innerHTML=genomeBar(d.genes,true);
+    card.appendChild(gw.firstElementChild);
+    rr.appendChild(card);
+  });
+
+  const bb=$('#breedBtn');
+  if(bb) bb.onclick=()=>{
+    const child=breedDragons(A,B);
+    if(child){
+      const perfect=isPerfect(child.genes);
+      floatText(perfect?'✦ ИДЕАЛ ✦':'🥚 потомок','#d9a441');
+      toast(`Вылупился потомок <b>${speciesById(child.id).name}</b> (поколение ${child.gen}) — чистота генома <b>${genomeScore(child.genes)}%</b>.${perfect?' <span style="color:var(--gold)">Это идеальный дракон!</span>':''}`);
+      S.breedA=child.uid; S.breedB=null;
+      renderAll(); renderRoost();
+    }
+  };
+}
+function breedParentCard(d){
+  const sp=speciesById(d.id), st=statsOf(d);
+  return `<div class="breed-card">
+    ${sigilHTML(sp,d.morph,'sigil',d.level)}
+    <div class="dname">${sp.name}</div>
+    <div class="dmeta">ур.${d.level} · поколение ${d.gen||1}</div>
+    ${genomeBar(d.genes)}
+  </div>`;
+}
+function assignBreed(d){
+  // назначаем в первый свободный слот; повторный клик снимает
+  if(S.breedA===d.uid){S.breedA=null;}
+  else if(S.breedB===d.uid){S.breedB=null;}
+  else if(!S.breedA){S.breedA=d.uid;}
+  else if(!S.breedB){S.breedB=d.uid;}
+  else {S.breedB=d.uid;} // заменяем второго
+  renderRoost();
+}
+
+/* ===== КУЗНИЦА И АРТЕФАКТЫ ===== */
+function artChip(inst,{selectable,onclick,showWearer}={}){
+  const art=artifactById(inst.id);
+  const b=artifactBonus(inst);
+  const wearer=showWearer?wearerOf(inst.invUid):null;
+  const div=document.createElement('div');
+  div.className='artcard'+(selectable&&S.forgeSel===inst.invUid?' sel':'');
+  div.innerHTML=`
+    <span class="art-lvl">+${inst.level}</span>
+    <span class="art-star">${'★'.repeat(art.rarity)}</span>
+    <div class="art-icon">${art.icon}</div>
+    <div class="art-name">${art.name}</div>
+    <div class="art-slot">${SLOT_ICON[art.slot]} ${SLOT_NAME[art.slot]} ${elTag(art.el)}</div>
+    <div class="art-bonus">${bonusText(b)}</div>
+    ${wearer?`<div class="art-wearer">носит: ${speciesById(wearer.id).name}</div>`:''}`;
+  if(onclick) div.onclick=()=>onclick(inst);
+  return div;
+}
+
+function renderForge(){
+  const body=$('#forgeBody');
+  if(!S.artifacts.length){
+    body.innerHTML=`<div class="empty">Сундук реликвий пуст. Артефакты находят в странствиях и роняют поверженные враги на Арене.</div>`;
+    return;
+  }
+  // выбранный по умолчанию — первый
+  if(!S.forgeSel || !artInst(S.forgeSel)) S.forgeSel=S.artifacts[0].invUid;
+  const inst=artInst(S.forgeSel);
+  const art=artifactById(inst.id);
+  const curB=artifactBonus(inst);
+  const atMax=inst.level>=FORGE_MAX;
+  const nextB = atMax?null:artifactBonus({...inst,level:inst.level+1});
+  const cost = atMax?0:forgeCost(art,inst.level);
+  const canForge = !atMax && S.gold>=cost;
+  const wearer=wearerOf(inst.invUid);
+
+  // diff бонусов
+  const diffRows=['atk','def','hp','spd'].filter(k=>curB[k]||(nextB&&nextB[k])).map(k=>{
+    const lab={atk:'⚔️ Атака',def:'🛡️ Защита',hp:'❤️ Жизнь',spd:'💨 Прыть'}[k];
+    const cur=curB[k]||0, nxt=nextB?(nextB[k]||0):cur;
+    return `<div class="forge-stat"><span>${lab}</span><b>+${cur}${nxt>cur?` <span class="up">→ +${nxt}</span>`:''}</b></div>`;
+  }).join('');
+
+  body.innerHTML=`
+    <div class="forge-layout">
+      <div class="forge-anvil">
+        <div class="anvil-art" id="anvilArt">
+          <div class="anvil-glow"></div>
+          <div class="art-icon-big">${art.icon}</div>
+        </div>
+        <div class="forge-title">${art.name} <span class="art-lvl-inline">+${inst.level}</span></div>
+        <div class="art-slot" style="justify-content:center">${SLOT_ICON[art.slot]} ${SLOT_NAME[art.slot]} ${elTag(art.el)} <span class="art-star">${RARITY_STAR(art.rarity)}</span></div>
+        <p class="lede" style="text-align:center;margin:10px 0">${art.lore}</p>
+        <div class="forge-stats">${diffRows}</div>
+        ${wearer?`<div class="hint" style="text-align:center">Сейчас носит: <b>${speciesById(wearer.id).name}</b></div>`:''}
+        <div class="btnrow" style="justify-content:center">
+          ${atMax
+            ? `<button class="btn" disabled>Выкован до предела (+${FORGE_MAX})</button>`
+            : `<button class="btn" id="forgeBtn" ${canForge?'':'disabled'}>Ковать&nbsp;·&nbsp;🪙${cost}</button>`}
+          <button class="btn ghost" id="recycleBtn">Распылить&nbsp;·&nbsp;+${recycleYield(inst)}✦</button>
+        </div>
+        ${!atMax&&!canForge?`<p class="hint" style="text-align:center">Не хватает золота: нужно ${cost}🪙</p>`:''}
+        <p class="hint" style="text-align:center">Распыление обращает реликвию в ✦ пыль для селекции драконов.</p>
+      </div>
+      <div class="forge-stock">
+        <h3 class="forge-sub">Сундук реликвий <span class="dmeta">(${S.artifacts.length})</span></h3>
+        <div class="artgrid" id="artGrid"></div>
+        <p class="hint">Выбери реликвию, чтобы рассмотреть, ковать или распылить. Надеть артефакт на дракона можно в его свитке в Логове.</p>
+      </div>
+    </div>`;
+
+  const grid=$('#artGrid');
+  S.artifacts.forEach(a=>grid.appendChild(artChip(a,{selectable:true,showWearer:true,onclick:i=>{S.forgeSel=i.invUid;renderForge();}})));
+
+  const fb=$('#forgeBtn');
+  if(fb) fb.onclick=()=>doForge(inst);
+  const rb=$('#recycleBtn');
+  if(rb) rb.onclick=()=>recycleArtifact(inst.invUid);
+}
+
+function doForge(inst){
+  const art=artifactById(inst.id);
+  if(inst.level>=FORGE_MAX) return;
+  const cost=forgeCost(art,inst.level);
+  if(S.gold<cost){toast('Недостаёт золота для ковки.');return;}
+  S.gold-=cost;
+  inst.level++;
+  const anvil=$('#anvilArt');
+  if(anvil){anvil.classList.remove('forging');void anvil.offsetWidth;anvil.classList.add('forging');}
+  floatText('+1 ковка',art && ELEMENTS[art.el]?ELEMENTS[art.el].color:'#d9a441');
+  toast(`<b>${art.name}</b> выкован до +${inst.level}! ${inst.level>=FORGE_MAX?'Достигнут предел.':''}`);
+  questEvent('forge'); persist();
+  renderLedger();renderForge();renderLair();
+}
+
+/* экипировка артефакта на дракона */
+function equipArtifact(d, invUid){
+  const inst=artInst(invUid); if(!inst) return;
+  const art=artifactById(inst.id);
+  d.equip=d.equip||{};
+  // снять у прежнего владельца
+  const prev=wearerOf(invUid);
+  if(prev && prev!==d){ for(const s in prev.equip){ if(prev.equip[s]===invUid) delete prev.equip[s]; } }
+  d.equip[art.slot]=invUid;
+  // здоровье не превышает новый максимум
+  d.curHp=Math.min(d.curHp,statsOf(d).maxHp);
+  renderLair();persist();
+}
+function unequipArtifact(d, slot){
+  if(d.equip){ delete d.equip[slot]; d.curHp=Math.min(d.curHp,statsOf(d).maxHp); }
+  renderLair();persist();
+}
+
+/* ===== ШПИЛЬ МИРОЗДАНИЯ: ДРЕВО ТАЛАНТОВ И КНИГА ===== */
+let spireTab='tree'; // 'tree' | 'book'
+function renderSpire(){
+  const body=$('#spireBody');
+  if(!body) return;
+  if(!S.dragons.length){ body.innerHTML='<div class="empty">Сначала обзаведись драконом в Гнезде, и его путь раскроется здесь.</div>'; return; }
+  // выбираем дракона: тот же, что в Логове
+  if(!S.sel || !S.dragons.some(d=>d.uid===S.sel)) S.sel=S.dragons[0].uid;
+  const d=S.dragons.find(x=>x.uid===S.sel);
+  const sp=speciesById(d.id);
+  const need=xpToNext(d.level);
+  const xpPct=d.level>=MAX_LEVEL?100:Math.round(d.xp/need*100);
+  const pend=pendingForks(d).length;
+
+  // выбор дракона (мини-полоска)
+  const chips=S.dragons.map(x=>{
+    const xs=speciesById(x.id);
+    return `<button class="spire-chip${x.uid===d.uid?' on':''}" data-pick="${x.uid}">
+      <span class="chip-art" style="filter:${morphById(x.morph).filter||'none'}">${dragonVisual(x.id, x.level)}</span> ${dragonName(x)}
+      <span class="spire-chip-lvl">${x.level}</span>${pendingForks(x).length?'<span class="spire-chip-dot">●</span>':''}</button>`;
+  }).join('');
+
+  body.innerHTML=`
+    <div class="spire-pick" id="spirePick">${chips}</div>
+    <div class="spire-head">
+      <div class="spire-hero dragon-wrap" style="filter:${morphById(d.morph).filter||'none'}">${dragonVisual(d.id, d.level)}</div>
+      <div class="spire-hero-info">
+        <h3>${dragonName(d)} <span class="spire-lvl">ур. ${d.level}/${MAX_LEVEL}</span></h3>
+        <div class="spire-xpbar"><i style="width:${xpPct}%"></i></div>
+        <div class="dmeta">${d.level>=MAX_LEVEL?'Достигнут вершины Шпиля! 🏆':`до следующего уровня: ${need-d.xp} опыта`}</div>
+      </div>
+    </div>
+    <div class="spire-tabs">
+      <button class="spire-tab${spireTab==='tree'?' on':''}" data-st="tree">🌳 Древо силы${pend?` <span class="spire-badge">${pend}</span>`:''}</button>
+      <button class="spire-tab${spireTab==='book'?' on':''}" data-st="book">📖 Книга дракона</button>
+    </div>
+    <div id="spireContent"></div>`;
+
+  $$('#spirePick [data-pick]').forEach(b=>b.onclick=()=>{S.sel=+b.dataset.pick;renderSpire();});
+  $$('.spire-tab').forEach(b=>b.onclick=()=>{spireTab=b.dataset.st;renderSpire();});
+  if(spireTab==='tree') renderSpireTree(d); else renderSpireBook(d);
+}
+
+function renderSpireTree(d){
+  const c=$('#spireContent');
+  const tree=treeOf(d.id);
+  const picks=d.talentPicks||{};
+  const rows=tree.map(node=>{
+    const open = node.lvl<=d.level;
+    const lockCls = open?'':' locked';
+    let inner='';
+    if(node.kind==='spell'||node.kind==='ult'){
+      const cls = node.kind==='ult'?'tnode ult':'tnode spell';
+      inner=`<div class="${cls}${lockCls}">
+        <div class="tnode-ic">${open?node.icon:'🔒'}</div>
+        <div class="tnode-body"><div class="tnode-name">${node.name} ${node.kind==='ult'?'<span class="ult-tag">УЛЬТА</span>':'<span class="spell-tag">заклинание</span>'}</div>
+        <div class="tnode-desc">${open?node.desc:'откроется на ур. '+node.lvl}</div></div></div>`;
+    } else if(node.kind==='perk'){
+      inner=`<div class="tnode perk${lockCls}">
+        <div class="tnode-ic">${open?node.icon:'🔒'}</div>
+        <div class="tnode-body"><div class="tnode-name">${node.name}</div>
+        <div class="tnode-desc">${open?node.desc:'откроется на ур. '+node.lvl}</div></div></div>`;
+    } else if(node.kind==='fork'){
+      const chosen=picks[node.lvl];
+      inner=`<div class="tnode fork${lockCls}${(open&&chosen==null)?' choose':''}">
+        <div class="tnode-ic">${open?'🔀':'🔒'}</div>
+        <div class="tnode-body">
+          <div class="tnode-name">Выбери талант ${(open&&chosen==null)?'<span class="choose-tag">нужен выбор!</span>':''}</div>
+          <div class="fork-opts">
+            ${node.options.map((o,i)=>`<button class="fork-opt${chosen===i?' picked':''}" data-fork="${node.lvl}" data-opt="${i}" ${open?'':'disabled'}>
+              <span class="fo-ic">${o.icon}</span><span class="fo-name">${o.name}</span><span class="fo-desc">${o.desc}</span></button>`).join('')}
+          </div>
+        </div></div>`;
+    }
+    return `<div class="trow${lockCls}"><div class="trow-lvl">${node.lvl}</div><div class="trow-node">${inner}</div></div>`;
+  }).join('');
+  c.innerHTML=`<div class="ttree">${rows}</div>`;
+  c.querySelectorAll('[data-fork]').forEach(btn=>btn.onclick=()=>{
+    const lvl=+btn.dataset.fork, opt=+btn.dataset.opt;
+    chooseFork(d, lvl, opt);
+  });
+}
+
+function chooseFork(d, lvl, opt){
+  d.talentPicks=d.talentPicks||{};
+  const already=d.talentPicks[lvl]!=null;
+  d.talentPicks[lvl]=opt;
+  d.curHp=Math.min(d.curHp,statsOf(d).maxHp);
+  const tree=treeOf(d.id);
+  const node=tree.find(n=>n.lvl===lvl);
+  const o=node.options[opt];
+  floatText(o.icon+' '+o.name,'#d9a441');
+  if(!already) toast(`<b>${dragonName(d)}</b> выбрал талант <b>${o.name}</b> (${o.desc})!`);
+  persist(); renderSpire(); renderLair();
+}
+
+function renderSpireBook(d){
+  const c=$('#spireContent');
+  const sp=speciesById(d.id);
+  const spells=unlockedSpells(d).filter(n=>n.kind==='spell');
+  const ults=unlockedSpells(d).filter(n=>n.kind==='ult');
+  const tree=treeOf(d.id);
+  const tal=talentMods(d);
+  // активные перки
+  const activePerks=[];
+  for(const n of tree){
+    if(n.lvl>d.level) continue;
+    if(n.kind==='perk') activePerks.push(n);
+    else if(n.kind==='fork' && d.talentPicks && d.talentPicks[n.lvl]!=null) activePerks.push({...n.options[d.talentPicks[n.lvl]]});
+  }
+  const nextNode=tree.find(n=>n.lvl>d.level);
+  const talLine=Object.entries(tal).filter(([k,v])=>v>0).map(([k,v])=>`+${Math.round(v*100)}% ${{atk:'атаки',def:'защиты',hp:'здоровья',spd:'прыти'}[k]}`).join(' · ');
+
+  c.innerHTML=`
+    <div class="book">
+      <div class="book-section">
+        <h4>📜 О драконе</h4>
+        <p class="book-lore">${d.name?`<b>${d.name}</b> — это ${sp.name.toLowerCase()}. `:''}${sp.lore}</p>
+        <p class="book-meta">Стихия: <b style="color:${ELEMENTS[sp.el].color}">${ELEMENTS[sp.el].name}</b> · сильнее против <b style="color:${ELEMENTS[ADVANTAGE[sp.el]].color}">${ELEMENTS[ADVANTAGE[sp.el]].name}</b></p>
+        ${talLine?`<p class="book-meta">Бонусы от талантов: <b style="color:var(--venom)">${talLine}</b></p>`:''}
+      </div>
+      <div class="book-section">
+        <h4>✨ Заклинания (${spells.length})</h4>
+        ${spells.length?spells.map(s=>`<div class="book-spell"><span class="bs-ic">${s.icon}</span><span class="bs-name">${s.name}</span><span class="bs-lvl">ур.${s.lvl}</span><span class="bs-desc">${s.desc}</span></div>`).join(''):'<p class="hint">Первое заклинание откроется на 10-м уровне.</p>'}
+      </div>
+      ${ults.length?`<div class="book-section">
+        <h4>⭐ Ультимативные способности (${ults.length})</h4>
+        ${ults.map(u=>`<div class="book-spell ult"><span class="bs-ic">${u.icon}</span><span class="bs-name">${u.name}</span><span class="bs-lvl">ур.${u.lvl}</span><span class="bs-desc">${u.desc}</span></div>`).join('')}
+      </div>`:''}
+      <div class="book-section">
+        <h4>🌟 Таланты и перки (${activePerks.length})</h4>
+        ${activePerks.length?activePerks.map(p=>`<div class="book-perk"><span class="bs-ic">${p.icon}</span><span class="bs-name">${p.name}</span><span class="bs-desc">${p.desc}</span></div>`).join(''):'<p class="hint">Первый перк откроется на 5-м уровне.</p>'}
+      </div>
+      ${nextNode?`<div class="book-next">Дальше на ур. ${nextNode.lvl}: ${nextNode.kind==='ult'?'⭐ ультимативная способность':nextNode.kind==='spell'?'✨ новое заклинание':nextNode.kind==='fork'?'🔀 талант на выбор':'🌟 новый перк'}</div>`:'<div class="book-next">🏆 Все таланты открыты — это вершина Шпиля!</div>'}
+    </div>`;
+}
+
+/* ===== ОТПУСКАНИЕ ДРАКОНА (теперь из свитка в Логове) ===== */
+let farewellArmed=null;
+function confirmReleaseOne(d){
+  if(S.dragons.length<=1){ toast('Это твой единственный дракон — его не отпускаем! 🐉'); return; }
+  const btn=$('#releaseBtn');
+  if(farewellArmed!==d.uid){
+    farewellArmed=d.uid;
+    const g=farewellGift(d);
+    if(btn){btn.textContent=`Точно отпустить ${dragonName(d)}? (получишь ${g.gold}🪙)`;btn.classList.add('arm');}
+    setTimeout(()=>{farewellArmed=null;const b=$('#releaseBtn');if(b){b.textContent='Отпустить на волю 🕊️';b.classList.remove('arm');}},3500);
+    return;
+  }
+  farewellArmed=null;
+  releaseDragons([d.uid]);
+}
+
+/* ===== КОДЕКС ===== */
+function renderCodex(){
+  const g=$('#codexGrid');g.innerHTML='';
+  SPECIES.forEach(sp=>{
+    const found=S.discovered[sp.id];
+    const owned=S.dragons.filter(d=>d.id===sp.id).length;
+    const seen=S.morphsSeen[sp.id]||{};
+    // силуэт показываем в самом редком из найденных окрасов
+    let displayMorph='common';
+    if(found){
+      const ownedMorphs=MORPHS.filter(m=>seen[m.id]);
+      if(ownedMorphs.length) displayMorph=ownedMorphs.sort((a,b)=>a.weight-b.weight)[0].id;
+    }
+    const morphDots=MORPHS.map(m=>{
+      const got=seen[m.id];
+      return `<span class="mdot${got?'':' off'}${m.shiny?' shiny':''}" title="${m.name}${got?'':' — не найден'}" style="background:${got?m.swatch:'transparent'};border-color:${m.swatch}"></span>`;
+    }).join('');
+    const div=document.createElement('div');
+    div.className='dcard'+(found?'':' locked');
+    div.style.cursor='default';
+    div.innerHTML=`
+      <span class="star">${RARITY_STAR(sp.rarity)}</span>
+      ${found?sigilHTML(sp,displayMorph,'sigil'):'<div class="sigil">❔</div>'}
+      <div class="dname">${found?sp.name:'???'}</div>
+      ${found?elTag(sp.el):'<span class="dmeta">Не открыт</span>'}
+      <div class="dmeta" style="margin-top:8px">${found?`${RARITY_NAME[sp.rarity]} · в логове: ${owned}`:'Поймай, чтобы открыть'}</div>
+      ${found?`<div class="mdots" title="Собранные окрасы">${morphDots}</div>`:''}`;
+    g.appendChild(div);
+  });
+}
+
+/* ===== ВКЛАДКИ ===== */
+const VIEW_TITLES={lair:'Логово',hatch:'Гнездо',explore:'Странствие',arena:'Турнир',roost:'Гнездилище Рода',forge:'Кузница',spire:'Шпиль Мироздания',codex:'Кодекс видов'};
+function ensureScreenBar(v){
+  if(v==='hub') return;
+  const sec=$('#'+v); if(!sec) return;
+  if(sec.querySelector(':scope > .screen-bar')) return;
+  const bar=document.createElement('div');
+  bar.className='screen-bar';
+  bar.innerHTML=`<button class="home-btn" onclick="switchView('hub')">🏠 На главную</button>
+    <span class="screen-bar-title">${VIEW_TITLES[v]||''}</span>`;
+  sec.insertBefore(bar, sec.firstChild);
+}
+function switchView(v){
+  $$('.view').forEach(s=>s.classList.toggle('on',s.id===v));
+  ensureScreenBar(v);
+  if(v==='hub')renderHub();
+  if(v==='explore'){ if(flight) renderFlight(); else renderMap(); }
+  if(v==='arena'){if(!battle){$('#arenaSetup').style.display='block';$('#battleStage').style.display='none';renderArenaPicker();}}
+  if(v==='codex')renderCodex();
+  if(v==='forge')renderForge();
+  if(v==='roost')renderRoost();
+  if(v==='spire')renderSpire();
+  if(v==='lair')renderLair();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderAll(){renderLedger();renderLair();renderCodex();
+  if($('#forge').classList.contains('on'))renderForge();
+  if($('#roost').classList.contains('on'))renderRoost();
+  if($('#spire').classList.contains('on'))renderSpire();}
+
+/* ======================= СОХРАНЕНИЕ ======================= */
+const SAVE_KEY='draconis_save_v1';
+// безопасная обёртка над localStorage (в песочнице может быть недоступен)
+const store={
+  ok:(()=>{try{const k='__t';localStorage.setItem(k,'1');localStorage.removeItem(k);return true;}catch(e){return false;}})(),
+  get(){try{return localStorage.getItem(SAVE_KEY);}catch(e){return null;}},
+  set(v){try{localStorage.setItem(SAVE_KEY,v);return true;}catch(e){return false;}},
+  clear(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
+};
+let saveTimer=null;
+function saveGame(now){
+  S.lastSeen=Date.now();
+  const ok=store.set(JSON.stringify(S));
+  return ok;
+}
+// дебаунс-сохранение после действий
+function persist(){
+  if(!store.ok) return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(saveGame,400);
+}
+function loadGame(){
+  if(!store.ok) return false;
+  const raw=store.get();
+  if(!raw) return false;
+  try{
+    const data=JSON.parse(raw);
+    if(!data||!Array.isArray(data.dragons)) return false;
+    // мягкое слияние: берём сохранённое поверх дефолтов (на случай новых полей)
+    S=Object.assign({},S,data);
+    return true;
+  }catch(e){return false;}
+}
+
+/* ======================= IDLE-ДОХОД ======================= */
+// доход в минуту: сумма уровней всех драконов × ставка
+function idleRate(){
+  const sumLvl=S.dragons.reduce((a,d)=>a+d.level,0);
+  return sumLvl*IDLE_RATE_PER_DRAGON;
+}
+// начислить накопленное за время отсутствия (с потолком)
+function collectIdle(){
+  if(!S.lastSeen) return 0;
+  const mins=(Date.now()-S.lastSeen)/60000;
+  const capped=Math.min(mins, IDLE_CAP_HOURS*60);
+  const gold=Math.floor(idleRate()*capped);
+  if(gold>0) S.gold+=gold;
+  return gold;
+}
+
+/* ======================= ЕЖЕДНЕВНАЯ ПЕТЛЯ ======================= */
+function todayStr(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function daysBetween(a,b){
+  if(!a||!b) return 999;
+  return Math.round((new Date(b)-new Date(a))/86400000);
+}
+function rollDailyQuests(){
+  const pool=[...QUEST_POOL];
+  const out=[];
+  for(let i=0;i<3 && pool.length;i++){
+    const idx=Math.floor(Math.random()*pool.length);
+    const q=pool.splice(idx,1)[0];
+    // цели всегда маленькие и достижимые — никакого гринда
+    out.push({id:q.id, goal:q.goalBase, prog:0, done:false, claimed:false});
+  }
+  return out;
+}
+// вызвать при входе: новый день — новый подарок и новые весёлые задания (без наказаний за пропуск)
+function runDaily(){
+  const today=todayStr();
+  if(S.lastDaily!==today){
+    // считаем, сколько дней играли всего (для приятной статистики, без давления)
+    S.daysPlayed=(S.daysPlayed||0)+1;
+    S.lastDaily=today;
+    S.chestReady=true;
+  }
+  if(S.questDay!==today){
+    S.questDay=today;
+    S.quests=rollDailyQuests();
+  }
+}
+// продвижение квеста по событию
+function questEvent(id, amount=1){
+  let changed=false;
+  for(const q of S.quests){
+    if(q.id===id && !q.done){
+      q.prog=Math.min(q.goal, q.prog+amount);
+      if(q.prog>=q.goal){q.done=true; toast(`Задание выполнено: <b>${questText(q.id)}</b> — забери награду в Логове.`);}
+      changed=true;
+    }
+  }
+  if(changed){ renderDaily(); persist(); }
+}
+function questDef(id){return QUEST_POOL.find(q=>q.id===id);}
+function questText(id){const d=questDef(id);return d?d.text:id;}
+function rewardText(r){
+  const parts=[];
+  if(r.gold) parts.push(`🪙${r.gold}`);
+  if(r.eggs) parts.push(`🥚${r.eggs}`);
+  if(r.dust) parts.push(`✦${r.dust}`);
+  return parts.join(' ');
+}
+function claimQuest(id){
+  const q=S.quests.find(x=>x.id===id);
+  if(!q||!q.done||q.claimed) return;
+  const r=questDef(id).reward;
+  if(r.gold) S.gold+=r.gold;
+  if(r.eggs) S.eggs+=r.eggs;
+  if(r.dust) S.dust+=r.dust;
+  q.claimed=true;
+  floatText('+ '+rewardText(r),'#d9a441');
+  toast(`Награда получена: <b>${rewardText(r)}</b>!`);
+  renderLedger(); renderDaily(); persist();
+}
+// ежедневный подарок: всегда щедрый и одинаково радостный, без стрик-условий
+function chestReward(){
+  return {gold:150, eggs:1, dust:25};
+}
+function claimChest(){
+  if(!S.chestReady) return;
+  const r=chestReward();
+  if(r.gold) S.gold+=r.gold;
+  if(r.eggs) S.eggs+=r.eggs;
+  if(r.dust) S.dust+=r.dust;
+  S.chestReady=false;
+  floatText('ПОДАРОК ОТКРЫТ','#d9a441');
+  toast(`🎁 Подарок дня: <b>${rewardText(r)}</b>! Загляни завтра за новым.`);
+  renderLedger(); renderDaily(); persist();
+}
+
+/* ===== РЕНДЕР ЕЖЕДНЕВНОЙ ПАНЕЛИ (в Логове) ===== */
+function renderDaily(){
+  const box=$('#dailyPanel');
+  if(!box) return;
+  const r=chestReward();
+  const questHTML=S.quests.map(q=>{
+    const def=questDef(q.id);
+    const pct=Math.round(q.prog/q.goal*100);
+    return `<div class="quest${q.done?' done':''}">
+      <div class="quest-ic">${def.icon}</div>
+      <div class="quest-main">
+        <div class="quest-text">${def.text} <span class="quest-prog">${q.prog}/${q.goal}</span></div>
+        <div class="qbar"><i style="width:${pct}%"></i></div>
+      </div>
+      ${q.claimed
+        ? '<span class="quest-claimed">✓</span>'
+        : q.done
+          ? `<button class="btn quest-claim" data-claim="${q.id}">${rewardText(def.reward)}</button>`
+          : `<span class="quest-reward">${rewardText(def.reward)}</span>`}
+    </div>`;
+  }).join('');
+
+  box.innerHTML=`
+    <div class="daily-top">
+      <div class="chest-wrap">
+        ${S.chestReady
+          ? `<button class="btn chest-btn" id="chestBtn">🎁 Открыть подарок дня · ${rewardText(r)}</button>`
+          : `<div class="chest-done">🎁 Подарок получен! Возвращайся завтра за новым сюрпризом.</div>`}
+      </div>
+    </div>
+    <div class="quests-head">✨ Весёлые дела на сегодня</div>
+    <div class="quests">${questHTML||'<span class="hint">Новые дела появятся завтра.</span>'}</div>
+    ${store.ok
+      ? '<div class="save-row"><span class="save-ok">💾 Игра сохраняется сама</span><button class="save-reset" id="resetBtn">Начать заново</button></div>'
+      : '<p class="hint" style="color:var(--ember)">⚠ Чтобы игра запоминалась, скачай файл и открой его на компьютере (двойным щелчком).</p>'}`;
+
+  const cb=$('#chestBtn'); if(cb) cb.onclick=claimChest;
+  box.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>claimQuest(b.dataset.claim));
+  const rb=$('#resetBtn'); if(rb) rb.onclick=confirmReset;
+}
+let resetArmed=false;
+function confirmReset(){
+  const btn=$('#resetBtn');
+  if(!resetArmed){
+    resetArmed=true;
+    if(btn){btn.textContent='Точно? Нажми ещё раз';btn.classList.add('arm');}
+    setTimeout(()=>{resetArmed=false;const b=$('#resetBtn');if(b){b.textContent='Начать заново';b.classList.remove('arm');}},3000);
+    return;
+  }
+  store.clear();
+  location.reload();
+}
+
+/* ===== ИНИЦИАЛИЗАЦИЯ ===== */
+$('#hatchBtn').onclick=hatchEgg;
+$('#buyEggBtn').onclick=buyEgg;
+
+function newGame(){
+  addDragon('ember',2,'common',{atk:2,def:2,hp:2,spd:2,spark:false},1);
+  addArtifact('emberfang',1);
+  S.dust=60;
+  S.sel=S.dragons[0].uid;
+}
+
+const loaded=loadGame();
+if(!loaded){ newGame(); }
+// idle-доход за время отсутствия (только при загрузке сохранения)
+let idleGold=0;
+if(loaded){ idleGold=collectIdle(); }
+runDaily();
+renderAll();
+renderDaily();
+renderHub(); // игра открывается на главном экране
+
+if(loaded){
+  let msg='С возвращением! Драконы скучали по тебе 🐉';
+  if(idleGold>0) msg+=` Пока тебя не было, в логове накопилось <b>${idleGold}🪙</b>.`;
+  toast(msg);
+} else {
+  toast('Привет! Высиживай яйца, заботься о драконах и собери их всех 🐉🥚');
+}
+
+// автосохранение при уходе со страницы и периодически
+window.addEventListener('beforeunload', saveGame);
+setInterval(()=>{ if(store.ok) saveGame(); }, 30000);
+</script>
+</body>
+</html>
