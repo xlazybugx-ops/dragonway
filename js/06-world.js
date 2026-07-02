@@ -141,11 +141,13 @@ function renderHub(){
       <div class="hub-btns">
         <button class="btn ghost hub-deco-btn" id="treasBtn">🎁 Сокровищница${chestCount()?` (${chestCount()})`:''}</button>
         ${ownedCount?`<button class="btn ghost hub-deco-btn" id="decoBtn">🎨 Украшения (${ownedCount})</button>`:''}
+        <button class="btn ghost hub-deco-btn" id="saveBtn" title="Экспорт и импорт сейва">💾</button>
       </div>
     </div>`;
   wrap.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>switchView(b.dataset.go));
   const db=$('#decoBtn'); if(db) db.onclick=openDecorManager;
   const tb=$('#treasBtn'); if(tb) tb.onclick=openTreasury;
+  const sv=$('#saveBtn'); if(sv) sv.onclick=openSaveManager;
 }
 
 // управление украшениями: разместить/убрать по слотам

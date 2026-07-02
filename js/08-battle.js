@@ -516,13 +516,14 @@ function endBattle(win){
       if(first){
         // трофей-украшение (в каталоге DECORATIONS статически)
         if(!S.decorOwned)S.decorOwned=[];
-        S.decorOwned.push(b.boss.trophy.id);
+        const trophy=decorById(b.boss.trophyId);
+        S.decorOwned.push(b.boss.trophyId);
         // звезда владык — материал восхождения
         S.ascStars=(S.ascStars||0)+1;
         const bonus=Math.round(b.reward*1.5);
         S.gold+=bonus; S.dust+=50;
         pushLog(`<span class="gold">☠️ ${b.boss.icon} <b>${b.boss.name} повержен впервые!</b></span>`);
-        pushLog(`🏆 Трофей «<b>${b.boss.trophy.name}</b>» — укрась им поселение! · ⭐ <b>Звезда владык</b> (для Восхождения) · +${bonus}🪙 +50✦`);
+        pushLog(`🏆 Трофей «<b>${trophy.name}</b>» — укрась им поселение! · ⭐ <b>Звезда владык</b> (для Восхождения) · +${bonus}🪙 +50✦`);
       } else {
         S.gold+=Math.round(b.reward*0.5); S.dust+=15;
         pushLog(`${b.boss.icon} ${b.boss.name} вновь пал. Слава и добыча: +${Math.round(b.reward*0.5)}🪙 +15✦`);

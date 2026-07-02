@@ -379,6 +379,64 @@ if(loaded){
   showStartScreen();
 }
 
-// автосохранение при уходе со страницы и периодически
+// автосохранение при уходе со страницы и периодически.
+// На мобильных (особенно iOS Safari) beforeunload часто НЕ срабатывает —
+// поэтому дублируем на pagehide и на сворачивание вкладки (visibilitychange).
 window.addEventListener('beforeunload', saveGame);
+window.addEventListener('pagehide', saveGame);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') saveGame(); });
 setInterval(()=>{ if(store.ok) saveGame(); }, 30000);
+
+/* ===== ЭКСПОРТ / ИМПОРТ СЕЙВА =====
+   Страховка от потери localStorage и перенос между устройствами. */
+function exportSave(){
+  saveGame(); // зафиксировать актуальное состояние
+  const data=JSON.stringify(S);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const d=new Date();
+  const stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  a.href=url; a.download='draconis-save-'+stamp+'.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('💾 Сейв выгружен в файл. Храни его как сокровище!');
+}
+function importSaveFromFile(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(!data || !Array.isArray(data.dragons)) throw new Error('не похоже на сейв Дракониса');
+      S=Object.assign({},S,data);
+      migrateDragons();
+      saveGame();
+      toast('<b>💾 Сейв загружен!</b> Добро пожаловать обратно.');
+      renderLedger(); switchView('hub');
+    }catch(e){
+      toast('⚠ Не удалось прочитать файл: '+e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+function openSaveManager(){
+  const wrap=$('#hubWrap'); if(!wrap) return;
+  wrap.innerHTML=`<div class="panel" style="margin:0">
+    <div class="screen-bar" style="margin-top:0"><button class="home-btn" id="svBack">← Поселение</button>
+      <span class="screen-bar-title">💾 Сохранение</span></div>
+    <p class="lede">Выгрузи сейв в файл, чтобы не потерять прогресс или перенести игру на другое устройство.</p>
+    <div class="btnrow" style="flex-direction:column;gap:10px">
+      <button class="btn" id="svExport">⬇️ Выгрузить сейв в файл</button>
+      <label class="btn ghost" style="text-align:center;cursor:pointer">⬆️ Загрузить сейв из файла
+        <input type="file" id="svImport" accept=".json,application/json" style="display:none">
+      </label>
+    </div>
+    <p class="hint">Загрузка файла <b>заменит</b> текущий прогресс. Сначала выгрузи текущий сейв, если он дорог.</p>
+  </div>`;
+  $('#svBack').onclick=renderHub;
+  $('#svExport').onclick=exportSave;
+  $('#svImport').addEventListener('change',(e)=>{
+    const f=e.target.files&&e.target.files[0];
+    if(f) importSaveFromFile(f);
+  });
+}

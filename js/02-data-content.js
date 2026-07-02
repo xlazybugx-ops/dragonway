@@ -34,6 +34,7 @@ const DECORATIONS=[
   {id:'trophy_storm', name:'Громовой трофей',  icon:'🏆', rarity:4, desc:'Осколок молнии Владыки Бурь.', trophy:true},
   {id:'trophy_shade', name:'Трофей Пустоты',   icon:'🏆', rarity:4, desc:'Беззвёздная чешуя Владыки Пустоты.', trophy:true},
 ];
+const decorById=id=>DECORATIONS.find(d=>d.id===id);
 /* ======================= СВИТКИ ЛЕГЕНД =======================
    Лор по мирам и биомам. Собираются в странствиях и из сундуков, хранятся в Кодексе.
    hint — подсказка к боссу/артефакту/механике (мягкая, необязательная). */
@@ -301,27 +302,27 @@ const WORLD_BOSSES=[
   {world:'emberreach', id:'boss_fire',  name:'Владыка Пламени',   icon:'🔥', speciesBase:'pyrelord',
    weakTo:'frost', hpMult:2.2, atkMult:1.15,
    mech:null,
-   trophy:{id:'trophy_fire', name:'Пламенный трофей', icon:'🏆', rarity:3, desc:'Голова Владыки Пламени над воротами.'},
+   trophyId:'trophy_fire',
    lore:'Даже вечный огонь боится холода, что старше самого пламени.'},
   {world:'mirelot', id:'boss_venom', name:'Матерь Топей',      icon:'🕸️', speciesBase:'blightfang',
    weakTo:'fire', hpMult:2.2, atkMult:1.15,
    mech:null,
-   trophy:{id:'trophy_venom', name:'Трофей Топей', icon:'🏆', rarity:3, desc:'Жвала Матери Топей на пьедестале.'},
+   trophyId:'trophy_venom',
    lore:'Пламя — единственное, что заставляет её отступить.'},
   {world:'glacior', id:'boss_frost', name:'Владыка Стужи',     icon:'❄️', speciesBase:'permafrost',
    weakTo:'fire', hpMult:2.3, atkMult:1.1,
    mech:null,
-   trophy:{id:'trophy_frost', name:'Ледяной трофей', icon:'🏆', rarity:3, desc:'Нерастающий рог Владыки Стужи.'},
+   trophyId:'trophy_frost',
    lore:'Лишь ярость пламени способна растопить его вечную броню.'},
   {world:'stormpeak', id:'boss_storm', name:'Владыка Бурь',      icon:'⚡', speciesBase:'thundercall',
    weakTo:null, hpMult:2.4, atkMult:1.2,
    mech:'stall3',
-   trophy:{id:'trophy_storm', name:'Громовой трофей', icon:'🏆', rarity:3, desc:'Осколок молнии Владыки Бурь.'},
+   trophyId:'trophy_storm',
    lore:'Он бьёт трижды, а на четвёртый раз замирает — в этот миг он беззащитен.'},
   {world:'voidedge', id:'boss_shade', name:'Владыка Пустоты',   icon:'🌑', speciesBase:'worldserpent',
    weakTo:'fire', hpMult:2.5, atkMult:1.2,
    mech:'vamp',
-   trophy:{id:'trophy_shade', name:'Трофей Пустоты', icon:'🏆', rarity:3, desc:'Беззвёздная чешуя Владыки Пустоты.'},
+   trophyId:'trophy_shade',
    lore:'Лишь свет чистого пламени способен обжечь того, кто соткан из мрака.'},
 ];
 const bossByWorld=w=>WORLD_BOSSES.find(b=>b.world===w);

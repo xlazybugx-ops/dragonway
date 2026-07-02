@@ -118,7 +118,7 @@ function resolvePOI(idx){
     addArtifact(art.id,1); f.stats.relics++; msg=`Внутри реликвия <b>${art.icon} ${art.name}</b>!`;
   } else if(p.kind==='chest'){
     const tier=region.biomeN||1;
-    addChest(tier); f.stats.relics=(f.stats.relics||0);
+    addChest(tier);
     const ct=chestType(tier);
     msg=`Найден <b>${ct.icon} ${ct.name}</b>! Открой его в поселении ключом или в кузне.`;
   } else if(p.kind==='key'){
