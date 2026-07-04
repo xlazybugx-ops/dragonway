@@ -782,6 +782,14 @@
     border:1px solid var(--gold-soft);background:linear-gradient(180deg,#b88a2e,#8a6420);color:#fff;font-family:inherit}
   .enc-card button.ghost{background:rgba(0,0,0,.15);color:var(--ink-dim);border-color:var(--edge)}
   .flight-fs .flight-end{position:absolute}
+  /* Оверлей мини-игр вне боя (гнездо, кузница) */
+  .rhythm-overlay{position:fixed;inset:0;z-index:1500;display:flex;align-items:center;justify-content:center;
+    background:rgba(15,9,5,.72);animation:fade .25s ease}
+  .rhythm-overlay .enc-card{min-width:270px}
+  .rhythm-egg{font-size:74px;line-height:1.2;transition:transform .05s linear;will-change:transform}
+  .rhythm-hits{font-size:22px;letter-spacing:4px;margin:6px 0 4px}
+  .rhythm-overlay .timing-bar{margin:14px 0 4px}
+  .forge-bar{position:relative}
   .fcv-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     color:var(--gold);font-family:'Cinzel';font-size:16px;background:#161009}
   .fcv-fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:25;transition:opacity .35s}
