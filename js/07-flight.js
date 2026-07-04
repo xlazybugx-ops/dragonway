@@ -7,15 +7,13 @@
    ============================================================ */
 let flight=null; // {region, d, stats, ... состояние карты и дракона}
 
-/* ===== НАРИСОВАННЫЕ КАРТЫ ЯРУСОВ (из демо) =====
-   Имена: images/fly_{scene}_{ярус}.webp. Если файла нет —
+/* ===== НАРИСОВАННЫЕ КАРТЫ ЯРУСОВ =====
+   По мирам: images/fly_{ключ}_{ярус}.webp. Если файла нет —
    игра сама нарисует процедурный фон, ничего не сломается. */
-const FLY_MAPS={
-  fire:['images/fly_fire_1.webp','images/fly_fire_2.webp','images/fly_fire_3.webp'],
-};
-function loadFlyMap(scene,tier,cb){
-  const list=FLY_MAPS[scene], src=list&&list[tier-1];
-  if(!src)return cb(null);
+const FLY_ART_KEY={emberreach:'fire',mirelot:'jungle',glacior:'ice',stormpeak:'storm',voidedge:'shade'};
+function flyArtKey(region){ return FLY_ART_KEY[region.worldId]||region.scene; }
+function loadFlyMap(region,tier,cb){
+  const src=`images/fly_${flyArtKey(region)}_${tier}.webp`;
   const i=new Image(); i.onload=()=>cb(i); i.onerror=()=>cb(null); i.src=src;
 }
 
@@ -75,9 +73,17 @@ function flySprite(speciesId){
   img.src='data:image/svg+xml;utf8,'+encodeURIComponent(topDragonSVG(speciesId).replace(/class="[^"]*"/g,''));
   return img;
 }
-/* нарисованный PNG-спрайт полёта, если есть (images/{вид}_fly.png) */
-function flySpritePng(speciesId){
-  const img=new Image(); img.src=`images/${speciesId}_fly.png`; return img;
+/* нарисованный PNG-спрайт полёта с учётом возраста: images/{вид}_fly_{стадия}.png
+   (стадии 1/25/60/100, как у портретов). Нет нужной стадии — берём ближайшую
+   имеющуюся; нет ни одной — останется векторный дракон. */
+function flySpritePng(speciesId, level){
+  const img=new Image();
+  const want=stageForLevel(level||1);
+  const order=[want,...[100,60,25,1].filter(st=>st!==want)];
+  let i=0;
+  img.onerror=()=>{ if(i<order.length) img.src=`images/${speciesId}_fly_${order[i++]}.png`; };
+  img.src=`images/${speciesId}_fly_${order[i++]}.png`;
+  return img;
 }
 
 /* ===== СТАРТ ПОЛЁТА ===== */
@@ -90,7 +96,7 @@ function startFlight(region,d){
     W:0,H:0,items:[],storms:[],dens:[],wilds:[],floats:[],clouds:[],
     drag:null, stam:140, portal:null, paused:true, ended:false,
     raf:0, ac:null, _pend:null, battleWin:undefined, bg:null,
-    sprPng:flySpritePng(d.id), sprSvg:flySprite(d.id),
+    sprPng:flySpritePng(d.id,d.level), sprSvg:flySprite(d.id),
   };
   document.body.classList.add('flight-active');
   const fs=$('#flightFs');
@@ -103,7 +109,11 @@ function buildFlightTier(region){
   const f=flight; if(!f)return;
   f.region=region;
   const bn=region.biomeN||1;
-  loadFlyMap(region.scene,bn,img=>{
+  // картинка логова этого мира (если есть)
+  f.denImg=new Image();
+  f.denImg.onerror=()=>{f.denImg=null;};
+  f.denImg.src=`images/den_${flyArtKey(region)}.png`;
+  loadFlyMap(region,bn,img=>{
     if(!flight||flight!==f)return;
     let W,H;
     if(img){ // нарисованная карта: нативное разрешение, резко и без апскейла
@@ -467,8 +477,11 @@ function renderFlight(){
     // логова
     f.dens.forEach(dd=>{const px=dd.x-sx,py=dd.y-sy;
       if(px>-200&&py>-200&&px<vw+200&&py<vh+200){
-        ctx.font='34px serif';ctx.fillText('🕳️',px,py);
-        ctx.font='italic 12px Georgia';ctx.fillStyle='rgba(255,230,200,.92)';ctx.fillText(dd.name,px,py+30);
+        if(f.denImg&&f.denImg.complete&&f.denImg.naturalWidth){
+          const dw2=180,dh2=dw2*f.denImg.naturalHeight/f.denImg.naturalWidth;
+          ctx.drawImage(f.denImg,px-dw2/2,py-dh2/2,dw2,dh2);
+        } else {ctx.font='34px serif';ctx.fillText('🕳️',px,py);}
+        ctx.font='italic 12px Georgia';ctx.fillStyle='rgba(255,230,200,.92)';ctx.fillText(dd.name,px,py+58);
         if(!dd.defeated){ctx.font='30px serif';ctx.fillText(dd.icon,dd.beast.x-sx,dd.beast.y-sy);
           ctx.strokeStyle='rgba(255,120,80,.22)';ctx.setLineDash([6,6]);ctx.beginPath();
           ctx.arc(dd.beast.x-sx,dd.beast.y-sy,dd.aggro,0,7);ctx.stroke();ctx.setLineDash([]);}
