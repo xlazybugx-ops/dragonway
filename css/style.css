@@ -748,6 +748,41 @@
   .poi-choice-opts{display:flex;flex-direction:column;gap:9px}
   .poi-choice-opts .btn{font-size:13px}
 
+  /* Канвас-полёт (джойстик, цели, встречи) */
+  .flight-fs{touch-action:none;-webkit-user-select:none;user-select:none}
+  #fcv{display:block;width:100vw;height:100vh}
+  .fcv-top{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:8px 12px calc(8px + env(safe-area-inset-top)) 12px;
+    background:linear-gradient(180deg,rgba(20,12,6,.85),transparent);color:var(--gold)}
+  .fcv-title{font-family:'Cinzel';font-size:clamp(12px,2.2vw,16px);color:#ffe9c0;text-shadow:0 2px 6px #000}
+  #fcvScore{font-size:13px;font-weight:600;white-space:nowrap;text-shadow:0 1px 3px #000}
+  .fcv-stam{flex:1;max-width:150px;min-width:80px;height:12px;border:1px solid var(--gold-soft);border-radius:6px;
+    overflow:hidden;background:rgba(0,0,0,.5)}
+  #fcvStamFill{height:100%;width:100%;background:linear-gradient(90deg,var(--fire,#e0633a),var(--gold));transition:width .2s}
+  .fcv-exit{margin-left:auto;padding:7px 11px;border-radius:8px;border:1px solid var(--gold-soft);
+    background:rgba(40,25,15,.85);color:#fda;font-size:12px;cursor:pointer;font-family:inherit}
+  .fcv-goals{position:absolute;top:52px;left:8px;z-index:5;background:rgba(28,16,8,.85);border:1px solid var(--gold-soft);
+    border-radius:10px;padding:8px 12px;color:#f4e6c8;font-size:12.5px;line-height:1.7;max-width:230px;
+    box-shadow:0 4px 16px rgba(0,0,0,.5)}
+  .fcv-goals .g-title{color:var(--gold);font-weight:700;font-size:13px;font-family:'Cinzel'}
+  .fcv-goals .done{color:#9c4}
+  .fcv-stick{position:fixed;width:120px;height:120px;border-radius:50%;z-index:6;display:none;
+    border:2px solid rgba(255,215,106,.5);background:rgba(255,215,106,.08);pointer-events:none}
+  .fcv-knob{position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;
+    background:rgba(255,215,106,.85);transform:translate(-50%,-50%);box-shadow:0 2px 10px rgba(0,0,0,.5)}
+  .fcv-enc{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(20,10,4,.7);z-index:20}
+  .enc-card{background:linear-gradient(180deg,var(--panel),var(--vellum2));border:1px solid var(--gold);
+    border-radius:10px;padding:22px 26px;text-align:center;max-width:320px;color:var(--ink);
+    box-shadow:0 10px 40px rgba(0,0,0,.7);animation:fade .25s ease}
+  .enc-icon{font-size:52px}
+  .enc-name{font-family:'Cinzel';font-size:17px;font-weight:700;margin:8px 0 4px;color:var(--gold)}
+  .enc-sub{font-size:12.5px;color:var(--ink-dim);line-height:1.5;margin-bottom:14px}
+  .enc-card button{display:block;width:100%;margin:8px 0 0;padding:11px;border-radius:6px;font-size:14px;cursor:pointer;
+    border:1px solid var(--gold-soft);background:linear-gradient(180deg,#b88a2e,#8a6420);color:#fff;font-family:inherit}
+  .enc-card button.ghost{background:rgba(0,0,0,.15);color:var(--ink-dim);border-color:var(--edge)}
+  .flight-fs .flight-end{position:absolute}
+
   /* Battle */
   .arena{
     background:linear-gradient(180deg,#241a12,#15100b);
@@ -859,3 +894,32 @@
 
   .hint{font-size:12px;color:var(--ink-dim);font-style:italic;margin-top:8px}
   .codex-foot{text-align:center;color:var(--ink-dim);font-size:12px;font-style:italic;margin-top:20px}
+/* Коллекционные вехи */
+.miles-list{display:flex;flex-direction:column;gap:10px}
+.mile-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+  border:1px solid var(--edge);border-radius:8px;padding:10px 12px;background:rgba(18,13,9,.35)}
+.mile-row.ready{border-color:var(--gold);background:linear-gradient(180deg,rgba(50,38,14,.55),rgba(24,17,10,.5));
+  box-shadow:0 0 12px rgba(217,164,65,.15)}
+.mile-row.claimed{opacity:.65}
+.mile-icon{font-size:26px}
+.mile-body{display:flex;flex-direction:column;gap:3px;min-width:0}
+.mile-name{font-family:'Cinzel';font-size:13.5px;color:var(--ink)}
+.mile-desc{font-size:11.5px;color:var(--ink-dim)}
+.mile-bar{height:5px;background:rgba(0,0,0,.4);border-radius:3px;overflow:hidden;margin-top:2px}
+.mile-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));border-radius:3px}
+.mile-prog{font-size:10.5px;color:var(--gold-soft)}
+.mile-claim{width:auto;margin:0;font-size:11px;padding:6px 10px;line-height:1.3}
+.mile-done{color:#9c4;font-size:20px}
+.mile-reward{font-size:11px;color:var(--ink-dim);text-align:right;line-height:1.4}
+/* Арена волн */
+.wave-entry{margin-top:16px;border:1px solid rgba(109,180,212,.45);border-radius:10px;padding:14px 16px;
+  background:linear-gradient(180deg,rgba(20,38,52,.5),rgba(14,22,30,.5));text-align:center}
+.wave-title{font-family:'Cinzel';font-size:15px;color:#8ac0ff;letter-spacing:.05em;margin-bottom:6px}
+.wave-entry .dmeta{margin:4px auto 8px;max-width:520px;line-height:1.5}
+.wave-record{font-size:12.5px;color:var(--gold);margin-bottom:10px}
+.wave-entry .btn{width:auto;margin:0 auto}
+/* фикс карусели в grid-колонках: колонка обязана ужиматься, иначе дорожка растягивает страницу */
+.forge-stock,.equip-picker{min-width:0;max-width:100%}
+.forge-stock .carousel,.equip-picker .carousel{max-width:100%}
+/* мгновенный отклик кнопок мини-игр: без задержки двойного тапа и выделения */
+.timing-overlay .btn{touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}

@@ -15,6 +15,11 @@ let S = {
   scrolls:[],      // собранные свитки легенд (id)
   bossesDefeated:{}, // побеждённые владыки {bossId:true}
   ascStars:0,        // звёзды владык (материал Восхождения)
+  soundOn:true,      // звук и вибрация
+  hintsSeen:{},      // показанные одноразовые подсказки
+  marketDust:null,   // дневной лимит обмена пыли на Рынке
+  milestonesClaimed:{}, // забранные коллекционные вехи
+  waveBest:0,        // рекорд арены волн
   dragons:[],      // {uid,id,level,xp,curHp,morph,equip,genes,gen,nature}
   discovered:{},   // species id -> true
   morphsSeen:{},   // species id -> {morphId:true}

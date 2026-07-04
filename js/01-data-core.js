@@ -101,10 +101,10 @@ function dragonVisual(speciesId, level){
   const svg=dragonArt(speciesId);
   if(!USE_PHOTO_DRAGONS) return svg;
   const stage=stageForLevel(level||1);
-  const src=`images/${speciesId}_${stage}.png`;
+  const src=`images/${speciesId}_${stage}.webp`;
   // если картинка не загрузится — onerror подменит контейнер на SVG
   const svgEsc=svg.replace(/"/g,'&quot;');
-  return `<img class="dragon-art dragon-photo" src="${src}" alt=""
+  return `<img class="dragon-art dragon-photo" src="${src}" alt="" loading="lazy" decoding="async"
      onerror="this.outerHTML=this.getAttribute('data-fallback')"
      data-fallback="${svgEsc}">`;
 }

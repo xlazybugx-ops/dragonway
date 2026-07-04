@@ -6,6 +6,49 @@
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+
+/* ===== ЗВУК (WebAudio, синтез — без файлов) =====
+   6 коротких эффектов. Включается первым касанием (политика браузеров).
+   Тумблер 🔊/🔇 в хабе, состояние в S.soundOn. */
+let _actx=null;
+function _audio(){ if(!_actx){ try{_actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return _actx; }
+function sfx(kind){
+  if(S && S.soundOn===false) return;
+  const ctx=_audio(); if(!ctx) return;
+  if(ctx.state==='suspended'){ ctx.resume().catch(()=>{}); }
+  const t=ctx.currentTime;
+  const tone=(freq,start,dur,type='square',vol=0.08,slide=0)=>{
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,t+start);
+    if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide),t+start+dur);
+    g.gain.setValueAtTime(vol,t+start);
+    g.gain.exponentialRampToValueAtTime(0.001,t+start+dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t+start); o.stop(t+start+dur+0.02);
+  };
+  switch(kind){
+    case 'hit':   tone(180,0,0.08,'square',0.07,-80); break;
+    case 'crit':  tone(120,0,0.12,'sawtooth',0.1,-60); tone(240,0.03,0.1,'square',0.07,-120); vibrate(35); break;
+    case 'win':   tone(523,0,0.12,'triangle',0.09); tone(659,0.12,0.12,'triangle',0.09); tone(784,0.24,0.2,'triangle',0.1); vibrate([40,60,40]); break;
+    case 'lose':  tone(220,0,0.25,'triangle',0.08,-120); break;
+    case 'hatch': tone(392,0,0.1,'triangle',0.08); tone(587,0.1,0.16,'triangle',0.09,60); vibrate(30); break;
+    case 'chest': tone(330,0,0.09,'square',0.07); tone(494,0.09,0.09,'square',0.08); tone(659,0.18,0.14,'square',0.09); break;
+    case 'coin':  tone(880,0,0.06,'square',0.06); tone(1175,0.05,0.09,'square',0.06); break;
+  }
+}
+/* ===== ВИБРАЦИЯ (мобильные) ===== */
+function vibrate(pattern){
+  if(S && S.soundOn===false) return; // общий тумблер эффектов
+  try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+}
+/* ===== ОДНОРАЗОВЫЕ ПОДСКАЗКИ (туториал) ===== */
+function hintOnce(id, html){
+  if(!S.hintsSeen) S.hintsSeen={};
+  if(S.hintsSeen[id]) return;
+  S.hintsSeen[id]=true;
+  toast('💡 '+html);
+  persist();
+}
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 
 function toast(html){const t=$('#toast');t.innerHTML=html;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}

@@ -185,10 +185,12 @@ function renderCodex(){
   const tabs=$$('#codex .codex-tab');
   tabs.forEach(t=>t.onclick=()=>{
     tabs.forEach(x=>x.classList.toggle('on',x===t));
-    const isLore=t.dataset.ctab==='lore';
-    $('#codexSpecies').style.display=isLore?'none':'block';
-    $('#codexLore').style.display=isLore?'block':'none';
-    if(isLore) renderLore();
+    const tab=t.dataset.ctab;
+    $('#codexSpecies').style.display=tab==='species'?'block':'none';
+    $('#codexLore').style.display=tab==='lore'?'block':'none';
+    $('#codexMiles').style.display=tab==='miles'?'block':'none';
+    if(tab==='lore') renderLore();
+    if(tab==='miles') renderMilestones();
   });
   const g=$('#codexGrid');g.innerHTML='';
   SPECIES.forEach(sp=>{
@@ -224,7 +226,7 @@ function renderLore(){
   const total=LORE_SCROLLS.length, found=scrollsFound().length;
   let html=`<p class="lede">Свитки легенд, собранные в странствиях. Собрано: <b>${found}/${total}</b>. В некоторых скрыты подсказки к артефактам и владыкам миров.</p>`;
   WORLDS.forEach(w=>{
-    const worldScrolls=LORE_SCROLLS.filter(s=>s.world===w.id);
+    const worldScrolls=LORE_SCROLLS.filter(s=>s.world===w.id).sort((a,b)=>(a.biome-b.biome)||(a.n-b.n));
     const gotCount=worldScrolls.filter(s=>hasScroll(s)).length;
     html+=`<div class="lore-world">
       <div class="lore-world-head">${elTag(w.el)} <b>${w.name}</b> <span class="dmeta">${gotCount}/${worldScrolls.length}</span></div>
@@ -282,3 +284,33 @@ function renderAll(){renderLedger();renderLair();renderCodex();
   if($('#roost').classList.contains('on'))renderRoost();
   if($('#spire').classList.contains('on'))renderSpire();}
 
+
+// вкладка «Вехи»: коллекционные цели с наградами
+function renderMilestones(){
+  const box=$('#codexMiles'); if(!box) return;
+  const done=MILESTONES.filter(m=>milestoneClaimed(m.id)).length;
+  let html=`<p class="lede">Большие цели драконовода. Собрано: <b>${done}/${MILESTONES.length}</b>.</p><div class="miles-list">`;
+  MILESTONES.forEach(m=>{
+    const claimed=milestoneClaimed(m.id);
+    const ready=!claimed && m.check();
+    const [cur,max]=m.progress();
+    const pct=Math.min(100,Math.round(cur*100/max));
+    html+=`<div class="mile-row ${claimed?'claimed':ready?'ready':''}">
+      <span class="mile-icon">${m.icon}</span>
+      <span class="mile-body">
+        <span class="mile-name">${m.name}</span>
+        <span class="mile-desc">${m.desc}</span>
+        <span class="mile-bar"><i style="width:${pct}%"></i></span>
+        <span class="mile-prog">${cur}/${max}</span>
+      </span>
+      ${claimed
+        ? '<span class="mile-done">✔</span>'
+        : ready
+          ? `<button class="btn mile-claim" data-mile="${m.id}">Забрать<br>${m.reward.gold}🪙+${m.reward.dust}✦</button>`
+          : `<span class="mile-reward">${m.reward.gold}🪙<br>${m.reward.dust}✦</span>`}
+    </div>`;
+  });
+  html+='</div>';
+  box.innerHTML=html;
+  box.querySelectorAll('[data-mile]').forEach(b=>b.onclick=()=>{claimMilestone(b.dataset.mile);renderMilestones();});
+}

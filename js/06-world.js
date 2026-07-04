@@ -131,7 +131,7 @@ function renderHub(){
   const ownedCount=(S.decorOwned||[]).length;
   wrap.innerHTML=`
     <div class="hub-stage hub-stage-photo">
-      <img class="hub-bg" src="images/hub_bg.png" alt=""
+      <img class="hub-bg" src="images/hub_bg.webp" decoding="async" alt=""
         onerror="this.style.display='none';this.parentNode.classList.add('hub-bg-fallback')">
       ${decoEls}
       ${spots}
@@ -140,7 +140,9 @@ function renderHub(){
       <p class="hub-hint">Нажми на любое строение, чтобы отправиться туда.</p>
       <div class="hub-btns">
         <button class="btn ghost hub-deco-btn" id="treasBtn">🎁 Сокровищница${chestCount()?` (${chestCount()})`:''}</button>
+        <button class="btn ghost hub-deco-btn" id="marketBtn">🛒 Рынок</button>
         ${ownedCount?`<button class="btn ghost hub-deco-btn" id="decoBtn">🎨 Украшения (${ownedCount})</button>`:''}
+        <button class="btn ghost hub-deco-btn" id="sndBtn" title="Звук">${S.soundOn===false?'🔇':'🔊'}</button>
         <button class="btn ghost hub-deco-btn" id="saveBtn" title="Экспорт и импорт сейва">💾</button>
       </div>
     </div>`;
@@ -148,9 +150,87 @@ function renderHub(){
   const db=$('#decoBtn'); if(db) db.onclick=openDecorManager;
   const tb=$('#treasBtn'); if(tb) tb.onclick=openTreasury;
   const sv=$('#saveBtn'); if(sv) sv.onclick=openSaveManager;
+  const mk=$('#marketBtn'); if(mk) mk.onclick=openMarket;
+  const sn=$('#sndBtn'); if(sn) sn.onclick=()=>{S.soundOn=S.soundOn===false?true:false;persist();renderHub();};
 }
 
 // управление украшениями: разместить/убрать по слотам
+/* ===== РЫНОК: золотые стоки (ключи, премиум-украшения, обмен пыли) ===== */
+function marketDustState(){
+  const today=new Date().toDateString();
+  if(!S.marketDust || S.marketDust.day!==today) S.marketDust={day:today, bought:0};
+  return S.marketDust;
+}
+function openMarket(){
+  const wrap=$('#hubWrap'); if(!wrap) return;
+  // ключи
+  const keyRows=[1,2,3].map(t=>{
+    const ct=chestType(t); const price=MARKET_KEY_PRICE[t];
+    const can=S.gold>=price;
+    return `<div class="chest-row">
+      <span class="chest-ic">${ct.keyIcon}</span>
+      <span class="chest-name">${ct.keyName}<br><span class="chest-sub">открывает: ${ct.name.toLowerCase()} · у тебя: ${keyCount(t)}</span></span>
+      <button class="btn ${can?'':'ghost'}" data-buykey="${t}" ${can?'':'disabled'}>🪙 ${price}</button>
+    </div>`;
+  }).join('');
+  // премиум-украшения
+  const premRows=DECORATIONS.filter(d=>d.premium).map(d=>{
+    const owned=(S.decorOwned||[]).includes(d.id);
+    const can=!owned && S.gold>=d.price;
+    return `<div class="chest-row">
+      <span class="chest-ic">${d.icon}</span>
+      <span class="chest-name">${d.name} ${'★'.repeat(d.rarity)}<br><span class="chest-sub">${d.desc}</span></span>
+      ${owned?'<span class="boss-done">✔ куплено</span>':`<button class="btn ${can?'':'ghost'}" data-buydeco="${d.id}" ${can?'':'disabled'}>🪙 ${d.price}</button>`}
+    </div>`;
+  }).join('');
+  // обмен пыли
+  const md=marketDustState();
+  const left=MARKET_DUST.dailyCap-md.bought;
+  const canDust=left>=MARKET_DUST.dust && S.gold>=MARKET_DUST.gold;
+  wrap.innerHTML=`<div class="panel" style="margin:0">
+    <div class="screen-bar" style="margin-top:0"><button class="home-btn" id="mkBack">← Поселение</button>
+      <span class="screen-bar-title">🛒 Рынок</span></div>
+    <p class="lede">Торговец скупает золото драконоводов. Трать излишки с умом!</p>
+    <h3 class="forge-sub">🗝️ Ключи</h3>
+    <div class="chest-list">${keyRows}</div>
+    <h3 class="forge-sub" style="margin-top:14px">✨ Премиум-украшения</h3>
+    <div class="chest-list">${premRows}</div>
+    <h3 class="forge-sub" style="margin-top:14px">✦ Обмен на пыль</h3>
+    <div class="chest-row">
+      <span class="chest-ic">✦</span>
+      <span class="chest-name">${MARKET_DUST.gold}🪙 → ${MARKET_DUST.dust}✦<br><span class="chest-sub">сегодня осталось: ${left}✦ из ${MARKET_DUST.dailyCap}</span></span>
+      <button class="btn ${canDust?'':'ghost'}" id="mkDust" ${canDust?'':'disabled'}>Обменять</button>
+    </div>
+  </div>`;
+  $('#mkBack').onclick=renderHub;
+  wrap.querySelectorAll('[data-buykey]').forEach(b=>b.onclick=()=>{
+    const t=+b.dataset.buykey, price=MARKET_KEY_PRICE[t];
+    if(S.gold<price) return;
+    S.gold-=price; addKey(t);
+    sfx('coin'); persist(); renderLedger();
+    toast(`${chestType(t).keyIcon} <b>${chestType(t).keyName}</b> куплен!`);
+    openMarket();
+  });
+  wrap.querySelectorAll('[data-buydeco]').forEach(b=>b.onclick=()=>{
+    const d=decorById(b.dataset.buydeco);
+    if(!d || S.gold<d.price || (S.decorOwned||[]).includes(d.id)) return;
+    S.gold-=d.price;
+    if(!S.decorOwned)S.decorOwned=[];
+    S.decorOwned.push(d.id);
+    sfx('coin'); persist(); renderLedger();
+    toast(`${d.icon} <b>${d.name}</b> — твоё! Размести его через «🎨 Украшения».`);
+    openMarket();
+  });
+  const dustBtn=$('#mkDust');
+  if(dustBtn&&!dustBtn.disabled) dustBtn.onclick=()=>{
+    const md=marketDustState();
+    if(md.bought+MARKET_DUST.dust>MARKET_DUST.dailyCap || S.gold<MARKET_DUST.gold) return;
+    S.gold-=MARKET_DUST.gold; S.dust+=MARKET_DUST.dust; md.bought+=MARKET_DUST.dust;
+    sfx('coin'); persist(); renderLedger();
+    openMarket();
+  };
+}
+
 function openDecorManager(){
   const owned=S.decorOwned||[];
   if(!owned.length){ toast('Украшений пока нет. Их находят в сундуках!'); return; }
@@ -503,6 +583,7 @@ function openBossChallenge(worldId){
 
 // экран улучшения портала
 function openPortalUpgrade(){
+  hintOnce('portal','Каждый уровень портала открывает новые миры и глубины. В глубоких биомах — редкие яйца, легендарные реликвии и владыки!');
   const lvl=S.portalLevel||1;
   if(lvl>=PORTAL_MAX)return;
   const cost=portalCost(lvl);

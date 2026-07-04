@@ -45,6 +45,16 @@ function renderArenaPicker(){
       foes.appendChild(card);
     });
     wrap.appendChild(foes);
+    // испытание волн
+    const waveCard=document.createElement('div');
+    waveCard.className='wave-entry';
+    waveCard.innerHTML=`
+      <div class="wave-title">🌊 Испытание волн</div>
+      <div class="dmeta">Волны врагов всё сильнее — на одном запасе сил и маны. Между волнами лишь короткая передышка. Уйди вовремя, чтобы забрать всю добычу; падёшь — спасёшь половину.</div>
+      <div class="wave-record">Рекорд: <b>${S.waveBest||0}</b> волн</div>
+      <button class="btn" id="waveStartBtn">Начать испытание</button>`;
+    wrap.appendChild(waveCard);
+    $('#waveStartBtn').onclick=()=>startWaveRun(me);
   } else {
     wrap.innerHTML+='<p class="hint">Выбери чемпиона, чтобы вызвать противников.</p>';
   }
@@ -96,6 +106,7 @@ function startBattle(myDragon,foeSpec,reward,bossDef){
     pushLog(`<span class="gold">⚔️ ${bossDef.icon} <b>${bossDef.name}</b> восстаёт!</span> ${bossDef.lore}`);
   } else {
     pushLog(`<span class="gold">Бой начинается!</span> ${battle.me.sp.name} против дикого ${battle.foe.sp.name}.`);
+    hintOnce('battle','Мана 💧 копится каждый ход (защита даёт больше). Накопи её на заклинание и мощную ⭐ ульту!');
   }
 }
 
@@ -209,6 +220,7 @@ function doStrike(att,def,move,labelClass,accMult){
   const critChance = 0.06 + ((att.fx&&att.fx.critPct)||0)/100;
   const crit=(accMult>=2)|| Math.random()<critChance;
   if(crit && accMult<2)dmg=Math.round(dmg*1.6);
+  sfx(crit?'crit':'hit');
   def.hp-=dmg;
   let extra='';
   if(mult>1)extra=' <span class="gold">(стихия превосходит!)</span>';
@@ -302,34 +314,40 @@ function startTimingStrike(move){
         <div class="timing-marker" id="timingMarker"></div>
       </div>
       <div class="timing-btns">
-        <button class="btn" id="timingHit">БЕЙ!</button>
         <button class="btn ghost" id="timingSkip">Пропустить</button>
+        <button class="btn" id="timingHit">БЕЙ!</button>
       </div>
     </div>`;
   stage.appendChild(box);
   // позиции зон (в % ширины)
   const perfStart=46, perfEnd=54, goodStart=34, goodEnd=66;
-  let pos=0, dir=1, raf=null, speed=1.7;
+  // скорость по ВРЕМЕНИ (%/сек), а не по кадрам — иначе на 120Гц экранах бегунок летит вдвое быстрее
+  const SPEED=100;
+  let pos=0, dir=1, raf=null, last=performance.now(), doneFlag=false;
   const marker=box.querySelector('#timingMarker');
-  function tick(){
-    pos+=dir*speed;
+  function tick(now){
+    const dt=Math.min(0.05,(now-last)/1000); last=now;
+    pos+=dir*SPEED*dt;
     if(pos>=100){pos=100;dir=-1;} if(pos<=0){pos=0;dir=1;}
     marker.style.left=pos+'%';
     raf=requestAnimationFrame(tick);
   }
-  tick();
+  raf=requestAnimationFrame(t=>{last=t;tick(t);});
   function finish(accMult,label,color){
+    if(doneFlag) return; doneFlag=true;
     cancelAnimationFrame(raf);
     box.remove();
     if(label) floatText(label,color);
     resolvePlayerStrike(move, accMult);
   }
-  box.querySelector('#timingHit').onclick=()=>{
+  // pointerdown = мгновенный отклик на касание (click на мобильных запаздывает и глотается жестами)
+  box.querySelector('#timingHit').onpointerdown=(e)=>{
+    e.preventDefault();
     if(pos>=perfStart&&pos<=perfEnd) finish(2.0,'⭐ ИДЕАЛЬНО!','#ffd24a');
     else if(pos>=goodStart&&pos<=goodEnd) finish(1.4,'✯ Точно!','#7fb24a');
     else finish(0.8,'промах…','#c5544a');
   };
-  box.querySelector('#timingSkip').onclick=()=>finish(1.0,null,null);
+  box.querySelector('#timingSkip').onpointerdown=(e)=>{e.preventDefault();finish(1.0,null,null);};
 }
 
 /* ===== ДВОЙНАЯ МИНИ-ИГРА ДЛЯ УЛЬТЫ =====
@@ -356,35 +374,39 @@ function startUltMinigame(move){
         <div class="ult-badge" id="ultBadge2">2</div>
       </div>
       <div class="timing-btns">
-        <button class="btn" id="ultHit">ФОКУС!</button>
         <button class="btn ghost" id="ultSkip">Пропустить</button>
+        <button class="btn" id="ultHit">ФОКУС!</button>
       </div>
     </div>`;
   stage.appendChild(box);
   const perfStart=45, perfEnd=55, goodStart=32, goodEnd=68;
   let phase=1; // 1 → бьём первую зону, 2 → вторую
-  let pos=0, dir=1, raf=null, speed=2.0;
+  const SPEED=118; // %/сек (по времени, не по кадрам)
+  let pos=0, dir=1, raf=null, last=performance.now(), doneFlag=false;
   let hit1=null; // 'crit' | 'good' | null(промах)
   const m1=box.querySelector('#ultMarker1'), m2=box.querySelector('#ultMarker2');
-  function tick(){
-    pos+=dir*speed;
+  function tick(now){
+    const dt=Math.min(0.05,(now-last)/1000); last=now;
+    pos+=dir*SPEED*dt;
     if(pos>=100){pos=100;dir=-1;} if(pos<=0){pos=0;dir=1;}
     (phase===1?m1:m2).style.left=pos+'%';
     raf=requestAnimationFrame(tick);
   }
-  tick();
+  raf=requestAnimationFrame(t=>{last=t;tick(t);});
   function zoneResult(){
     if(pos>=perfStart&&pos<=perfEnd) return 'crit';
     if(pos>=goodStart&&pos<=goodEnd) return 'good';
     return null;
   }
   function finishUlt(accMult,label,color){
+    if(doneFlag) return; doneFlag=true;
     cancelAnimationFrame(raf);
     box.remove();
     if(label) floatText(label,color);
     resolvePlayerStrike(move, accMult);
   }
-  box.querySelector('#ultHit').onclick=()=>{
+  box.querySelector('#ultHit').onpointerdown=(e)=>{
+    e.preventDefault();
     if(phase===1){
       hit1=zoneResult();
       // отметим результат первой зоны
@@ -409,7 +431,7 @@ function startUltMinigame(move){
       else finishUlt(1.5,'✯ Ульта прошла!','#7fb24a');
     }
   };
-  box.querySelector('#ultSkip').onclick=()=>finishUlt(1.0,null,null);
+  box.querySelector('#ultSkip').onpointerdown=(e)=>{e.preventDefault();finishUlt(1.0,null,null);};
 }
 
 function foeTurn(){
@@ -486,6 +508,38 @@ function renderHpOnly(){
   upd(fighters[1],b.foe);
 }
 
+/* ===== АРЕНА ВОЛН =====
+   Бесконечное испытание: волны врагов всё сильнее на одном запасе сил.
+   Добыча копится в банке: уйди вовремя — заберёшь всё; падёшь — половину. */
+let waveRun=null;
+function waveFoeSpec(d,wave){
+  const lvl=Math.max(2,Math.round(d.level*(0.55+0.12*wave)));
+  const sp=weightedSpecies();
+  return {id:sp.id,level:lvl,morph:rollMorph()};
+}
+function startWaveRun(d){
+  waveRun={d, wave:1, bank:{gold:0,dust:0}, mana:2};
+  startWaveBattle();
+}
+function startWaveBattle(){
+  const run=waveRun; if(!run) return;
+  startBattle(run.d, waveFoeSpec(run.d,run.wave), 0);
+  battle.waveCtx=run;
+  battle.me.mana=run.mana;
+  renderBattle();
+  pushLog(`<span class="gold">🌊 Волна ${run.wave}!</span> Против тебя — дикий ${battle.foe.sp.name} ур.${battle.foe.level}.`);
+}
+function finishWaveRun(){
+  const run=waveRun; if(!run) return;
+  S.gold+=run.bank.gold; S.dust+=run.bank.dust;
+  sfx('win');
+  toast(`🌊 <b>Испытание волн:</b> пройдено волн — ${run.wave}! Добыча: +${run.bank.gold}🪙${run.bank.dust?' +'+run.bank.dust+'✦':''}${run.wave>=(S.waveBest||0)&&run.wave>0?' · <span style="color:var(--gold)">РЕКОРД!</span>':''}`);
+  waveRun=null; battle=null;
+  $('#battleStage').style.display='none';
+  $('#arenaSetup').style.display='block';
+  renderArenaPicker(); renderLedger(); persist(); renderAll();
+}
+
 function endBattle(win){
   const b=battle;b.over=true;
   const me=b.me.ref; // настоящий дракон
@@ -507,6 +561,7 @@ function endBattle(win){
     }
     pushLog(`<span class="gold">Победа!</span> +${gold}🪙 · +${xp} опыта.${eggMsg}${artMsg}${leveled?' <span class="crit">Новый уровень!</span>':''}`);
     floatText('ПОБЕДА',' #d9a441');
+    sfx('win');
     questEvent('win_arena');
     // === ПОБЕДА НАД ВЛАДЫКОЙ ===
     if(b.boss){
@@ -532,6 +587,7 @@ function endBattle(win){
   } else {
     pushLog(`<span class="dmg">Ох!</span> ${dragonName(b.me.ref)} устал и сдался. Покорми его и дай отдохнуть в Логове — и снова в бой!`);
     floatText('УВЫ…','#c5544a');
+    sfx('lose');
   }
   const end=$('#battleEnd');
   // после боя — показать полную историю сражения
@@ -541,6 +597,7 @@ function endBattle(win){
     latest.innerHTML=`<div class="bh-title">📜 Ход сражения</div>`+b.log.map(l=>`<p>${l}</p>`).join('');
   }
   if(b.fromFlight && flight){
+    flight.battleWin=win; // итог заберёт renderFlight() при возврате
     if(win){ flight.stats.beasts++; }
     end.innerHTML=`<button class="btn" id="backFlightBtn">↩ Вернуться в полёт</button>`;
     $('#backFlightBtn').onclick=()=>{
@@ -555,6 +612,34 @@ function endBattle(win){
     };
     renderLedger(); persist();
     return;
+  }
+  // === АРЕНА ВОЛН ===
+  if(b.waveCtx){
+    const run=b.waveCtx;
+    if(win){
+      const w=run.wave;
+      const g=Math.round(b.foe.level*(12+w*5));
+      const du=w>=3?(w-2)*3:0;
+      run.bank.gold+=g; run.bank.dust+=du;
+      if(w>(S.waveBest||0)) S.waveBest=w;
+      // передышка: подлечка и перенос маны на следующую волну
+      run.mana=Math.min(b.me.manaMax, b.me.mana+1);
+      const heal=Math.round(b.me.maxHp*0.12);
+      me.curHp=Math.min(statsOf(me).maxHp, me.curHp+heal);
+      pushLog(`<span class="gold">🌊 Волна ${w} пройдена!</span> В копилке: <b>${run.bank.gold}🪙${run.bank.dust?' + '+run.bank.dust+'✦':''}</b>. Передышка: +${heal} жизни, +1💧.`);
+      end.innerHTML=`<button class="btn" id="waveNextBtn">🌊 Волна ${w+1} →</button>
+        <button class="btn ghost" id="waveLeaveBtn">Уйти с добычей</button>`;
+      $('#waveNextBtn').onclick=()=>{run.wave++;battle=null;startWaveBattle();};
+      $('#waveLeaveBtn').onclick=finishWaveRun;
+      renderLedger(); persist();
+      return;
+    } else {
+      const kg=Math.round(run.bank.gold*0.5), kd=Math.round(run.bank.dust*0.5);
+      S.gold+=kg; S.dust+=kd;
+      pushLog(`🌊 Испытание оборвалось на волне ${run.wave}. Спасена половина добычи: <b>+${kg}🪙${kd?' +'+kd+'✦':''}</b>.`);
+      waveRun=null;
+      // дальше — стандартные кнопки конца боя
+    }
   }
   end.innerHTML=`<button class="btn" id="againBtn">К арене</button>
     <button class="btn ghost" id="lairBtn">В Логово</button>`;

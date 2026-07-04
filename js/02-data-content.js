@@ -27,14 +27,70 @@ const DECORATIONS=[
   {id:'lantern',  name:'Звёздный фонарь', icon:'🏮', rarity:1, desc:'Ловит и хранит звёздный свет.'},
   {id:'hoard',    name:'Груда сокровищ',  icon:'💰', rarity:3, desc:'Драконье золото горой.'},
   {id:'shrine',   name:'Древний алтарь',  icon:'⛩️', rarity:3, desc:'Святилище давно ушедших.'},
+  {id:'well',     name:'Колодец желаний', icon:'🪣', rarity:1, desc:'Брось монетку — загадай желание.'},
+  {id:'scarecrow',name:'Пугало-дракончик',icon:'🎭', rarity:1, desc:'Отпугивает ворон и скуку.'},
+  {id:'bell',     name:'Бронзовый колокол',icon:'🔔', rarity:2, desc:'Звонит к обеду и к приключениям.'},
+  {id:'totem',    name:'Тотем пяти стихий',icon:'🪬', rarity:2, desc:'Пять граней — пять миров.'},
+  {id:'pond',     name:'Пруд с карпами',  icon:'🐟', rarity:2, desc:'Карпы мечтают стать драконами.'},
+  {id:'garden',   name:'Грядка огнецвета',icon:'🌺', rarity:2, desc:'Цветы, тёплые на ощупь.'},
+  {id:'sundial',  name:'Солнечные часы',  icon:'🕰️', rarity:3, desc:'Показывают время всех миров разом.'},
+  {id:'gate_arch',name:'Арка странников', icon:'⛩',  rarity:3, desc:'Пройди под ней перед дальней дорогой.'},
   // трофеи владык миров (только за победу над боссами)
   {id:'trophy_fire',  name:'Пламенный трофей', icon:'🏆', rarity:4, desc:'Голова Владыки Пламени над воротами.', trophy:true},
   {id:'trophy_venom', name:'Трофей Топей',     icon:'🏆', rarity:4, desc:'Жвала Матери Топей на пьедестале.', trophy:true},
   {id:'trophy_frost', name:'Ледяной трофей',   icon:'🏆', rarity:4, desc:'Нерастающий рог Владыки Стужи.', trophy:true},
   {id:'trophy_storm', name:'Громовой трофей',  icon:'🏆', rarity:4, desc:'Осколок молнии Владыки Бурь.', trophy:true},
   {id:'trophy_shade', name:'Трофей Пустоты',   icon:'🏆', rarity:4, desc:'Беззвёздная чешуя Владыки Пустоты.', trophy:true},
+  // премиум-украшения (покупаются на Рынке за золото)
+  {id:'gold_statue', name:'Золотая статуя дракона', icon:'✨', rarity:4, desc:'Сияет на всё поселение.', premium:true, price:8000},
+  {id:'beacon',      name:'Радужный маяк',          icon:'🌈', rarity:4, desc:'Виден из всех пяти миров.', premium:true, price:12000},
+  {id:'gem_garden',  name:'Сад самоцветов',         icon:'💠', rarity:4, desc:'Цветы из живых кристаллов.', premium:true, price:18000},
+  {id:'sky_swing',   name:'Небесные качели',        icon:'🎠', rarity:5, desc:'Качели для маленьких драконят.', premium:true, price:25000},
+  {id:'throne',      name:'Тронный камень',         icon:'👑', rarity:5, desc:'Трон истинного драконовода.', premium:true, price:40000},
 ];
 const decorById=id=>DECORATIONS.find(d=>d.id===id);
+
+/* ===== КОЛЛЕКЦИОННЫЕ ВЕХИ =====
+   Большие цели коллекционера. Проверяются на лету, награда забирается один раз. */
+const MILESTONES=[
+  {id:'all_species',  icon:'🐉', name:'Собиратель видов',    desc:'Открой всех 15 видов драконов',
+   check:()=>SPECIES.every(sp=>S.discovered[sp.id]), progress:()=>[SPECIES.filter(sp=>S.discovered[sp.id]).length,SPECIES.length], reward:{gold:2000,dust:100}},
+  {id:'lore_ember',   icon:'📜', name:'Летописец Огня',      desc:'Собери все свитки Огненного мира',
+   check:()=>LORE_SCROLLS.filter(s=>s.world==='emberreach').every(hasScroll), progress:()=>[LORE_SCROLLS.filter(s=>s.world==='emberreach'&&hasScroll(s)).length,LORE_SCROLLS.filter(s=>s.world==='emberreach').length], reward:{gold:800,dust:25}},
+  {id:'lore_mire',    icon:'📜', name:'Летописец Топей',     desc:'Собери все свитки Ядовитого мира',
+   check:()=>LORE_SCROLLS.filter(s=>s.world==='mirelot').every(hasScroll), progress:()=>[LORE_SCROLLS.filter(s=>s.world==='mirelot'&&hasScroll(s)).length,LORE_SCROLLS.filter(s=>s.world==='mirelot').length], reward:{gold:800,dust:25}},
+  {id:'lore_glacior', icon:'📜', name:'Летописец Стужи',     desc:'Собери все свитки Ледяного мира',
+   check:()=>LORE_SCROLLS.filter(s=>s.world==='glacior').every(hasScroll), progress:()=>[LORE_SCROLLS.filter(s=>s.world==='glacior'&&hasScroll(s)).length,LORE_SCROLLS.filter(s=>s.world==='glacior').length], reward:{gold:800,dust:25}},
+  {id:'lore_storm',   icon:'📜', name:'Летописец Бурь',      desc:'Собери все свитки Штормового мира',
+   check:()=>LORE_SCROLLS.filter(s=>s.world==='stormpeak').every(hasScroll), progress:()=>[LORE_SCROLLS.filter(s=>s.world==='stormpeak'&&hasScroll(s)).length,LORE_SCROLLS.filter(s=>s.world==='stormpeak').length], reward:{gold:800,dust:25}},
+  {id:'lore_void',    icon:'📜', name:'Летописец Пустоты',   desc:'Собери все свитки Теневого мира',
+   check:()=>LORE_SCROLLS.filter(s=>s.world==='voidedge').every(hasScroll), progress:()=>[LORE_SCROLLS.filter(s=>s.world==='voidedge'&&hasScroll(s)).length,LORE_SCROLLS.filter(s=>s.world==='voidedge').length], reward:{gold:800,dust:25}},
+  {id:'all_bosses',   icon:'☠️', name:'Гроза владык',        desc:'Победи всех 5 владык миров',
+   check:()=>WORLD_BOSSES.every(b=>bossDefeated(b.id)), progress:()=>[WORLD_BOSSES.filter(b=>bossDefeated(b.id)).length,WORLD_BOSSES.length], reward:{gold:5000,dust:150}},
+  {id:'first_asc',    icon:'⭐', name:'Первое Восхождение',  desc:'Проведи дракона через Восхождение',
+   check:()=>S.dragons.some(d=>(d.asc||0)>0), progress:()=>[S.dragons.some(d=>(d.asc||0)>0)?1:0,1], reward:{gold:1500,dust:50}},
+  {id:'perfect_gene', icon:'🧬', name:'Идеальная чешуя',     desc:'Выведи дракона с идеальным геномом',
+   check:()=>S.dragons.some(d=>isPerfect(d.genes)), progress:()=>[S.dragons.some(d=>isPerfect(d.genes))?1:0,1], reward:{gold:1500,dust:60}},
+  {id:'forge_max',    icon:'⚒️', name:'Легенда наковальни',  desc:'Выкуй артефакт до предела (+8)',
+   check:()=>S.artifacts.some(a=>a.level>=FORGE_MAX), progress:()=>[S.artifacts.some(a=>a.level>=FORGE_MAX)?1:0,1], reward:{gold:1200,dust:40}},
+  {id:'deco_six',     icon:'🎨', name:'Уютное гнездо',       desc:'Заполни все 6 мест украшениями',
+   check:()=>Object.keys(S.decorations||{}).length>=6, progress:()=>[Object.keys(S.decorations||{}).length,6], reward:{gold:1000,dust:30}},
+  {id:'five_100',     icon:'🏔️', name:'Пять вершин',         desc:'Вырасти 5 драконов до 100 уровня',
+   check:()=>S.dragons.filter(d=>d.level>=100).length>=5, progress:()=>[Math.min(5,S.dragons.filter(d=>d.level>=100).length),5], reward:{gold:4000,dust:120}},
+];
+function milestoneClaimed(id){ if(!S.milestonesClaimed)S.milestonesClaimed={}; return !!S.milestonesClaimed[id]; }
+function claimMilestone(id){
+  const m=MILESTONES.find(x=>x.id===id);
+  if(!m || milestoneClaimed(id) || !m.check()) return;
+  S.milestonesClaimed[id]=true;
+  S.gold+=m.reward.gold; S.dust+=m.reward.dust;
+  sfx('win'); persist(); renderLedger();
+  toast(`${m.icon} <b>Веха «${m.name}» взята!</b> +${m.reward.gold}🪙 +${m.reward.dust}✦`);
+}
+
+/* ===== РЫНОК (золотые стоки) ===== */
+const MARKET_KEY_PRICE={1:400, 2:1200, 3:3000};
+const MARKET_DUST={gold:150, dust:5, dailyCap:30}; // обмен 150🪙→5✦, максимум 30✦ в день
 /* ======================= СВИТКИ ЛЕГЕНД =======================
    Лор по мирам и биомам. Собираются в странствиях и из сундуков, хранятся в Кодексе.
    hint — подсказка к боссу/артефакту/механике (мягкая, необязательная). */
@@ -73,6 +129,66 @@ const LORE_SCROLLS=[
   {world:'voidedge', biome:1, n:3, title:'Цена тьмы', text:'Тьма даёт силу, но берёт плату. Драконы теней сильнее всех — и одиноки более всех.'},
   {world:'voidedge', biome:3, n:1, title:'Беззвёздное ядро', text:'В сердце пустоты покоится Жнец Пустоты — коса из антисвета. Она пожирает жизнь и бьёт без промаха, но носитель беззащитен.', hint:'Жнец Пустоты (ядро тени): вампиризм и крит ценой защиты.'},
   {world:'voidedge', biome:3, n:2, title:'Владыка пустоты', text:'Древнейший из всех, Владыка Пустоты питается тьмой. Лишь свет чистого пламени способен обжечь того, кто соткан из мрака.', hint:'Босс тени уязвим к огненной стихии.'},
+
+  /* ===== ДОПОЛНЕНИЕ: ОГНЕННЫЙ МИР ===== */
+  {world:'emberreach', biome:1, n:4, title:'Песня углей', text:'Ночами пустоши поют: это остывающие угли трещат в лад. Драконята-огоньки засыпают только под эту песню.'},
+  {world:'emberreach', biome:1, n:5, title:'Стихийный круг', text:'Огонь силён против яда, но вода бури гасит пламя. Мудрый драконовод помнит круг стихий и выбирает бойца по врагу.', hint:'Стихия-противовес даёт ×1.4 урона — смотри значок ▲ на приёмах.'},
+  {world:'emberreach', biome:2, n:1, title:'Кузни лавовых рек', text:'Во втором поясе Карн-Вулака лава течёт медленно, как мёд. Древние ковали здесь оружие, окуная заготовки прямо в огненные реки.'},
+  {world:'emberreach', biome:2, n:2, title:'Пасть Инферно', text:'Оружие берсерков лавовых рек. Кто держит Пасть Инферно, бьёт без промаха в самое сердце — но забывает о собственной защите.', hint:'Пасть Инферно (огонь): высокий крит ценой защиты.'},
+  {world:'emberreach', biome:2, n:3, title:'Саламандровы тропы', text:'По берегам лавовых рек бегают огненные саламандры. Они показывают путникам броды — если угостить их углём.'},
+  {world:'emberreach', biome:2, n:4, title:'Закалка характера', text:'«Каким вылупился — таким и вырастет», — говорят о характерах драконов. Задиру не переделать в невозмутимого, но любить можно всякого.', hint:'Характер дракона постоянен: смотри, какие статы он усиливает.'},
+  {world:'emberreach', biome:2, n:5, title:'Пепельные врата', text:'Между вторым поясом и Сердцем Вулкана стоят врата из спёкшегося пепла. Открываются лишь тем, чей портал напитан силой.'},
+  {world:'emberreach', biome:3, n:3, title:'Венец Пепла', text:'Корона древних огненных королей. Жар её заживляет раны носителя каждый вздох — но остужает ярость его ударов.', hint:'Венец Пепла (огонь): лечение каждый ход ценой атаки.'},
+  {world:'emberreach', biome:3, n:4, title:'Искра рода', text:'В каждом роду драконов дремлет искра. Зажжённая пылью селекционера, она горит вечно, умножая силу всех чешуек.', hint:'Искра рода: +8% ко всем статам навсегда, зажигается за ✦ в Логове.'},
+  {world:'emberreach', biome:3, n:5, title:'Сердце не остывает', text:'Говорят, если приложить ухо к скале в Сердце Вулкана, услышишь стук. Мир-вулкан жив, и он слушает тех, кто ходит по нему.'},
+
+  /* ===== ДОПОЛНЕНИЕ: ЯДОВИТЫЙ МИР ===== */
+  {world:'mirelot', biome:1, n:4, title:'Светляки трясины', text:'Болотные огоньки — не души утопших, как пугают малышей, а светляки-великаны. Они любят драконов и вьются за ними хороводом.'},
+  {world:'mirelot', biome:1, n:5, title:'Тропа терпеливых', text:'В топях спешка тонет первой. Кто идёт медленно и смотрит под ноги, находит то, что спрятала трясина.'},
+  {world:'mirelot', biome:2, n:1, title:'Грибные чертоги', text:'Во втором поясе грибы вырастают выше деревьев. Под их шляпками драконы пережидают ядовитые дожди.'},
+  {world:'mirelot', biome:2, n:2, title:'Клык Мора', text:'Отравленный клык болотного змея. Каждая рана врага возвращает носителю жизнь — но сам он становится хрупок, как сухой лист.', hint:'Клык Мора (яд): сильный вампиризм ценой запаса жизни.'},
+  {world:'mirelot', biome:2, n:3, title:'Обмен у трясины', text:'Болотные торговцы скупают золото охотно: в топях оно не ржавеет. За звонкую монету дают и ключи, и мерцающую пыль.', hint:'На Рынке в поселении можно купить ключи и обменять золото на ✦.'},
+  {world:'mirelot', biome:2, n:4, title:'Мутная вода', text:'В мутной воде отражение честнее зеркала: оно показывает не чешую, а нрав. Загляни — узнаешь своего дракона лучше.'},
+  {world:'mirelot', biome:2, n:5, title:'Корни-письмена', text:'Корни древних мангров сплетаются в письмена. Учёные драконоводы читают их веками — и всё ещё в начале первой строки.'},
+  {world:'mirelot', biome:3, n:3, title:'Оплот Топей', text:'Панцирь исполинской черепахи, что спит под Ульем Спор. Носитель почти неуязвим и раны его затягиваются — но шаг его тяжёл.', hint:'Оплот Топей (яд): броня и лечение ценой прыти.'},
+  {world:'mirelot', biome:3, n:4, title:'Перекройка жил', text:'Мастера селекции умеют перекраивать силу дракона: убавить в одном, прибавить в другом. Изредка жила растёт сама — это великая удача.', hint:'Мутация перераспределяет гены; изредка растит общий бюджет.'},
+  {world:'mirelot', biome:3, n:5, title:'Сон Матери', text:'Матерь Топей спит на дне Улья тысячу лет из тысячи и одного года. Горе миру в год, когда она просыпается голодной.'},
+
+  /* ===== ДОПОЛНЕНИЕ: ЛЕДЯНОЙ МИР ===== */
+  {world:'glacior', biome:1, n:4, title:'Снежные фонари', text:'Ледяные драконы дышат на снежинки, и те застывают светящимися шарами. Так зажигают фонари в Хладном Безмолвии.'},
+  {world:'glacior', biome:1, n:5, title:'Узоры на льду', text:'Каждый мороз рисует на льду свой узор. Старые драконы читают в них погоду на сто лет вперёд.'},
+  {world:'glacior', biome:2, n:1, title:'Хрустальные гроты', text:'Во втором поясе льды становятся прозрачными, как стекло. В гротах здесь звенит эхо — само по себе, без голоса.'},
+  {world:'glacior', biome:2, n:2, title:'Грань Ледника', text:'Клинок, отколотый от сердца древнего ледника. Рубит наверняка, точно в цель — но холод его сковывает ноги носителя.', hint:'Грань Ледника (лёд): крит ценой прыти.'},
+  {world:'glacior', biome:2, n:3, title:'Ледяная вежливость', text:'В гротах не кричат: от громкого слова падают сосульки-копья. Ледяные драконы оттого немногословны и точны.'},
+  {world:'glacior', biome:2, n:4, title:'Замок с секретом', text:'Ледяные сундуки хранят замки-загадки. Тот, кто попадёт отмычкой в самое сердце механизма, получает больше, чем ждал.', hint:'Идеальный подбор замка (золотой центр) даёт лут ×1.5.'},
+  {world:'glacior', biome:2, n:5, title:'Спящие великаны', text:'Горы второго пояса — не горы вовсе, а свернувшиеся ледяные исполины. Не буди их громкой ковкой.'},
+  {world:'glacior', biome:3, n:3, title:'Сердце Инея', text:'Льдинка в форме сердца, что бьётся. Стужа её затягивает раны носителя каждый вздох — но остужает и его удары.', hint:'Сердце Инея (лёд): лечение каждый ход ценой атаки.'},
+  {world:'glacior', biome:3, n:4, title:'Вершина и новый путь', text:'Дракон, достигший вершины Шпиля, может начать путь заново — и каждый новый путь делает его сильнее прежнего.', hint:'Восхождение: дракон 100 ур. + ⭐ звезда владыки = вечные +6% к статам.'},
+  {world:'glacior', biome:3, n:5, title:'Бездна помнит', text:'Замёрзшая Бездна помнит всех, кто спускался. Имена их проступают инеем на стенах — и твоё однажды проступит.'},
+
+  /* ===== ДОПОЛНЕНИЕ: ШТОРМОВОЙ МИР ===== */
+  {world:'stormpeak', biome:1, n:4, title:'Гнёзда на ветру', text:'Буревестники вьют гнёзда прямо в потоках ветра. Яйца их парят, не падая, — пока не придёт время вылупиться.'},
+  {world:'stormpeak', biome:1, n:5, title:'Считалка грома', text:'«Раз — сверкнуло, два — гремит, три — дракончик в небо мчит!» Так штормовые малыши учатся не бояться грозы.'},
+  {world:'stormpeak', biome:2, n:1, title:'Лестница молний', text:'Во втором поясе молнии бьют по одним и тем же местам — будто ступени. Смелые драконы взлетают по ним, как по лестнице.'},
+  {world:'stormpeak', biome:2, n:2, title:'Око Бури', text:'В центре всякой бури есть тихое око. Заключённое в талисман, оно дарит носителю бездонную ману — но истончает его тело.', hint:'Око Бури (буря): большой запас и приток маны ценой жизни.'},
+  {world:'stormpeak', biome:2, n:3, title:'Двойной раскат', text:'Настоящая ульта — как двойной раскат грома: попади в ритм дважды, и удар сокрушит любого.', hint:'В мини-игре ульты два точных попадания дают двойной крит ×2.25.'},
+  {world:'stormpeak', biome:2, n:4, title:'Ветряные письма', text:'Штормовые драконы пишут письма прямо на ветре. Дойдёт ли письмо — зависит от почерка и погоды.'},
+  {world:'stormpeak', biome:2, n:5, title:'Тихая примета', text:'Если буря вдруг стихла — не радуйся, а считай до трёх. На счёт «три» она вернётся вдвое злее.'},
+  {world:'stormpeak', biome:3, n:3, title:'Доспех Вихря', text:'Броня, сотканная из сгустков ветра. Носитель стремителен и меток — но сам почти невесом и хрупок.', hint:'Доспех Вихря (буря): прыть и крит ценой жизни.'},
+  {world:'stormpeak', biome:3, n:4, title:'Мастерская мастеров', text:'Лучшие кузни куют даже мифическую чешую. Но растить кузню надо загодя: великая находка бесполезна без великого горна.', hint:'Кузня ур.5 нужна, чтобы ковать мифические артефакты ★★★★★.'},
+  {world:'stormpeak', biome:3, n:5, title:'Трон без хозяина', text:'Громовой Трон пустует между бурями. Говорят, он ждёт дракона, который переживёт тысячу молний. Пока не дождался.'},
+
+  /* ===== ДОПОЛНЕНИЕ: ТЕНЕВОЙ МИР ===== */
+  {world:'voidedge', biome:1, n:4, title:'Мягкие шаги', text:'В Пределе не слышно шагов: тьма подкладывает под лапы бархат. Оттого теневые драконы ходят бесшумно даже по гравию.'},
+  {world:'voidedge', biome:1, n:5, title:'Глаза привыкают', text:'Первый час во тьме страшно. Второй — любопытно. К третьему часу ты видишь то, чего при свете не бывает.'},
+  {world:'voidedge', biome:2, n:1, title:'Сумеречный сад', text:'Во втором поясе растут цветы, что распускаются только в темноте. Сорванные, они светятся неделю — а потом просятся обратно.'},
+  {world:'voidedge', biome:2, n:2, title:'Беззвёздная Сфера', text:'Шар чистой пустоты. Носитель черпает из него бездонную ману и бьёт без промаха — но пустота съедает его защиту.', hint:'Беззвёздная Сфера (тень): мана и крит ценой всей защиты.'},
+  {world:'voidedge', biome:2, n:3, title:'Эхо наоборот', text:'В сумеречном саду эхо отвечает раньше, чем крикнешь. Привыкнуть можно, подружиться — сложнее.'},
+  {world:'voidedge', biome:2, n:4, title:'Идеальная чешуя', text:'Раз в сто поколений рождается дракон с идеальным геномом. Селекционеры всей жизни кладут ради одной такой кладки.', hint:'Идеальный геном 5/5/5/5 — вершина селекции в Гнездилище.'},
+  {world:'voidedge', biome:2, n:5, title:'Договор с тенью', text:'Тень не служит — тень сотрудничает. Она отдаёт силу ровно в ту меру, в какую ты готов отдать что-то ей.'},
+  {world:'voidedge', biome:3, n:3, title:'Мантия Мрака', text:'Плащ из сгущённой ночи. Латает раны носителя и пьёт жизнь врага — но глушит его собственные удары, как подушка.', hint:'Мантия Мрака (тень): лечение и вампиризм ценой атаки.'},
+  {world:'voidedge', biome:3, n:4, title:'Последняя дверь', text:'В Беззвёздном Ядре есть дверь, которую никто не открывал. На ней нет замка — только надпись: «Ещё рано».'},
+  {world:'voidedge', biome:3, n:5, title:'Свет внутри', text:'Дракон, прошедший все пять миров, несёт в себе искры каждого. Тьма расступается перед тем, кто сам стал светом.'},
 ];
 function scrollId(s){ return s.world+'_b'+s.biome+'_'+s.n; }
 function scrollsFound(){ if(!Array.isArray(S.scrolls))S.scrolls=[]; return S.scrolls; }
@@ -111,7 +227,7 @@ function chestCount(){ return chestsArr().length; }
 
 // выбор украшения по редкости (глубже сундук — выше шанс редких)
 function rollDecoration(tier){
-  const pool=DECORATIONS.filter(d=>!d.trophy); // трофеи — только за владык
+  const pool=DECORATIONS.filter(d=>!d.trophy && !d.premium); // трофеи — за владык, премиум — на Рынке
   const bias=[0,0.4,1.0,1.8][tier]||0.4;
   const adj=pool.map(d=>({d, w:Math.pow(bias, d.rarity-1)*100 * (tier>=3?d.rarity:1)}));
   const total=adj.reduce((a,b)=>a+b.w,0);
@@ -211,21 +327,23 @@ function startLockpick(tier, done){
       </div>
       <div class="lp-pins" id="lpPins">${Array.from({length:zones},(_,i)=>`<span class="lp-pin" id="lpPin${i}">🔒</span>`).join('')}</div>
       <div class="timing-btns">
-        <button class="btn" id="lpHit">Подобрать!</button>
         <button class="btn ghost" id="lpSkip">Взломать грубо</button>
+        <button class="btn" id="lpHit">Подобрать!</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
   // ширина/скорость зависят от уровня: глубже — уже и быстрее
   const goodW=[0,36,28,22][tier], perfW=[0,10,8,6][tier];
   const goodStart=50-goodW/2, goodEnd=50+goodW/2, perfStart=50-perfW/2, perfEnd=50+perfW/2;
-  const speed=[0,1.6,2.1,2.6][tier];
-  let pos=0,dir=1,raf=null,zone=0,perfectAll=true,anyHit=true;
+  const SPEED=[0,96,126,156][tier]; // %/сек — по времени, не по кадрам
+  let pos=0,dir=1,raf=null,zone=0,perfectAll=true,anyHit=true,last=performance.now();
   const marker=overlay.querySelector('#lpMarker');
-  function tick(){ pos+=dir*speed; if(pos>=100){pos=100;dir=-1;} if(pos<=0){pos=0;dir=1;} marker.style.left=pos+'%'; raf=requestAnimationFrame(tick); }
-  tick();
+  function tick(now){ const dt=Math.min(0.05,(now-last)/1000); last=now;
+    pos+=dir*SPEED*dt; if(pos>=100){pos=100;dir=-1;} if(pos<=0){pos=0;dir=1;} marker.style.left=pos+'%'; raf=requestAnimationFrame(tick); }
+  raf=requestAnimationFrame(t2=>{last=t2;tick(t2);});
   function cleanup(){ cancelAnimationFrame(raf); overlay.remove(); }
-  overlay.querySelector('#lpHit').onclick=()=>{
+  overlay.querySelector('#lpHit').onpointerdown=(e)=>{
+    e.preventDefault();
     const pin=overlay.querySelector('#lpPin'+zone);
     if(pos>=perfStart&&pos<=perfEnd){ if(pin){pin.textContent='🔓';pin.classList.add('perfect');} }
     else if(pos>=goodStart&&pos<=goodEnd){ if(pin){pin.textContent='🔓';pin.classList.add('ok');} perfectAll=false; }
@@ -236,7 +354,7 @@ function startLockpick(tier, done){
       done(perfectAll?'perfect':(anyHit?'ok':'jam'));
     } else { pos=0; dir=1; }
   };
-  overlay.querySelector('#lpSkip').onclick=()=>{ cleanup(); done('jam'); };
+  overlay.querySelector('#lpSkip').onpointerdown=(e)=>{ e.preventDefault(); cleanup(); done('jam'); };
 }
 
 // показать результат открытия сундука
@@ -253,6 +371,7 @@ function showChestResult(tier, loot, result){
     if(it.type==='egg') items+=`<div class="chest-item">🥚 яйцо-ядро (${ELEMENTS[it.el].name})</div>`;
     if(it.type==='scroll') items+=`<div class="chest-item">📜 свиток «${it.scr.title}»</div>`;
   });
+  sfx('chest');
   toast(`<b>${ct.icon} ${ct.name} открыт!</b> ${resultLabel}<br>+${loot.gold}🪙 +${loot.dust}✦${items?'<br>'+items:''}`);
   // обновить открытую сокровищницу или хаб
   if(S._treasuryOpen) renderTreasury();
@@ -260,7 +379,7 @@ function showChestResult(tier, loot, result){
 }
 
 /* ===== СОКРОВИЩНИЦА (отдельный экран для сундуков) ===== */
-function openTreasury(){ S._treasuryOpen=true; renderTreasury(); }
+function openTreasury(){ S._treasuryOpen=true; hintOnce('treasury','Ключ запускает подбор замка — попади в золотой центр для бонусного лута! Кузня вскрывает наверняка, но за ресурсы.'); renderTreasury(); }
 function closeTreasury(){ S._treasuryOpen=false; renderHub(); }
 function renderTreasury(){
   const wrap=$('#hubWrap'); if(!wrap) return;
@@ -377,6 +496,16 @@ const ARTIFACTS = [
    base:{atk:6,spd:1}, per:{atk:3,spd:1}, lore:'Меч, выкованный в жерле спящего вулкана.'},
   {id:'worldheart', name:'Сердце Мироздания', icon:'💠', slot:'charm', rarity:5, el:'venom',
    base:{hp:14,atk:3,def:3,spd:2}, per:{hp:8,atk:2,def:2,spd:1}, lore:'Осколок первотворения. Дарует силу всем чешуйкам разом.'},
+  {id:'galewing',   name:'Перо Вихрекрыла',  icon:'🪶', slot:'charm', rarity:2, el:'storm',
+   base:{spd:5}, per:{spd:3}, lore:'Перо птицы, обгонявшей собственный крик.'},
+  {id:'ironhide',   name:'Шкура Железноспина',icon:'🪨', slot:'armor', rarity:2, el:'fire',
+   base:{def:4,hp:4}, per:{def:2,hp:3}, lore:'Обрезок шкуры дракона, что спал в кузнечном горне.'},
+  {id:'fangblade',  name:'Зуб-Кинжал',        icon:'🔪', slot:'weapon', rarity:2, el:'shade',
+   base:{atk:4,spd:1}, per:{atk:2,spd:1}, lore:'Молочный зуб теневого дракона. Малыш вырос — зуб остался.'},
+  {id:'tidecharm',  name:'Оберег Приливов',   icon:'🌊', slot:'charm', rarity:3, el:'frost',
+   base:{hp:10,def:2}, per:{hp:6,def:2}, lore:'Ракушка, в которой шумит море всех пяти миров.'},
+  {id:'runeblade',  name:'Рунный Резак',      icon:'⚔️', slot:'weapon', rarity:3, el:'storm',
+   base:{atk:5,spd:2}, per:{atk:2,spd:2}, lore:'По лезвию бегут руны — быстрее, чем успеваешь прочесть.'},
 
   /* ===== ОГНЕННЫЙ МИР (биом III: Сердце Вулкана) ===== */
   {id:'infernomaw', name:'Пасть Инферно', icon:'🌋', slot:'weapon', rarity:4, el:'fire', world:'emberreach',

@@ -371,6 +371,7 @@ function hatchEggAt(idx){
     const m=morphById(d.morph);
     floatText('🎉',ELEMENTS[sp.el].color);
     const morphTxt = m.id==='common' ? '' : ` <span style="color:${m.swatch}">· окрас «${m.name}»${m.shiny?' ✨':''}</span>`;
+    sfx('hatch');
     toast(`Вылупился <b>${sp.name}</b>! ${RARITY_STAR(sp.rarity)}${morphTxt} · характер «${natureById(d.nature).name}» ${wasNew?'<span style="color:var(--gold)">· новый вид!</span>':''}`);
     questEvent('hatch');
     // курсор карусели остаётся на месте (следующее яйцо из остатка)

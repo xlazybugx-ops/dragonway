@@ -126,6 +126,7 @@ function artChip(inst,{selectable,onclick,showWearer}={}){
 }
 
 function renderForge(){
+  hintOnce('forge','Ковка усиливает артефакт за золото. Ненужные реликвии распыляй в ✦ пыль — она нужна для мутаций и селекции!');
   const body=$('#forgeBody');
   const noArt=!S.artifacts.length;
   // выбранный по умолчанию — первый (если есть артефакты)

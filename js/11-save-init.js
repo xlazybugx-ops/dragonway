@@ -52,6 +52,10 @@ function migrateDragons(){
   if(!Array.isArray(S.scrolls)) S.scrolls=[];
   if(!S.bossesDefeated||typeof S.bossesDefeated!=='object') S.bossesDefeated={};
   if(typeof S.ascStars!=='number') S.ascStars=0;
+  if(typeof S.soundOn!=='boolean') S.soundOn=true;
+  if(!S.hintsSeen||typeof S.hintsSeen!=='object') S.hintsSeen={};
+  if(!S.milestonesClaimed||typeof S.milestonesClaimed!=='object') S.milestonesClaimed={};
+  if(typeof S.waveBest!=='number') S.waveBest=0;
   let migrated=0;
   for(const d of S.dragons){
     // характер: назначить, если нет
