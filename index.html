@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Драконис · Кодекс Чешуи</title>
+<link rel="stylesheet" href="css/style.css?v=11">
+</head>
+<body>
+<div id="startScreen" class="start-screen" style="display:none"></div>
+<div id="app">
+  <div class="topbar" id="topbar">
+    <span class="topbar-place">🏰 <b id="tbPlace">Драконьи Земли</b></span>
+    <span class="topbar-res">
+      <span class="tb-item">🪙<b id="gold">0</b></span>
+      <span class="tb-item">✦<b id="dust">0</b></span>
+      <span class="tb-item">🥚<b id="eggs">0</b></span>
+      <span class="tb-item">🐉<b id="count">0</b></span>
+    </span>
+  </div>
+
+  <!-- HUB (главный экран) -->
+  <section class="view on" id="hub">
+    <div class="hub-wrap" id="hubWrap"></div>
+  </section>
+
+  <!-- LAIR -->
+  <section class="view" id="lair">
+    <div class="panel panel--daily">
+      <h2>Подарок и весёлые дела</h2>
+      <p class="lede">Каждый день тебя ждёт подарок и несколько забавных дел. Не успел сегодня — ничего страшного, они подождут!</p>
+      <div id="dailyPanel"></div>
+    </div>
+    <div class="panel">
+      <h2>Логово</h2>
+      <p class="lede">Твои крылатые подопечные. Нажми, чтобы открыть свиток дракона.</p>
+      <div class="lair-roster" id="lairRoster"></div>
+    </div>
+    <div class="panel" id="detailPanel" style="display:none"></div>
+  </section>
+
+  <!-- HATCH -->
+  <section class="view" id="hatch">
+    <div class="panel">
+      <h2>Гнездо</h2>
+      <p class="lede">Яйца, добытые в странствиях, ждут своего часа. Стихия яйца определяет, кто вылупится — а глубина биома дарит редкие виды.</p>
+      <div id="hatchWrap"></div>
+    </div>
+  </section>
+
+  <!-- EXPLORE -->
+  <section class="view" id="explore">
+    <div class="panel">
+      <h2>Странствие</h2>
+      <p class="lede">Выбери землю и дракона — и отправляйся в полёт! Дракон будет парить над биомом, а ты находи и исследуй светящиеся точки: сокровища, яйца, реликвии и забавные встречи.</p>
+      <div class="map" id="map"></div>
+    </div>
+  </section>
+
+  <!-- Полноэкранный режим полёта -->
+  <div id="flightFs" class="flight-fs" style="display:none"></div>
+
+  <!-- ARENA -->
+  <section class="view" id="arena">
+    <div class="panel" id="arenaSetup">
+      <h2>Дружеский турнир</h2>
+      <p class="lede">Выбери своего дракона и соперника по силам. Подсказка: огонь сильнее льда, лёд сильнее бури, буря сильнее яда, яд сильнее тени, а тень сильнее огня! Никто по-настоящему не пострадает — это весёлое состязание.</p>
+      <label class="arcade-toggle"><input type="checkbox" id="arcadeChk" checked> ⚡ Мини-игра «Удар по таймингу» (можно выключить)</label>
+      <div id="arenaPicker"></div>
+    </div>
+    <div id="battleStage" style="display:none"></div>
+  </section>
+
+  <!-- ROOST / BREEDING -->
+  <section class="view" id="roost">
+    <div class="panel">
+      <h2>Гнездилище Рода</h2>
+      <p class="lede">Скрещивай драконов одного вида, чтобы потомок унаследовал лучшие гены родителей. Поколение за поколением выводи идеального дракона — все гены 6/6 и пылающая искра рода.</p>
+      <div id="roostBody"></div>
+    </div>
+  </section>
+
+  <!-- FORGE -->
+  <section class="view" id="forge">
+    <div class="panel">
+      <h2>Кузница Драконьего Огня</h2>
+      <p class="lede">Здесь древние реликвии раскрывают свою мощь. Куй их в пламени за золото — и каждый удар молота прибавляет силы.</p>
+      <div id="forgeBody"></div>
+    </div>
+  </section>
+
+  <!-- SPIRE -->
+  <section class="view" id="spire">
+    <div class="panel">
+      <h2>Шпиль Мироздания 🗼</h2>
+      <p class="lede">Древняя башня магии, где драконы растут в силе. Поднимаясь по уровням, твой дракон открывает заклинания, перки и грозные ультимативные способности. У каждого вида — свой неповторимый путь!</p>
+      <div id="spireBody"></div>
+    </div>
+  </section>
+
+  <!-- CODEX -->
+  <section class="view" id="codex">
+    <div class="panel">
+      <h2>Кодекс</h2>
+      <div class="codex-tabs">
+        <button class="codex-tab on" data-ctab="species">🐉 Виды</button>
+        <button class="codex-tab" data-ctab="lore">📜 Легенды</button>
+        <button class="codex-tab" data-ctab="miles">🏅 Вехи</button>
+      </div>
+      <div id="codexSpecies">
+        <p class="lede">Все драконы мира. Открой каждого, поймав хотя бы одного.</p>
+        <div class="roster" id="codexGrid"></div>
+      </div>
+      <div id="codexLore" style="display:none"></div>
+      <div id="codexMiles" style="display:none"></div>
+    </div>
+  </section>
+
+  <div class="codex-foot">«Кто приручит чешую — приручит и пламя.» — Старший драконовод Велла</div>
+</div>
+
+<div class="float" id="float"></div>
+<div id="toast"></div>
+
+<script src="js/01-data-core.js?v=11"></script>
+<script src="js/02-data-content.js?v=11"></script>
+<script src="js/03-state.js?v=11"></script>
+<script src="js/04-systems.js?v=11"></script>
+<script src="js/05-ui-base.js?v=11"></script>
+<script src="js/06-world.js?v=11"></script>
+<script src="js/07-flight.js?v=11"></script>
+<script src="js/08-battle.js?v=11"></script>
+<script src="js/09-forge-breed.js?v=11"></script>
+<script src="js/10-spire-codex.js?v=11"></script>
+<script src="js/11-save-init.js?v=11"></script>
+</body>
+</html>
