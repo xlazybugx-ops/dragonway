@@ -88,7 +88,8 @@ function migrateDragons(){
 /* ======================= IDLE-ДОХОД ======================= */
 // доход в минуту: сумма уровней всех драконов × ставка
 function idleRate(){
-  const sumLvl=S.dragons.reduce((a,d)=>a+d.level,0);
+  // полностью счастливый дракон приносит на 20% больше
+  const sumLvl=S.dragons.reduce((a,d)=>a+d.level*(((d.happy||0)>=HAPPY_MAX)?1.2:1),0);
   return sumLvl*IDLE_RATE_PER_DRAGON;
 }
 // начислить накопленное за время отсутствия (с потолком)
@@ -129,6 +130,8 @@ function runDaily(){
     S.daysPlayed=(S.daysPlayed||0)+1;
     S.lastDaily=today;
     S.chestReady=true;
+    // сердечки за ночь чуть остывают — драконы ждут заботы (мягко, по одному)
+    S.dragons.forEach(d=>{ d.happy=Math.max(1,(d.happy||0)-1); });
   }
   if(S.questDay!==today){
     S.questDay=today;

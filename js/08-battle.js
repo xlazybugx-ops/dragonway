@@ -24,12 +24,16 @@ function renderArenaPicker(){
     wrap.innerHTML+=`<div class="rule"></div><p class="hint">Выбери противника:</p>`;
     const foes=document.createElement('div');foes.className='roster';
     [-1,0,1].forEach(delta=>{
-      const lvl=Math.max(1,me.level+delta);
-      const sp=weightedSpecies();
+      let sp=weightedSpecies();
+      // «Слабее» — тренировочный бой: стихия врага не контрит чемпиона
+      if(delta<0){let g=0;while(ADVANTAGE[sp.el]===speciesById(me.id).el&&g++<8)sp=weightedSpecies();}
+      // очень редкий вид заметно сильнее — приходит «Легендой»: ниже уровнем, но награда ×2
+      const legend = sp.rarity >= speciesById(me.id).rarity + 2;
+      const lvl=Math.max(1, me.level + delta - (legend?3:0));
       const foeMorph=rollMorph();
       // множитель за риск: враг выше твоего уровня — щедрее, слабее — скромнее
       const riskMult = delta>0 ? 1.5 : (delta<0 ? 0.7 : 1.0);
-      const reward=Math.round(lvl* (8+sp.rarity*4) * (morphById(foeMorph).id==='common'?1:1.2) * riskMult);
+      const reward=Math.round(lvl* (8+sp.rarity*4) * (morphById(foeMorph).id==='common'?1:1.2) * riskMult * (legend?2:1));
       const card=document.createElement('div');
       card.className='dcard';
       const riskTag = delta>0?'<span class="risk-tag hard">⚔️ Сильнее</span>':(delta<0?'<span class="risk-tag easy">Слабее</span>':'<span class="risk-tag even">Равный</span>');
@@ -39,7 +43,7 @@ function renderArenaPicker(){
         ${sigilHTML(sp,foeMorph,'sigil',lvl)}
         <div class="dname">Дикий ${sp.name}</div>
         ${elTag(sp.el)} ${morphBadge(foeMorph)}
-        <div style="margin-top:6px">${riskTag}</div>
+        <div style="margin-top:6px">${legend?'<span class="risk-tag hard">⭐ Легенда</span> ':''}${riskTag}</div>
         <div class="dmeta" style="margin-top:6px;color:var(--gold)">Награда 🪙${reward}</div>`;
       card.onclick=()=>startBattle(me,{id:sp.id,level:lvl,morph:foeMorph},reward);
       foes.appendChild(card);
@@ -78,7 +82,7 @@ function makeCombatant(d,isFoe){
     fx, // эффекты от артефактов: critPct, manaRegen, healPct, vampPct
     spell: topSpell? {n:topSpell.name, icon:topSpell.icon, pow:1.45, t:topSpell.desc, isSpell:true, manaCost:3} : null,
     ult: topUlt? {n:topUlt.name, icon:topUlt.icon, pow:2.4, t:topUlt.desc, isUlt:true, heal: topUlt.lvl===100, manaCost:6} : null,
-    ultUsed:false};
+    ultUsed:false, happy5:!isFoe&&(d.happy||0)>=HAPPY_MAX};
 }
 const MANA_REGEN_BASIC=1; // мана за обычный удар
 const MANA_REGEN_GUARD=2; // мана за защиту (защита копит ману)
@@ -97,6 +101,7 @@ function startBattle(myDragon,foeSpec,reward,bossDef){
     me:makeCombatant(myDragon,false),
     foe,
     reward, log:[], turn:0, over:false,
+    guardStreak:0, combo:0,
     boss:bossDef||null, bossHits:0, bossStalled:false
   };
   $('#arenaSetup').style.display='none';
@@ -171,7 +176,7 @@ function renderBattle(){
       ${moves.map(m=>`<button class="move" data-k="${m.key}" ${b.over?'disabled':''}>
         <div class="mn">${m.n}</div><div class="mv-meta">${dmgTag(m.pow, m.pow>=1.5?0.7:0)}</div></button>`).join('')}
       <button class="move move-guard" data-k="guard" ${b.over?'disabled':''}>
-        <div class="mn">🛡️ ${GUARD.n}</div><div class="mv-meta"><span class="mv-heal">✚ защита +лечение</span> <span class="mana-gain">+${MANA_REGEN_GUARD}💧</span></div></button>
+        <div class="mn">🛡️ ${GUARD.n}</div><div class="mv-meta"><span class="mv-heal">✚ защита +лечение</span> <span class="mana-gain">+${MANA_REGEN_GUARD}💧 за 1-ю</span></div></button>
       ${b.me.spell?`<button class="move move-spell" data-k="spell" ${b.over||!canSpell?'disabled':''}>
         <div class="mn">${b.me.spell.icon} ${b.me.spell.n}</div><div class="mv-meta">${dmgTag(b.me.spell.pow)} <span class="mana-cost">💧${b.me.spell.manaCost}</span>${!canSpell?' <span class="need-mana">мало</span>':''}</div></button>`:''}
       ${b.me.ult?`<button class="move move-ult" data-k="ult" ${b.over||!canUlt?'disabled':''}>
@@ -202,7 +207,7 @@ function advMult(attEl,defEl){
 function doStrike(att,def,move,labelClass,accMult){
   accMult = accMult||1;
   // ультимативка и заклинания не промахиваются; сильные обычные приёмы — могут
-  if(move.pow>=1.5 && !move.isUlt && !move.isSpell && Math.random()>0.7){
+  if(att.isFoe && move.pow>=1.5 && !move.isUlt && !move.isSpell && Math.random()>0.7){
     pushLog(`<span>${att.sp.name} промахнулся «${move.n}».</span>`);
     return {dmg:0,miss:true};
   }
@@ -216,8 +221,10 @@ function doStrike(att,def,move,labelClass,accMult){
     if(battle.bossStalled){ mult*=1.6; } // застывший босс беззащитен
   }
   dmg=Math.round(dmg*mult);
+  if(!att.isFoe && att.happy5) dmg=Math.round(dmg*1.05); // счастливый дракон старается (+5%)
   if(def.guarding){dmg=Math.round(dmg*0.55);def.guarding=false;}
-  const critChance = 0.06 + ((att.fx&&att.fx.critPct)||0)/100;
+  if(def.parryMult){dmg=Math.round(dmg*def.parryMult);def.parryMult=0;}
+  const critChance = att.isFoe ? 0 : ((att.fx&&att.fx.critPct)||0)/100; // криты — навык и реликвии, не жребий
   const crit=(accMult>=2)|| Math.random()<critChance;
   if(crit && accMult<2)dmg=Math.round(dmg*1.6);
   sfx(crit?'crit':'hit');
@@ -247,15 +254,28 @@ function playerMove(move){
   $$('#moveBox .move').forEach(x=>x.disabled=true);
 
   if(move===GUARD){
+    b.combo=0;
+    b.guardStreak=(b.guardStreak||0)+1;
     b.me.guarding=true;
-    b.me.mana=Math.min(b.me.manaMax, b.me.mana+MANA_REGEN_GUARD);
-    const heal=Math.round(b.me.maxHp*0.08);
-    b.me.hp=Math.min(b.me.maxHp,b.me.hp+heal);
+    // каждая защита подряд лечит вдвое слабее, четвёртая и дальше — не лечит
+    const healPct=[0.08,0.04,0.02][b.guardStreak-1]||0;
+    const heal=Math.round(b.me.maxHp*healPct);
+    if(heal>0)b.me.hp=Math.min(b.me.maxHp,b.me.hp+heal);
+    let manaTxt='';
+    if(b.guardStreak===1){
+      b.me.mana=Math.min(b.me.manaMax, b.me.mana+MANA_REGEN_GUARD);
+      manaTxt=` <span class="mana-log">+${MANA_REGEN_GUARD}💧</span>`;
+    }
     animate('me','cast');
-    pushLog(`${b.me.sp.name} <b>встаёт в защиту</b> и восстанавливает <span class="heal">${heal}</span> жизни. <span class="mana-log">+${MANA_REGEN_GUARD}💧</span>`);
+    if(heal>0){
+      pushLog(`${b.me.sp.name} <b>встаёт в защиту</b> и восстанавливает <span class="heal">${heal}</span> жизни.${manaTxt}${b.guardStreak===2?' <span class="dim">Щит слабеет…</span>':''}`);
+    } else {
+      pushLog(`${b.me.sp.name} держит щит, но <b>лапы устали</b> — лечение иссякло. Пора атаковать!`);
+    }
     afterPlayerMove();
     return;
   }
+  b.guardStreak=0; // любая атака возвращает щиту силу
   // трата/восстановление маны
   if(move.manaCost){
     b.me.mana=Math.max(0, b.me.mana - move.manaCost);
@@ -272,14 +292,19 @@ function playerMove(move){
   if(arcadeEnabled()){
     startTimingStrike(move);
   } else {
-    resolvePlayerStrike(move, 1);
+    // без мини-игры — скрытая компенсация точности
+    resolvePlayerStrike(move, 1.25);
   }
 }
 // выполнить удар игрока с множителем точности из мини-игры
 function resolvePlayerStrike(move, accMult){
   const b=battle;
+  // комбо: точные попадания подряд наращивают урон (×1.1 → ×1.2 → ×1.3)
+  if(accMult>=1.4){ b.combo=Math.min(3,(b.combo||0)+1); if(b.combo>1)floatText('Комбо ×'+(1+b.combo*0.1).toFixed(1),'#ffd24a'); }
+  else if(accMult<1.2){ b.combo=0; }
+  const comboMult=1+(b.combo||0)*0.1;
   animate('me','cast');animate('foe','hit');
-  const r=doStrike(b.me,b.foe,move,null,accMult);
+  const r=doStrike(b.me,b.foe,move,null,accMult*comboMult);
   if(r.dmg&&r.mult>1)floatText('стихия!',ELEMENTS[b.me.el].color);
   afterPlayerMove();
 }
@@ -463,7 +488,8 @@ function foeTurn(){
   }
   // 2) есть спелл-мана и достаточно (симулируем сильный удар стихии) — бьёт сильнее
   const foeSpellCost=3;
-  if(f.mana>=foeSpellCost && Math.random()<0.5){
+  const foeZeal = f.level>b.me.level ? 0.5 : (f.level<b.me.level ? 0.12 : 0.3); // сильный колдует чаще, слабый — редко
+  if(f.mana>=foeSpellCost && Math.random()<foeZeal){
     f.mana-=foeSpellCost;
     move={...MOVES[f.el][0], n:'усиленный '+MOVES[f.el][0].n, pow:1.6};
     isSpell=true;
@@ -471,26 +497,66 @@ function foeTurn(){
     move = Math.random()<0.4?MOVES[f.el][1]:MOVES[f.el][0];
     f.mana=Math.min(f.manaMax,f.mana+MANA_REGEN_BASIC);
   }
-  animate('foe','cast');animate('me','hit');
-  const res=doStrike(f,b.me,move);
-  // босс-механики после его удара
-  if(b.boss){
-    if(b.boss.mech==='vamp' && res && res.dmg>0){
-      const heal=Math.max(1,Math.round(res.dmg*0.15));
-      f.hp=Math.min(f.maxHp,f.hp+heal);
-      pushLog(`<span style="color:#c08">🌑 ${b.boss.name} впитывает ${heal} жизни из тьмы.</span>`);
-    }
-    if(b.boss.mech==='stall3'){
-      b.bossHits=(b.bossHits||0)+1;
-      if(b.bossHits>=3){
-        b.bossStalled=true;
-        pushLog(`<span class="gold">⚡ ${b.boss.name} замирает, копя силу — он беззащитен! Бей сейчас!</span>`);
+  const deliver=()=>{
+    animate('foe','cast');animate('me','hit');
+    const res=doStrike(f,b.me,move);
+    // босс-механики после его удара
+    if(b.boss){
+      if(b.boss.mech==='vamp' && res && res.dmg>0){
+        const heal=Math.max(1,Math.round(res.dmg*0.15));
+        f.hp=Math.min(f.maxHp,f.hp+heal);
+        pushLog(`<span style="color:#c08">🌑 ${b.boss.name} впитывает ${heal} жизни из тьмы.</span>`);
+      }
+      if(b.boss.mech==='stall3'){
+        b.bossHits=(b.bossHits||0)+1;
+        if(b.bossHits>=3){
+          b.bossStalled=true;
+          pushLog(`<span class="gold">⚡ ${b.boss.name} замирает, копя силу — он беззащитен! Бей сейчас!</span>`);
+        }
       }
     }
+    renderHpOnly();
+    if(b.me.hp<=0){endBattle(false);return;}
+    $$('#moveBox .move').forEach(x=>x.disabled=false);
+  };
+  // сильный удар телеграфируется: окно парирования (если аркада включена)
+  if(arcadeEnabled() && move.pow>=1.5){
+    pushLog(`⚠️ ${f.sp.name} <b>замахивается</b> для мощного удара!`);
+    startParry(ok=>{
+      if(ok){ b.me.parryMult=0.6; floatText('🛡️ Парировано!','#7fb24a'); }
+      deliver();
+    });
+  } else deliver();
+}
+
+/* ===== МИНИ-ИГРА: ПАРИРОВАНИЕ ===== */
+function startParry(done){
+  const stage=$('#battleStage'); if(!stage){done(false);return;}
+  const box=document.createElement('div');
+  box.className='timing-overlay';
+  box.innerHTML=`
+    <div class="timing-card">
+      <div class="timing-title">🛡️ Мощный удар летит!</div>
+      <div class="timing-sub">Нажми, когда стрелка в золотой зоне — щит примет удар</div>
+      <div class="timing-bar">
+        <div class="timing-zone good" style="left:36%;width:28%"></div>
+        <div class="timing-marker" id="parryMarker"></div>
+      </div>
+      <div class="timing-btns"><button class="btn" id="parryBtn">ЩИТ!</button></div>
+    </div>`;
+  stage.appendChild(box);
+  let pos=0, raf=null;
+  const t0=performance.now(), DUR=1300;
+  const m=box.querySelector('#parryMarker');
+  function tick(now){
+    pos=Math.min(100,(now-t0)/DUR*100);
+    m.style.left=pos+'%';
+    if(pos>=100){cleanup(false);return;}
+    raf=requestAnimationFrame(tick);
   }
-  renderHpOnly();
-  if(b.me.hp<=0){return endBattle(false);}
-  $$('#moveBox .move').forEach(x=>x.disabled=false);
+  function cleanup(ok){cancelAnimationFrame(raf);box.remove();done(ok);}
+  box.querySelector('#parryBtn').onclick=()=>cleanup(pos>=36&&pos<=64);
+  raf=requestAnimationFrame(tick);
 }
 
 function renderHpOnly(){

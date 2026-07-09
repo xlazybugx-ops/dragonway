@@ -351,12 +351,54 @@ function renderHatch(){
   const scrollTo=i=>{const card=track.children[i];if(card)card.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});};
   $('#eggPrev').onclick=()=>{hatchSel=Math.max(0,hatchSel-1);scrollTo(hatchSel);};
   $('#eggNext').onclick=()=>{hatchSel=Math.min(eggs.length-1,hatchSel+1);scrollTo(hatchSel);};
-  wrap.querySelectorAll('[data-hatch]').forEach(b=>b.onclick=()=>hatchEggAt(+b.dataset.hatch));
+  wrap.querySelectorAll('[data-hatch]').forEach(b=>b.onclick=()=>{
+    if(arcadeEnabled&&arcadeEnabled())startHatchRhythm(+b.dataset.hatch);
+    else hatchEggAt(+b.dataset.hatch,false);
+  });
   setTimeout(()=>scrollTo(hatchSel),30);
 }
 
 // высиживание конкретного яйца по индексу; после — гнездо обновляется, показывая остаток
-function hatchEggAt(idx){
+/* ===== МИНИ-ИГРА: РИТМ СЕРДЦА ЯЙЦА =====
+   Тапай в такт, когда яйцо «вздувается». 3 точных тапа — идеальный ритм:
+   дракончик рождается со всеми сердечками и подарком золота. */
+function startHatchRhythm(idx){
+  const box=document.createElement('div');
+  box.className='rhythm-overlay';
+  box.innerHTML=`<div class="enc-card">
+    <div class="rhythm-egg" id="rhEgg">🥚</div>
+    <div class="enc-name">Слушай сердечко!</div>
+    <div class="enc-sub">Нажимай <b>ТУК</b>, когда яйцо раздувается. Три точных тука — идеальный ритм!</div>
+    <div class="rhythm-hits" id="rhHits">🤍🤍🤍</div>
+    <button id="rhTap">ТУК!</button>
+    <button class="ghost" id="rhSkip">Просто высидеть</button>
+  </div>`;
+  document.body.appendChild(box);
+  const egg=box.querySelector('#rhEgg'), hitsEl=box.querySelector('#rhHits');
+  let hits=0, tries=0, raf=0;
+  const t0=performance.now(), PERIOD=900;
+  function phase(now){ return Math.sin((now-t0)/PERIOD*Math.PI*2); }
+  function tick(now){
+    const k=1+Math.max(0,phase(now))*0.35;
+    egg.style.transform='scale('+k.toFixed(3)+')';
+    raf=requestAnimationFrame(tick);
+  }
+  raf=requestAnimationFrame(tick);
+  function finish(perfect){ cancelAnimationFrame(raf); box.remove(); hatchEggAt(idx,perfect); }
+  box.querySelector('#rhSkip').onclick=()=>finish(false);
+  box.querySelector('#rhTap').onclick=()=>{
+    tries++;
+    if(phase(performance.now())>0.6){
+      hits++; hitsEl.textContent='💖'.repeat(hits)+'🤍'.repeat(Math.max(0,3-hits));
+      if(hits>=3) return finish(true);
+    } else {
+      egg.style.filter='grayscale(.5)'; setTimeout(()=>{egg.style.filter='';},200);
+    }
+    if(tries>=8) finish(hits>=3);
+  };
+}
+
+function hatchEggAt(idx,perfectRhythm){
   const eggs=eggsArray();
   if(idx<0||idx>=eggs.length) return;
   const egg=eggs[idx];
@@ -372,7 +414,8 @@ function hatchEggAt(idx){
     floatText('🎉',ELEMENTS[sp.el].color);
     const morphTxt = m.id==='common' ? '' : ` <span style="color:${m.swatch}">· окрас «${m.name}»${m.shiny?' ✨':''}</span>`;
     sfx('hatch');
-    toast(`Вылупился <b>${sp.name}</b>! ${RARITY_STAR(sp.rarity)}${morphTxt} · характер «${natureById(d.nature).name}» ${wasNew?'<span style="color:var(--gold)">· новый вид!</span>':''}`);
+    if(perfectRhythm){ d.happy=HAPPY_MAX; S.gold+=25; floatText('💖 Идеальный ритм!','#cf6e8f'); }
+    toast(`Вылупился <b>${sp.name}</b>! ${RARITY_STAR(sp.rarity)}${morphTxt} · характер «${natureById(d.nature).name}» ${perfectRhythm?'<span style="color:#cf6e8f">· 💖 идеальный ритм: +25🪙 и полное счастье!</span>':''} ${wasNew?'<span style="color:var(--gold)">· новый вид!</span>':''}`);
     questEvent('hatch');
     // курсор карусели остаётся на месте (следующее яйцо из остатка)
     if(hatchSel>=eggs.length) hatchSel=Math.max(0,eggs.length-1);

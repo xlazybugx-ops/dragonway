@@ -274,15 +274,56 @@ function doForge(inst){
   const dustCost=forgeDustCost(inst.level);
   if(S.gold<cost){toast('Недостаёт золота для ковки.');return;}
   if(dustCost>0 && S.dust<dustCost){toast(`Для этой ковки нужно ещё ${dustCost}✦ пыли.`);return;}
-  S.gold-=cost;
-  if(dustCost>0) S.dust-=dustCost;
-  inst.level++;
-  const anvil=$('#anvilArt');
-  if(anvil){anvil.classList.remove('forging');void anvil.offsetWidth;anvil.classList.add('forging');}
-  floatText('+1 ковка',art && ELEMENTS[art.el]?ELEMENTS[art.el].color:'#d9a441');
-  toast(`<b>${art.name}</b> выкован до +${inst.level}! ${inst.level>=FORGE_MAX?'Достигнут предел.':''}`);
-  questEvent('forge'); persist();
-  renderLedger();renderForge();renderLair();
+  const apply=(quality)=>{
+    S.gold-=cost;
+    if(dustCost>0) S.dust-=dustCost;
+    let bonusTxt='';
+    if(quality==='perfect'){ // мастерская ковка: возврат четверти золота
+      const back=Math.round(cost*0.25);
+      S.gold+=back; bonusTxt=` <span style="color:var(--gold)">🔥 Мастерская ковка! Возврат ${back}🪙</span>`;
+    }
+    inst.level++;
+    const anvil=$('#anvilArt');
+    if(anvil){anvil.classList.remove('forging');void anvil.offsetWidth;anvil.classList.add('forging');}
+    floatText('+1 ковка',art && ELEMENTS[art.el]?ELEMENTS[art.el].color:'#d9a441');
+    toast(`<b>${art.name}</b> выкован до +${inst.level}!${bonusTxt} ${inst.level>=FORGE_MAX?'Достигнут предел.':''}`);
+    questEvent('forge'); persist();
+    renderLedger();renderForge();renderLair();
+  };
+  if(typeof arcadeEnabled==='function'&&arcadeEnabled()) startForgeHeat(apply);
+  else apply('good');
+}
+
+/* ===== МИНИ-ИГРА: ЖАР ГОРНА =====
+   Ударь молотом, когда стрелка в раскалённой зоне. Идеально — возврат золота. */
+function startForgeHeat(done){
+  const box=document.createElement('div');
+  box.className='rhythm-overlay';
+  box.innerHTML=`<div class="enc-card">
+    <div class="enc-icon">🔨</div>
+    <div class="enc-name">Жар горна</div>
+    <div class="enc-sub">Бей молотом, когда стрелка в раскалённой середине!</div>
+    <div class="timing-bar forge-bar">
+      <div class="timing-zone good" style="left:30%;width:40%"></div>
+      <div class="timing-zone perfect" style="left:45%;width:10%"></div>
+      <div class="timing-marker" id="fhMarker"></div>
+    </div>
+    <button id="fhHit">⚒️ КУЙ!</button>
+    <button class="ghost" id="fhSkip">Ковать спокойно</button>
+  </div>`;
+  document.body.appendChild(box);
+  let pos=0,dir=1,raf=0;const speed=1.9;
+  const m=box.querySelector('#fhMarker');
+  function tick(){pos+=dir*speed;if(pos>=100){pos=100;dir=-1;}if(pos<=0){pos=0;dir=1;}
+    m.style.left=pos+'%';raf=requestAnimationFrame(tick);}
+  tick();
+  function finish(q,txt,col){cancelAnimationFrame(raf);box.remove();if(txt)floatText(txt,col);done(q);}
+  box.querySelector('#fhHit').onclick=()=>{
+    if(pos>=45&&pos<=55)finish('perfect','🔥 ИДЕАЛЬНО!','#ffd24a');
+    else if(pos>=30&&pos<=70)finish('good','✯ Хороший удар!','#7fb24a');
+    else finish('good','дзынь…','#c5544a');
+  };
+  box.querySelector('#fhSkip').onclick=()=>finish('good',null,null);
 }
 
 /* экипировка артефакта на дракона */

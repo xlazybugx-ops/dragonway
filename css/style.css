@@ -934,3 +934,38 @@
 .forge-stock .carousel,.equip-picker .carousel{max-width:100%}
 /* мгновенный отклик кнопок мини-игр: без задержки двойного тапа и выделения */
 .timing-overlay .btn{touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+
+/* ===== АРКАДНЫЙ БОЙ (08b-arcade.js) ===== */
+.arcade-fs{position:fixed;inset:0;z-index:1100;background:#0d0b1a;touch-action:none;-webkit-user-select:none;user-select:none;overflow:hidden}
+.arcade-fs #acv{display:block;position:absolute;inset:0}
+.arcade-fs .ac-top{position:absolute;top:0;left:0;right:0;padding:8px 12px;pointer-events:none;
+  display:flex;flex-direction:column;gap:6px;text-shadow:0 1px 3px #000;color:#fff}
+.arcade-fs .ac-name{font-size:13px;font-weight:700}
+.arcade-fs .ac-name .ac-vs{opacity:.6;font-weight:400;font-size:11px;margin:0 3px}
+.arcade-fs .ac-bars{display:flex;flex-direction:column;gap:4px;max-width:320px}
+.arcade-fs .ac-bar{height:14px;border-radius:7px;background:rgba(0,0,0,.5);overflow:hidden;position:relative;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+.arcade-fs .ac-bar.sm{height:9px}
+.arcade-fs .ac-bar>i{display:block;height:100%;width:100%;transition:width .12s linear;
+  background:linear-gradient(90deg,#ff5d52,#ff8a3d)}
+.arcade-fs .ac-bar.sm>i{background:linear-gradient(90deg,#3d9bff,#7cd6ff)}
+.arcade-fs #acSh{position:absolute;top:0;left:0;height:100%;width:0;background:rgba(180,220,255,.55)}
+.arcade-fs .ac-exit{position:absolute;top:8px;right:10px;pointer-events:auto;font-size:13px;font-weight:700;
+  padding:7px 12px;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(30,26,58,.85);color:#fff}
+.arcade-fs .ac-foehp{position:absolute;top:64px;left:50%;transform:translateX(-50%);width:60%;max-width:340px;
+  text-align:center;color:#fff;text-shadow:0 1px 3px #000;font-size:12px;font-weight:700;pointer-events:none}
+.arcade-fs .ac-foehp .ac-bar{margin-top:3px}
+.arcade-fs .ac-foehp .ac-bar>i{background:linear-gradient(90deg,#d23b2e,#ff6a5a)}
+.arcade-fs .ac-stick{position:fixed;width:120px;height:120px;border-radius:50%;display:none;z-index:6;
+  border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05)}
+.arcade-fs .ac-knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;
+  background:rgba(255,255,255,.35);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.arcade-fs .ac-ab{position:absolute;right:14px;bottom:24px;display:flex;flex-direction:column;gap:10px;pointer-events:auto}
+.arcade-fs .ac-btn{width:60px;height:60px;border-radius:15px;position:relative;overflow:hidden;
+  border:2px solid rgba(255,255,255,.22);background:rgba(30,26,58,.85);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.arcade-fs .ac-btn:active{transform:scale(.93)}
+.arcade-fs .ac-btn.dash{border-color:rgba(255,240,180,.5);background:rgba(70,60,30,.8)}
+.arcade-fs .ac-btn.nomana{filter:grayscale(.7) brightness(.7)}
+.arcade-fs .ac-cd{position:absolute;inset:0;background:rgba(8,6,20,.72);transform-origin:bottom;transform:scaleY(0);pointer-events:none}
+.arcade-fs .ac-nm{position:absolute;bottom:1px;left:0;right:0;text-align:center;font-size:8px;font-weight:700;opacity:.7}

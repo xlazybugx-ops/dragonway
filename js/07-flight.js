@@ -100,7 +100,7 @@ function startFlight(region,d){
   };
   document.body.classList.add('flight-active');
   const fs=$('#flightFs');
-  if(fs){ fs.style.display='block'; fs.innerHTML='<div class="fcv-load">Разжигаем миры…</div>'; }
+  if(fs){ fs.style.display='block'; fs.innerHTML='<div class="fcv-load">Разжигаем миры… <span style="opacity:.55;font-size:12px">сборка v12</span></div>'; }
   buildFlightTier(region);
 }
 
@@ -127,7 +127,7 @@ function buildFlightTier(region){
     f.beasts=0; f.cnt={treasure:0,scroll:0};
     f.items=[];f.storms=[];f.dens=[];f.wilds=[];f.floats=[];f.clouds=[];
     f.drag={x:W/2,y:H-100,vx:0,vy:0,heading:-Math.PI/2,flap:0,hurt:0,bank:0,trail:[]};
-    f.stam=140; f.paused=false; f._pend=null; f.battleWin=undefined;
+    f.stam=140; f.paused=false; f.warp=false; f._pend=null; f.battleWin=undefined;
 
     const coinVal=Math.max(2,Math.round((region.gold[0]+region.gold[1])/20));
     const put=(icon,type,n,val)=>{for(let i=0;i<n;i++)f.items.push({icon,type,val:val||0,
@@ -139,8 +139,15 @@ function buildFlightTier(region){
     put('🔑','key',1+(bn>1?1:0));
     put('📜','scroll',1+(bn>1?1:0));
     put('❓','choice',2);
+    put('🍖','food',2+bn);
+    // трасса из колец: пролети все 5 подряд — гарантированный сундук
+    f.rings=[];f.ringIdx=0;f.ringTimer=0;f.ringDone=false;
+    {let rx=W*(0.25+Math.random()*0.5), ry=H*0.82;
+     for(let i=0;i<5;i++){f.rings.push({x:Math.max(90,Math.min(W-90,rx)),y:ry,r:52});
+       rx+=(Math.random()-0.5)*W*0.34; ry-=H*0.13;}}
     for(let i=0;i<1+bn*2;i++)f.storms.push({x:120+Math.random()*(W-240),y:240+Math.random()*(H-480),
-      r:60+Math.random()*40,a:Math.random()*6,va:.3+Math.random()*.5,vx:(Math.random()-.5)*40,vy:(Math.random()-.5)*40});
+      r:60+Math.random()*40,a:Math.random()*6,va:.3+Math.random()*.5,vx:(Math.random()-.5)*40,vy:(Math.random()-.5)*40,
+      ph:Math.random()*4}); // фаза цикла: затишье → предупреждение → разряд
     // логова зверей — реальные бои
     const denAt=(fx,fy)=>{const sp=weightedSpecies();
       return {x:W*fx,y:H*fy,icon:pick(['🐗','🦊','👹','🦎','🕷️','🦂']),name:'Логово: '+sp.name,sp,
@@ -204,48 +211,74 @@ function renderFlight(){
     ctx.setTransform(dpr,0,0,dpr,0,0);};
   addEventListener('resize',resize,sig); resize();
 
-  // возврат из боя: применяем итог
-  if(f._pend!==null && f._pend!==undefined && f.battleWin!==undefined){
-    const p=f._pend, ent=p.ent, win=f.battleWin;
-    f._pend=null; f.battleWin=undefined;
-    if(win){
-      ent.defeated=true;
-      if(p.kind==='den'){f.beasts++; questEvent('explore');}
-      if(p.kind==='wild'){
-        f.beasts++;
-        const tier=ent.rare?3:Math.min(3,f.region.biomeN||1);
-        addEgg(ent.sp.el,tier); f.stats.eggs++;
-        f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:ent.rare?'✨ РЕДКОЕ ЯЙЦО!':'🥚 Яйцо!'});
+  // возврат из боя: применяем итог (защищено от любых сбоев)
+  try{
+    if(f._pend!==null && f._pend!==undefined && f.battleWin!==undefined){
+      const p=f._pend, ent=p.ent, win=f.battleWin;
+      f._pend=null; f.battleWin=undefined;
+      if(win){
+        ent.defeated=true;
+        if(p.kind==='den'){f.beasts++; questEvent('explore');}
+        if(p.kind==='wild'){
+          f.beasts++;
+          const tier=ent.rare?3:Math.min(3,f.region.biomeN||1);
+          addEgg(ent.sp.el,tier); f.stats.eggs++;
+          f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:ent.rare?'✨ РЕДКОЕ ЯЙЦО!':'🥚 Яйцо!'});
+        } else {
+          f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:'⚔️ Победа!'});
+        }
+        // рассыпать монеты вокруг логова
+        const ox=ent.x, oy=ent.y;
+        const coinVal=Math.max(2,Math.round((f.region.gold[0]+f.region.gold[1])/20));
+        for(let i=0;i<5;i++){const a=Math.random()*6.28,r2=30+Math.random()*80;
+          f.items.push({icon:'🪙',type:'coin',val:coinVal,x:ox+Math.cos(a)*r2,y:oy+Math.sin(a)*r2,r:16,taken:false,pulse:Math.random()*6});}
+        persist(); renderLedger();
       } else {
-        f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:'⚔️ Победа!'});
+        ent.cool=4;
+        // дракон обессилел — переводит дух и продолжает путь
+        if((f.d.curHp||0)<=0){
+          const st=statsOf(f.d);
+          f.d.curHp=Math.max(1,Math.round(st.maxHp*0.25));
+          f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:'💤 Дракон отдышался (+25% сил)'});
+          persist();
+        }
       }
-      // рассыпать монеты вокруг логова
-      const ox=ent.beast?ent.x:ent.x, oy=ent.beast?ent.y:ent.y;
-      const coinVal=Math.max(2,Math.round((f.region.gold[0]+f.region.gold[1])/20));
-      for(let i=0;i<5;i++){const a=Math.random()*6.28,r2=30+Math.random()*80;
-        f.items.push({icon:'🪙',type:'coin',val:coinVal,x:ox+Math.cos(a)*r2,y:oy+Math.sin(a)*r2,r:16,taken:false,pulse:Math.random()*6});}
-      persist(); renderLedger();
-    } else {
-      ent.cool=4;
     }
-  }
+  }catch(e){ console.warn('[flight] возврат из боя:',e); f._pend=null; f.battleWin=undefined; }
+  // полёт продолжается после возврата из боя
+  if(!f.ended) f.paused=false;
+  console.log('[Драконис] полёт v12: экран собран, пауза='+f.paused);
 
   /* --- управление: джойстик под пальцем + WASD/стрелки --- */
   const stickEl=$('#fcvStick'), knobEl=$('#fcvKnob');
   const joy={active:false,cx:0,cy:0,dx:0,dy:0,id:null};
   const keys=new Set();
-  fs.addEventListener('pointerdown',e=>{
+  fs.onpointerdown=e=>{
     if(e.target.closest('#fcvExit,#fcvEnc,.fcv-top,.fcv-goals'))return;
     joy.active=true;joy.id=e.pointerId;joy.cx=e.clientX;joy.cy=e.clientY;joy.dx=joy.dy=0;
     stickEl.style.display='block';stickEl.style.left=(e.clientX-60)+'px';stickEl.style.top=(e.clientY-60)+'px';
-  },sig);
-  fs.addEventListener('pointermove',e=>{if(!joy.active||e.pointerId!==joy.id)return;
+  };
+  fs.onpointermove=e=>{if(!joy.active||e.pointerId!==joy.id)return;
     let dx=e.clientX-joy.cx,dy=e.clientY-joy.cy;const len=Math.hypot(dx,dy),max=60;
     if(len>max){dx*=max/len;dy*=max/len;}joy.dx=dx/max;joy.dy=dy/max;
-    knobEl.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;},sig);
+    knobEl.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;};
   const je=e=>{if(e.pointerId!==joy.id)return;joy.active=false;joy.dx=joy.dy=0;
     stickEl.style.display='none';knobEl.style.transform='translate(-50%,-50%)';};
-  fs.addEventListener('pointerup',je,sig);fs.addEventListener('pointercancel',je,sig);
+  fs.onpointerup=je;fs.onpointercancel=je;
+  // старые iOS Safari без Pointer Events: дублируем через touch-события
+  if(!window.PointerEvent){
+    fs.ontouchstart=e=>{const t=e.touches[0];if(!t)return;
+      if(e.target.closest('#fcvExit,#fcvEnc,.fcv-top,.fcv-goals'))return;
+      e.preventDefault();
+      joy.active=true;joy.id='t';joy.cx=t.clientX;joy.cy=t.clientY;joy.dx=joy.dy=0;
+      stickEl.style.display='block';stickEl.style.left=(t.clientX-60)+'px';stickEl.style.top=(t.clientY-60)+'px';};
+    fs.ontouchmove=e=>{const t=e.touches[0];if(!joy.active||!t)return;e.preventDefault();
+      let dx=t.clientX-joy.cx,dy=t.clientY-joy.cy;const len=Math.hypot(dx,dy),max=60;
+      if(len>max){dx*=max/len;dy*=max/len;}joy.dx=dx/max;joy.dy=dy/max;
+      knobEl.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;};
+    fs.ontouchend=fs.ontouchcancel=()=>{joy.active=false;joy.dx=joy.dy=0;
+      stickEl.style.display='none';knobEl.style.transform='translate(-50%,-50%)';};
+  }
   addEventListener('keydown',e=>keys.add(e.code),sig);
   addEventListener('keyup',e=>keys.delete(e.code),sig);
   $('#fcvExit').onclick=()=>finishFlight(false);
@@ -258,7 +291,7 @@ function renderFlight(){
     encEl.style.display='flex';
     encEl.innerHTML=`<div class="enc-card">
       <div class="enc-icon">${isWild?'🐉':ent.icon}</div>
-      <div class="enc-name">${ent.name}</div>
+      <div class="enc-name">${ent.sp&&ent.sp.rarity>=speciesById(f.d.id).rarity+2?'⭐ ':''}${ent.name}</div>
       <div class="enc-sub">${isWild?(ent.rare?'Редчайший дракон! Победа принесёт редкое яйцо.':'Победа над диким драконом — яйцо для Гнезда.')
         :'Из логова выходит зверь. Защити себя в честном бою!'}</div>
       <button id="fcvFight">⚔️ В бой</button><button class="ghost" id="fcvFlee">🛫 Улететь</button></div>`;
@@ -266,11 +299,17 @@ function renderFlight(){
       encEl.style.display='none';
       f._pend={kind,ent}; f.battleWin=undefined;
       const sp=ent.sp;
-      const lvl=Math.max(1,f.d.level+rnd(-1,1));
-      const reward=Math.round(lvl*(10+sp.rarity*4));
-      // спрятать полёт, запустить настоящий бой; вернёмся через renderFlight()
+      const legend=sp.rarity>=speciesById(f.d.id).rarity+2;
+      const lvl=Math.max(1,f.d.level+rnd(-1,1)-(legend?3:0));
+      const reward=Math.round(lvl*(10+sp.rarity*4)*(legend?2:1));
+      // спрятать полёт; вернёмся через renderFlight() (общий контракт для обоих боёв)
       if(f.raf)cancelAnimationFrame(f.raf); f.raf=0;
       fs.style.display='none';
+      // АРКАДНЫЙ бой (реальное время). Fallback — старый пошаговый, если модуль недоступен/упал.
+      if(typeof startArcadeFight==='function'){
+        try{ startArcadeFight(f.d, ent, {lvl, reward, kind}); return; }
+        catch(e){ console.warn('[Драконис] аркада не стартовала, пошаговый fallback:',e); }
+      }
       document.body.classList.remove('flight-active');
       S.arenaPick=f.d.uid; switchView('arena');
       startBattle(f.d,{id:sp.id,level:lvl,morph:rollMorph()},reward);
@@ -316,6 +355,10 @@ function renderFlight(){
     else if(it.type==='scroll'){const scr=grantScroll(R.worldId,R.biomeN);f.cnt.scroll++;f.cnt.treasure++;
       txt=scr?`📜 «${scr.title}»!`:'📜 Уже собран';
       if(!scr){const g=rnd(R.gold[0],R.gold[1]);S.gold+=g;f.stats.gold+=g;txt+=` +${g}🪙`;}}
+    else if(it.type==='food'){const st=statsOf(f.d);
+      const heal=Math.max(4,Math.round(st.maxHp*0.2));
+      f.d.curHp=Math.min(st.maxHp,Math.round((f.d.curHp||0)+heal));
+      txt=`🍖 +${heal} здоровья`;}
     else if(it.type==='choice'){choiceCard(it);return;}
     f.floats.push({x:it.x,y:it.y,t:0,txt});
     renderLedger();
@@ -359,8 +402,17 @@ function renderFlight(){
   const trailCol=(TOPDRAGON_COLORS[speciesById(f.d.id).el]||TOPDRAGON_COLORS.fire).edge;
   function frame(now){
     if(!flight||flight!==f)return;
+    try{ frameBody(now); }catch(e){ console.warn('[Драконис] сбой кадра полёта:',e); }
+    f.raf=requestAnimationFrame(frame);
+  }
+  function frameBody(now){
     const dt=f.paused||f.ended?0:Math.min(.05,(now-last)/1000);last=now;
     const dg=f.drag,W=f.W,H=f.H;
+    // самовосстановление: пауза висит, а карточки на экране нет — снимаем
+    if(f.paused&&!f.ended&&!f.warp){
+      const encO=$('#fcvEnc');
+      if(!encO||encO.style.display!=='flex')f.paused=false;
+    }
     // ввод: джойстик или клавиши
     let jx=joy.dx,jy=joy.dy;
     if(!joy.active){
@@ -385,8 +437,14 @@ function renderFlight(){
     // портал: переход на следующий ярус или возвращение
     if(!f.ended&&!f.paused){
       if(flyPortalReady()&&dg.y<110&&Math.abs(dg.x-f.portal.x)<W*0.5){
+        // мягкая посадка: подлетел медленно — бонус
+        if(Math.hypot(dg.vx,dg.vy)<80){
+          const cv=Math.max(2,Math.round((f.region.gold[0]+f.region.gold[1])/20))*5;
+          S.gold+=cv;f.stats.gold+=cv;
+          f.floats.push({x:dg.x,y:dg.y,t:0,txt:'🪶 Мягкая посадка! +'+cv+'🪙'});
+        }
         if(f.portal.next&&f.worldObj){
-          f.paused=true;
+          f.paused=true;f.warp=true;
           f.floats.push({x:f.portal.x,y:90,t:0,txt:'⛩️ ПЕРЕХОД!'});
           const fd=$('#fcvFade'); if(fd)fd.style.opacity='1';
           const nr=makeRegion(f.worldObj,f.portal.next);
@@ -406,10 +464,11 @@ function renderFlight(){
     if(moving)f.stam=Math.max(0,f.stam-dt*zoneMul);else f.stam=Math.min(STAM_MAX,f.stam+dt*4);
     const sf=$('#fcvStamFill');if(sf)sf.style.width=(f.stam/STAM_MAX*100)+'%';
 
-    // грозы
-    f.storms.forEach(s=>{s.a+=s.va*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
+    // грозы: цикл 4с — затишье 2.6с, предупреждение 1с, разряд 0.4с
+    f.storms.forEach(s=>{s.a+=s.va*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.ph=(s.ph+dt)%4;
       if(s.x<s.r||s.x>W-s.r)s.vx*=-1;if(s.y<s.r||s.y>H-s.r)s.vy*=-1;
-      if(!f.paused&&!f.ended&&dg.hurt<=0&&Math.hypot(s.x-dg.x,s.y-dg.y)<s.r*.65){
+      const striking=s.ph>3.6;
+      if(striking&&!f.paused&&!f.ended&&dg.hurt<=0&&Math.hypot(s.x-dg.x,s.y-dg.y)<s.r*.8){
         dg.hurt=1;f.floats.push({x:dg.x,y:dg.y,t:0,txt:'⚡!'});
         const a=Math.atan2(dg.y-s.y,dg.x-s.x);dg.vx+=Math.cos(a)*260;dg.vy+=Math.sin(a)*260;f.stam=Math.max(0,f.stam-8);}});
 
@@ -433,10 +492,31 @@ function renderFlight(){
         if(dst<14){wd.wait-=dt;if(wd.wait<=0){wd.tx=120+Math.random()*(W-240);wd.ty=150+Math.random()*(H-300);wd.wait=1+Math.random()*3;}}
         else{const a=Math.atan2(wd.ty-wd.y,wd.tx-wd.x);mvx=Math.cos(a)*wd.speed;mvy=Math.sin(a)*wd.speed;wd.x+=mvx*dt;wd.y+=mvy*dt;}}
       if(mvx||mvy)wd.heading=Math.atan2(mvy,mvx);
-      if(wd.cool<=0&&dp<46&&!f.paused&&!f.ended)encounter('wild',wd);});
+      if(wd.rare){ // беглеца надо догнать: слипстрим — держись рядом 3 секунды
+        if(wd.cool<=0&&!f.paused&&!f.ended){
+          if(dp<180){wd.slip=(wd.slip||0)+dt;if(wd.slip>=3){wd.slip=0;encounter('wild',wd);}}
+          else wd.slip=Math.max(0,(wd.slip||0)-dt*1.5);
+        }
+      } else if(wd.cool<=0&&dp<46&&!f.paused&&!f.ended)encounter('wild',wd);});
 
     // сбор
     f.items.forEach(it=>{if(!it.taken&&!f.paused&&Math.hypot(it.x-dg.x,it.y-dg.y)<it.r+30)pickup(it);});
+    // кольца-трасса
+    if(!f.ringDone&&f.rings&&f.rings.length&&!f.paused){
+      const ring=f.rings[f.ringIdx];
+      if(ring&&Math.hypot(ring.x-dg.x,ring.y-dg.y)<ring.r){
+        f.ringIdx++;f.ringTimer=6;
+        if(f.ringIdx>=f.rings.length){
+          f.ringDone=true;
+          addChest(Math.min(3,f.region.biomeN||1));
+          f.cnt.treasure++;renderLedger();
+          f.floats.push({x:ring.x,y:ring.y,t:0,txt:'🎁 Трасса пройдена! Сундук!'});
+        } else f.floats.push({x:ring.x,y:ring.y,t:0,txt:'⭕ '+f.ringIdx+'/'+f.rings.length});
+      } else if(f.ringIdx>0){
+        f.ringTimer-=dt;
+        if(f.ringTimer<=0){f.ringIdx=0;f.floats.push({x:dg.x,y:dg.y,t:0,txt:'⭕ трасса сброшена'});}
+      }
+    }
     const sc=$('#fcvScore');
     if(sc)sc.textContent=`🪙${f.stats.gold} 🥚${f.stats.eggs} 💰${f.cnt.treasure} 📜${f.cnt.scroll}`;
     renderGoals();
@@ -456,6 +536,17 @@ function renderFlight(){
       ctx.fillStyle=g;ctx.beginPath();ctx.arc(px,py,c.r,0,7);ctx.fill();});
     ctx.textAlign='center';ctx.textBaseline='middle';
 
+    // кольца трассы
+    if(!f.ringDone&&f.rings)f.rings.forEach((rg,i)=>{
+      if(i<f.ringIdx)return;const px=rg.x-sx,py=rg.y-sy;
+      if(px<-90||py<-90||px>vw+90||py>vh+90)return;
+      const active=i===f.ringIdx, pulse=active?1+Math.sin(now/200)*0.08:1;
+      ctx.save();ctx.globalAlpha=active?.95:.35;
+      ctx.strokeStyle=active?'#ffd76a':'#c9a24a';ctx.lineWidth=active?6:3;
+      ctx.beginPath();ctx.arc(px,py,rg.r*pulse,0,7);ctx.stroke();
+      if(active){ctx.font='bold 15px Georgia';ctx.fillStyle='#ffd76a';
+        ctx.fillText((i+1)+'/'+f.rings.length,px,py);}
+      ctx.restore();});
     // предметы
     f.items.forEach(it=>{if(it.taken)return;const px=it.x-sx,py=it.y-sy;
       if(px<-30||py<-30||px>vw+30||py>vh+30)return;it.pulse+=dt*3;
@@ -479,7 +570,11 @@ function renderFlight(){
       if(px>-200&&py>-200&&px<vw+200&&py<vh+200){
         if(f.denImg&&f.denImg.complete&&f.denImg.naturalWidth){
           const dw2=180,dh2=dw2*f.denImg.naturalHeight/f.denImg.naturalWidth;
-          ctx.drawImage(f.denImg,px-dw2/2,py-dh2/2,dw2,dh2);
+          const bob=Math.sin(now/700+dd.x*0.01)*5;
+          const lift=(bob+5)/10;
+          ctx.save();ctx.globalAlpha=.3-lift*.12;ctx.fillStyle='#000';
+          ctx.beginPath();ctx.ellipse(px,py+dh2*0.62,dw2*0.34*(1-lift*.12),dh2*0.15*(1-lift*.12),0,0,7);ctx.fill();ctx.restore();
+          ctx.drawImage(f.denImg,px-dw2/2,py-dh2/2-bob,dw2,dh2);
         } else {ctx.font='34px serif';ctx.fillText('🕳️',px,py);}
         ctx.font='italic 12px Georgia';ctx.fillStyle='rgba(255,230,200,.92)';ctx.fillText(dd.name,px,py+58);
         if(!dd.defeated){ctx.font='30px serif';ctx.fillText(dd.icon,dd.beast.x-sx,dd.beast.y-sy);
@@ -490,12 +585,29 @@ function renderFlight(){
     // дикие
     f.wilds.forEach(wd=>{if(wd.defeated)return;const px=wd.x-sx,py=wd.y-sy;
       if(px<-90||py<-90||px>vw+90||py>vh+90)return;
-      drawSprite(wd.img,wd.x,wd.y,wd.heading,sx,sy,wd.rare?64:54,now,null,wd.rare);});
+      drawSprite(wd.img,wd.x,wd.y,wd.heading,sx,sy,wd.rare?64:54,now,null,wd.rare);
+      if(wd.rare&&(wd.slip||0)>0){ // прогресс слипстрима
+        ctx.save();ctx.strokeStyle='#ffd76a';ctx.lineWidth=5;
+        ctx.beginPath();ctx.arc(px,py,44,-Math.PI/2,-Math.PI/2+6.283*Math.min(1,wd.slip/3));ctx.stroke();
+        ctx.font='italic 12px Georgia';ctx.fillStyle='#ffe9c0';ctx.fillText('держись рядом!',px,py+58);
+        ctx.restore();}});
 
-    // грозы
-    f.storms.forEach(s=>{const px=s.x-sx,py=s.y-sy;if(px<-120||py<-120||px>vw+120||py>vh+120)return;
-      ctx.save();ctx.translate(px,py);ctx.rotate(Math.sin(s.a)*.15);ctx.globalAlpha=.85;
-      ctx.font=(s.r*1.1)+'px serif';ctx.fillText('⛈️',0,0);ctx.restore();ctx.globalAlpha=1;});
+    // грозы: видимые фазы
+    f.storms.forEach(s=>{const px=s.x-sx,py=s.y-sy;if(px<-140||py<-140||px>vw+140||py>vh+140)return;
+      const warn=s.ph>2.6&&s.ph<=3.6, strike=s.ph>3.6;
+      ctx.save();ctx.translate(px,py);ctx.rotate(Math.sin(s.a)*.15);
+      ctx.globalAlpha=strike?1:(warn?.9:.55);
+      ctx.font=(s.r*1.1)+'px serif';ctx.fillText('⛈️',0,0);ctx.restore();
+      if(warn){ // предупреждение: пунктирное кольцо растёт
+        const k=(s.ph-2.6);
+        ctx.save();ctx.strokeStyle='rgba(255,230,120,'+(0.4+k*0.5)+')';ctx.lineWidth=3;
+        ctx.setLineDash([8,8]);ctx.beginPath();ctx.arc(px,py,s.r*.8,0,7);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+      } else if(strike){ // разряд!
+        ctx.save();ctx.globalAlpha=.75;ctx.fillStyle='rgba(255,240,150,.35)';
+        ctx.beginPath();ctx.arc(px,py,s.r*.8,0,7);ctx.fill();
+        ctx.font=(s.r*.9)+'px serif';ctx.fillText('⚡',px,py);ctx.restore();
+      }
+      ctx.globalAlpha=1;});
 
     // след
     dg.trail.forEach(p=>{const px=p.x-sx,py=p.y-sy,a=(1-p.t/0.5);
@@ -516,8 +628,6 @@ function renderFlight(){
     f.floats.forEach(fl=>{ctx.globalAlpha=1-fl.t/1.4;ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=3;ctx.fillStyle='#fff';
       ctx.strokeText(fl.txt,fl.x-sx,fl.y-sy-30-fl.t*28);ctx.fillText(fl.txt,fl.x-sx,fl.y-sy-30-fl.t*28);});
     ctx.globalAlpha=1;
-
-    f.raf=requestAnimationFrame(frame);
   }
   f.raf=requestAnimationFrame(t=>{last=t;frame(t);});
 }
