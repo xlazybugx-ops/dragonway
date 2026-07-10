@@ -409,6 +409,7 @@ if(loaded){
   runDaily();
   renderAll();
   renderDaily();
+  if(typeof applyA11y==='function')applyA11y();
   renderHub(); // игра открывается на главном экране
   let msg='С возвращением! Драконы скучали по тебе 🐉';
   if(idleGold>0) msg+=` Пока тебя не было, в логове накопилось <b>${idleGold}🪙</b>.`;

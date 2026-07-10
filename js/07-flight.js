@@ -6,11 +6,36 @@
    Драконис · Кодекс Чешуи
    ============================================================ */
 let flight=null; // {region, d, stats, ... состояние карты и дракона}
+/* ===== ИССЛЕДОВАНИЕ МИРА: хелперы наград/прогресса/кодекса ===== */
+function worldRegionKey(){ return (flight&&flight.region&&(flight.region.id||flight.region.worldId))||'?'; }
+function worldRegionName(){ return (flight&&flight.region&&(flight.region.name||flight.region.biome))||'Область'; }
+function worldSeen(kind,id){ if(!S.worldCodex)S.worldCodex={events:{},biomes:{},weather:{}}; if(!S.worldCodex[kind])S.worldCodex[kind]={}; S.worldCodex[kind][id]=true; }
+function worldEventSeen(ev){ if(ev&&ev.name)worldSeen('events',ev.name); }
+function exploreProgress(){ if(!flight)return; if(!S.worldExplored)S.worldExplored={};
+  const k=worldRegionKey(), step=(typeof GB!=='undefined'&&GB.World&&GB.World.exploreStep)||4;
+  const prev=S.worldExplored[k]||0, cur=Math.min(100,prev+step); S.worldExplored[k]=cur;
+  const ms=(typeof GB!=='undefined'&&GB.World&&GB.World.exploreMilestones)||[25,50,100];
+  for(let i=0;i<ms.length;i++){ if(prev<ms[i]&&cur>=ms[i]){ const g=((GB.World&&GB.World.exploreRewardGold)||60)*(i+1); S.gold+=g; if(typeof toast==='function')toast(`🗺️ ${worldRegionName()} исследован на ${ms[i]}%! +${g}🪙`); } } }
+function grantWorldReward(reward){ const f=flight; if(!f)return '…'; const R=f.region; let txt='';
+  if(reward==='gold'){const g=rnd(R.gold[0],R.gold[1]);S.gold+=g;f.stats.gold+=g;txt='🪙 +'+g;}
+  else if(reward==='dust'){const du=rnd(8,18);S.dust+=du;txt='✦ +'+du;}
+  else if(reward==='shards'){const sh=rnd(2,6);S.shards=(S.shards||0)+sh;txt='🔮 +'+sh;}
+  else if(reward==='scroll'){const scr=grantScroll(R.worldId,R.biomeN);f.cnt.scroll++;txt=scr?'📜 Свиток легенды!':('🪙 +'+((()=>{const g=rnd(R.gold[0],R.gold[1]);S.gold+=g;return g;})()));}
+  else if(reward==='chest'){addChest(Math.min(3,R.biomeN||1));txt='🎁 Сундук!';}
+  else if(reward==='relic'){ if(featureUnlocked('spire')){const art=biomeArtifact(R);addArtifact(art.id,1);f.stats.relics++;txt=art.icon+' '+art.name+'!';} else {const g=rnd(R.gold[0],R.gold[1]);S.gold+=g;txt='🪙 +'+g;} }
+  else if(reward==='egg'){addEgg(R.el,R.biomeN);f.stats.eggs++;txt='🥚 Яйцо!';}
+  else if(reward==='egg_rare'){addEgg(R.el,3,3);f.stats.eggs++;txt='🥚 Редкое яйцо!';}
+  else if(reward==='egg_epic'){addEgg(R.el,3,4);f.stats.eggs++;txt='🥚 Эпическое яйцо!';}
+  else if(reward==='egg_legend'){addEgg(R.el,3,5);f.stats.eggs++;txt='🥚 Легендарное яйцо!';}
+  else if(reward==='codex'){worldSeen('events','Древняя запись');txt='📖 Запись Кодекса!';}
+  else { txt='🍃'; }
+  return txt; }
 
 /* ===== НАРИСОВАННЫЕ КАРТЫ ЯРУСОВ =====
    По мирам: images/fly_{ключ}_{ярус}.webp. Если файла нет —
    игра сама нарисует процедурный фон, ничего не сломается. */
 const FLY_ART_KEY={emberreach:'fire',mirelot:'jungle',glacior:'ice',stormpeak:'storm',voidedge:'shade'};
+const _denImgCache={}; // ПЕРФ: кэш картинок логова (не грузить одно и то же повторно)
 function flyArtKey(region){ return FLY_ART_KEY[region.worldId]||region.scene; }
 function loadFlyMap(region,tier,cb){
   const src=`images/fly_${flyArtKey(region)}_${tier}.webp`;
@@ -110,9 +135,9 @@ function buildFlightTier(region){
   f.region=region;
   const bn=region.biomeN||1;
   // картинка логова этого мира (если есть)
-  f.denImg=new Image();
-  f.denImg.onerror=()=>{f.denImg=null;};
-  f.denImg.src=`images/den_${flyArtKey(region)}.png`;
+  const _dik=flyArtKey(region); // ПЕРФ: переиспользуем Image(), не грузим повторно
+  if(_denImgCache[_dik]!==undefined){ f.denImg=_denImgCache[_dik]; }
+  else { const _im=new Image(); _im.onerror=()=>{_denImgCache[_dik]=null; if(flight)flight.denImg=null;}; _im.onload=()=>{_denImgCache[_dik]=_im;}; _im.src=`images/den_${_dik}.png`; f.denImg=_im; }
   loadFlyMap(region,bn,img=>{
     if(!flight||flight!==f)return;
     let W,H;
@@ -124,6 +149,7 @@ function buildFlightTier(region){
       f.bg=flyBackground(region.scene,Math.round(W),Math.round(H),region.id);
     }
     f.W=W; f.H=H;
+    f.weather=(typeof rollWeather==='function')?rollWeather(region):null; worldSeen('biomes',region.scene); if(f.weather)worldSeen('weather',f.weather.id);
     f.beasts=0; f.cnt={treasure:0,scroll:0};
     f.items=[];f.storms=[];f.dens=[];f.wilds=[];f.floats=[];f.clouds=[];
     f.drag={x:W/2,y:H-100,vx:0,vy:0,heading:-Math.PI/2,flap:0,hurt:0,bank:0,trail:[]};
@@ -194,7 +220,7 @@ function renderFlight(){
   fs.innerHTML=`
     <canvas id="fcv"></canvas>
     <div class="fcv-top">
-      <div class="fcv-title">Ярус ${tierRoman} · ${f.region.biome} · ${dragonName(f.d)}</div>
+      <div class="fcv-title">Ярус ${tierRoman} · ${f.region.biome}${f.weather?' · '+f.weather.emoji+' '+f.weather.name:''} · ${dragonName(f.d)}</div>
       <span id="fcvScore"></span>
       <div class="fcv-stam"><div id="fcvStamFill"></div></div>
       <button class="fcv-exit" id="fcvExit">🏁 Закончить</button>
@@ -203,6 +229,7 @@ function renderFlight(){
     <div class="fcv-stick" id="fcvStick"><div class="fcv-knob" id="fcvKnob"></div></div>
     <div class="fcv-enc" id="fcvEnc"></div>
     <div class="fcv-fade" id="fcvFade"></div>`;
+  f._score=$('#fcvScore'); f._stam=$('#fcvStamFill'); f._goals=$('#fcvGoals'); // ПЕРФ: кэш ссылок HUD (не $() каждый кадр)
 
   const cv=$('#fcv'), ctx=cv.getContext('2d');
   let vw,vh,dpr;
@@ -325,29 +352,26 @@ function renderFlight(){
   /* --- загадочное место (❓) --- */
   function choiceCard(item){
     f.paused=true;
-    const ch=pick(POI_CHOICES);
+    const ev=(typeof rollWorldEvent==='function')?rollWorldEvent():null;
+    if(!ev){ f.paused=false; return; }
+    worldEventSeen(ev);
     encEl.style.display='flex';
-    encEl.innerHTML=`<div class="enc-card">
-      <div class="enc-icon">❓</div><div class="enc-name">Загадочное место</div>
-      <div class="enc-sub">${ch.q}</div>
-      <button data-c="a">${ch.a.t}</button><button class="ghost" data-c="b">${ch.b.t}</button></div>`;
-    encEl.querySelectorAll('[data-c]').forEach(b=>b.onpointerdown=()=>{
-      const opt=b.dataset.c==='a'?ch.a:ch.b;
+    encEl.innerHTML=`<div class="enc-card"><div class="enc-icon">${ev.icon}</div><div class="enc-name">${ev.name}</div><div class="enc-sub">${ev.q}</div>`
+      + ev.opts.map((o,i)=>`<button ${i?'class="ghost"':''} data-c="${i}">${o.t}</button>`).join('') + `</div>`;
+    encEl.querySelectorAll('[data-c]').forEach(btn=>btn.onpointerdown=()=>{
+      const opt=ev.opts[+btn.dataset.c];
       encEl.style.display='none';f.paused=false;
-      let txt='';
-      if(opt.reward==='gold'){const g=rnd(f.region.gold[0],f.region.gold[1]);S.gold+=g;f.stats.gold+=g;txt=`🪙 +${g}`;}
-      else if(opt.reward==='dust'){const du=rnd(8,18);S.dust+=du;txt=`✦ +${du} пыли`;}
-      else if(opt.reward==='egg'){addEgg(f.region.el,f.region.biomeN);f.stats.eggs++;txt='🥚 Яйцо!';}
-      else if(opt.reward==='relic'){ if(featureUnlocked('spire')){const art=biomeArtifact(f.region);addArtifact(art.id,1);f.stats.relics++;txt=`${art.icon} ${art.name}!`;} else {const g=rnd(f.region.gold[0],f.region.gold[1]);S.gold+=g;f.stats.gold+=g;txt=`🪙 +${g}`;} }
+      const txt=grantWorldReward(opt.reward);
+      if(opt.reward!=='none'){ f.cnt.treasure++; exploreProgress(); }
       f.floats.push({x:item.x,y:item.y,t:0,txt});
-      f.cnt.treasure++; renderLedger();
+      renderLedger();
     });
   }
 
   /* --- сбор предмета --- */
   function pickup(it){
     it.taken=true;
-    if(typeof incubateEggs==='function') incubateEggs(1); // исследование инкубирует яйца
+    if(typeof incubateEggs==='function') incubateEggs(GB.Eggs.incExplore); // исследование инкубирует яйца
     const R=f.region;let txt=it.icon+' +1';
     if(it.type==='coin'||it.type==='gem'){S.gold+=it.val;f.stats.gold+=it.val;f.cnt.treasure++;txt=`${it.icon} +${it.val}`;}
     else if(it.type==='egg'){addEgg(R.el,R.biomeN);f.stats.eggs++;f.cnt.treasure++;txt='🥚 Яйцо!';}
@@ -366,7 +390,7 @@ function renderFlight(){
   }
 
   function renderGoals(){
-    const g=$('#fcvGoals'); if(!g)return;
+    const g=f._goals; if(!g)return;
     const rdy=flyPortalReady();
     g.innerHTML=`<span class="g-title">⛩️ ${f.portal.name}</span><br>`+f.portal.goals.map(go=>{
       const c=Math.min(go.need,go.cur());
@@ -463,7 +487,7 @@ function renderFlight(){
     // выносливость
     const zoneMul=1+((f.region.biomeN||1)-1)*0.2,moving=spd>30;
     if(moving)f.stam=Math.max(0,f.stam-dt*zoneMul);else f.stam=Math.min(STAM_MAX,f.stam+dt*4);
-    const sf=$('#fcvStamFill');if(sf)sf.style.width=(f.stam/STAM_MAX*100)+'%';
+    const sf=f._stam;if(sf)sf.style.width=(f.stam/STAM_MAX*100)+'%';
 
     // грозы: цикл 4с — затишье 2.6с, предупреждение 1с, разряд 0.4с
     f.storms.forEach(s=>{s.a+=s.va*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.ph=(s.ph+dt)%4;
@@ -518,7 +542,7 @@ function renderFlight(){
         if(f.ringTimer<=0){f.ringIdx=0;f.floats.push({x:dg.x,y:dg.y,t:0,txt:'⭕ трасса сброшена'});}
       }
     }
-    const sc=$('#fcvScore');
+    const sc=f._score;
     if(sc)sc.textContent=`🪙${f.stats.gold} 🥚${f.stats.eggs} 💰${f.cnt.treasure} 📜${f.cnt.scroll}`;
     renderGoals();
     f.clouds.forEach(c=>{c.x+=c.vx*dt;c.y+=c.vy*dt;if(c.x>W+c.r)c.x=-c.r;if(c.y>H+c.r)c.y=-c.r;if(c.y<-c.r)c.y=H+c.r;});
@@ -530,6 +554,7 @@ function renderFlight(){
     const sx=cam.x+(Math.random()-.5)*shake,sy=cam.y+(Math.random()-.5)*shake;
     ctx.clearRect(0,0,vw,vh);
     if(f.bg)ctx.drawImage(f.bg,0,0,f.bg.width,f.bg.height,-sx,-sy,W,H);
+    if(f.weather&&f.weather.tint){ctx.fillStyle=f.weather.tint;ctx.fillRect(0,0,vw,vh);} // погода (визуал)
 
     f.clouds.forEach(c=>{const px=c.x-sx,py=c.y-sy;if(px<-c.r||py<-c.r||px>vw+c.r||py>vh+c.r)return;
       const g=ctx.createRadialGradient(px,py,c.r*.2,px,py,c.r);

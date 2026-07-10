@@ -108,6 +108,32 @@ function hubBadge(v){
   if(v==='hatch' && eggCount()>0) return String(eggCount());
   return '';
 }
+// UX: инфо-строка главного экрана — цель, инкубация, задания, коллекция, подарок
+function hubGoalsHTML(){
+  const parts=[];
+  let next=null; for(const k of ['forge','spire','roost']){ if(typeof featureUnlocked==='function'&&!featureUnlocked(k)){ next={k,min:FEATURE_MIN[k]}; break; } }
+  if(next) parts.push(`🔓 До «${FEATURE_NAME[next.k]}»: <b>${Math.max(1,next.min-progLevel())} ур.</b>`);
+  const eggs=(typeof eggsArray==='function')?eggsArray():[];
+  const inc=eggs.find(e=>e.incNeed&&(e.inc||0)<e.incNeed);
+  if(inc) parts.push(`🥚 Инкубация: <b>${Math.round((inc.inc||0)/inc.incNeed*100)}%</b>`);
+  else if(eggs.length) parts.push(`🥚 К высиживанию: <b>${eggs.length}</b>`);
+  const q=(S.quests||[]).filter(x=>!x.claimed).length; if(q) parts.push(`✨ Задания: <b>${q}</b>`);
+  const disc=(typeof SPECIES!=='undefined')?SPECIES.filter(sp=>S.discovered&&S.discovered[sp.id]).length:0;
+  parts.push(`🐉 Виды: <b>${disc}/${(typeof SPECIES!=='undefined'?SPECIES.length:15)}</b>`);
+  if(S.chestReady) parts.push('🎁 <b>Подарок дня</b>');
+  return `<div class="hub-goals"><div class="hg-row">${parts.join(' · ')}</div></div>`;
+}
+// UX: панель доступности (модальный оверлей)
+function openA11y(){
+  const a=S.a11y||{};
+  let sc=document.getElementById('a11yOverlay');
+  if(!sc){ sc=document.createElement('div'); sc.id='a11yOverlay'; sc.className='screen'; document.body.appendChild(sc); }
+  sc.style.display='flex';
+  const opt=(k,l)=>`<button class="a11y-btn ${a[k]?'on':''}" data-a11y="${k}">${l}</button>`;
+  sc.innerHTML=`<h1 style="font-size:22px">♿ Доступность</h1><p style="opacity:.8;font-size:13px;max-width:320px">Настрой интерфейс под себя. Изменения сохраняются.</p><div class="a11y-panel">${opt('contrast','🌗 Высокий контраст')}${opt('large','🔎 Крупный текст')}${opt('lefthand','🤚 Для левшей')}${opt('colorblind','🎨 Без опоры на цвет')}</div><button class="btn" id="a11yClose" style="min-height:44px">Готово</button>`;
+  sc.querySelectorAll('[data-a11y]').forEach(b=>b.onclick=()=>{ if(typeof toggleA11y==='function')toggleA11y(b.dataset.a11y); b.classList.toggle('on'); });
+  const cl=document.getElementById('a11yClose'); if(cl)cl.onclick=()=>{ sc.style.display='none'; };
+}
 function renderHub(){
   S._treasuryOpen=false;
   const wrap=$('#hubWrap');
@@ -130,6 +156,7 @@ function renderHub(){
   }).join('');
   const ownedCount=(S.decorOwned||[]).length;
   wrap.innerHTML=`
+    ${hubGoalsHTML()}
     <div class="hub-stage hub-stage-photo">
       <img class="hub-bg" src="images/hub_bg.webp" decoding="async" alt=""
         onerror="this.style.display='none';this.parentNode.classList.add('hub-bg-fallback')">
@@ -144,12 +171,14 @@ function renderHub(){
         ${ownedCount?`<button class="btn ghost hub-deco-btn" id="decoBtn">🎨 Украшения (${ownedCount})</button>`:''}
         <button class="btn ghost hub-deco-btn" id="sndBtn" title="Звук">${S.soundOn===false?'🔇':'🔊'}</button>
         <button class="btn ghost hub-deco-btn" id="saveBtn" title="Экспорт и импорт сейва">💾</button>
+        <button class="btn ghost hub-deco-btn" id="a11yBtn" title="Доступность">♿</button>
       </div>
     </div>`;
   wrap.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>switchView(b.dataset.go));
   const db=$('#decoBtn'); if(db) db.onclick=openDecorManager;
   const tb=$('#treasBtn'); if(tb) tb.onclick=openTreasury;
   const sv=$('#saveBtn'); if(sv) sv.onclick=openSaveManager;
+  const a11=$('#a11yBtn'); if(a11) a11.onclick=openA11y;
   const mk=$('#marketBtn'); if(mk) mk.onclick=openMarket;
   const sn=$('#sndBtn'); if(sn) sn.onclick=()=>{S.soundOn=S.soundOn===false?true:false;persist();renderHub();};
 }
@@ -474,7 +503,7 @@ function renderMap(){
   header.innerHTML=`
     <div class="portal-info">
       <span class="portal-lvl">🌀 Портал ур. ${S.portalLevel||1}/${PORTAL_MAX}</span>
-      <span class="portal-sub">Открыто миров: ${ps.worlds}/5 · глубина биомов: ${['','I','II','III'][ps.maxBiome]}</span>
+      <span class="portal-sub">Открыто миров: ${ps.worlds}/5 · глубина биомов: ${['','I','II','III'][ps.maxBiome]}${(()=>{const w=S.worldCodex||{};const b=Object.keys(w.biomes||{}).length,e=Object.keys(w.events||{}).length;return (b||e)?` · 📖 мир: ${b} биом., ${e} событ.`:'';})()}</span>
     </div>
     ${(S.portalLevel||1)<PORTAL_MAX?`<button class="btn" id="portalUpBtn">Улучшить портал</button>`:'<span class="portal-max">Портал раскрыт полностью ✦</span>'}`;
   m.appendChild(header);
@@ -495,7 +524,7 @@ function renderMap(){
       return `<div class="biome-row ${u.ok?'':'off'}">
         <span class="biome-tier">${BIOME_TIERLABEL[b.n]}</span>
         <span class="biome-name">${b.name}</span>
-        <span class="biome-meta">🪙${b.gold[0]}–${b.gold[1]} · 🥚${Math.round(b.eggChance*100)}%</span>
+        <span class="biome-meta">🪙${b.gold[0]}–${b.gold[1]} · 🥚${Math.round(b.eggChance*100)}%${(S.worldExplored&&S.worldExplored[w.id+'_b'+b.n])?` · 🗺️${S.worldExplored[w.id+'_b'+b.n]}%`:''}</span>
         ${status}
       </div>`;
     }).join('');

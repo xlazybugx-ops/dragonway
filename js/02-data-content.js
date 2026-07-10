@@ -15,6 +15,38 @@ const CHEST_TYPES=[
 ];
 const chestType=tier=>CHEST_TYPES.find(c=>c.tier===tier)||CHEST_TYPES[0];
 
+/* ============================================================
+   EGG_CATALOG — КАТАЛОГ ЯИЦ (данные отдельно от логики)
+   Поля: id, name, desc, rarity(1-6), el, drop(отн. шанс), source, cond(условие),
+   look{emoji}, cost{dust/shards при переработке}, dragons[] (возможные виды),
+   unique(один раз, фикс. дракон), secret(скрыто до условия), fixed(фикс. вид).
+   Тип яйца определяет ПУЛ возможных драконов; редкость влияет на уклон к редким видам.
+   ============================================================ */
+const EGG_CATALOG = [
+  // — базовые стихийные (основной источник — бои/исследование) —
+  {id:'egg_fire',  name:'Огненное яйцо',  el:'fire',  rarity:1, source:'battle',  drop:1.0, look:{emoji:'🔥'}, dragons:['ember','cinderpup','magma','pyrelord'],   desc:'Тёплое на ощупь — внутри тлеет искра.'},
+  {id:'egg_frost', name:'Ледяное яйцо',   el:'frost', rarity:1, source:'battle',  drop:1.0, look:{emoji:'🧊'}, dragons:['glacier','permafrost','aurora'],          desc:'Покрыто вечным инеем.'},
+  {id:'egg_venom', name:'Ядовитое яйцо',  el:'venom', rarity:1, source:'battle',  drop:1.0, look:{emoji:'🟢'}, dragons:['sporewing','blightfang','worldserpent'],   desc:'Пахнет болотными спорами.'},
+  {id:'egg_storm', name:'Грозовое яйцо',  el:'storm', rarity:1, source:'battle',  drop:1.0, look:{emoji:'⚡'}, dragons:['tempest','thundercall'],                  desc:'Потрескивает статикой.'},
+  {id:'egg_shade', name:'Теневое яйцо',   el:'shade', rarity:1, source:'battle',  drop:1.0, look:{emoji:'🌑'}, dragons:['umbra','nightwyrm','voidmaw'],             desc:'Ускользает от взгляда.'},
+  // — тематические типы (свои источники) —
+  {id:'egg_forest',  name:'Лесное яйцо',      el:'venom', rarity:3, source:'explore', drop:0.30, look:{emoji:'🌿'}, dragons:['sporewing','blightfang','worldserpent'], desc:'Оплетено живыми лозами, тёплое от жизни.'},
+  {id:'egg_crystal', name:'Кристальное яйцо', el:'frost', rarity:4, source:'chest',   drop:0.15, look:{emoji:'💎'}, dragons:['glacier','aurora','permafrost'],        desc:'Грани сияют внутренним светом.'},
+  {id:'egg_royal',   name:'Королевское яйцо', el:'any',   rarity:5, source:'streak',  drop:0.08, look:{emoji:'👑'}, dragons:['pyrelord','aurora','voidmaw'],           desc:'Награда за долгую череду побед.'},
+  {id:'egg_ancient', name:'Древнее яйцо',     el:'shade', rarity:6, source:'boss',    drop:0.05, look:{emoji:'🥚'}, dragons:['voidmaw','worldserpent'],               desc:'Старше самих гор.'},
+  {id:'egg_primord', name:'Первозданное яйцо',el:'any',   rarity:6, source:'tower',   drop:0.03, look:{emoji:'✴️'}, dragons:['voidmaw','worldserpent','pyrelord'],     desc:'Из времён до времён.'},
+  // — уникальные (фиксированный дракон, один раз за игру) —
+  {id:'egg_ashking',    name:'Яйцо Пепельного Короля',  el:'fire',  rarity:6, source:'unique', unique:true, fixed:'pyrelord',    look:{emoji:'♔'}, dragons:['pyrelord'],    desc:'В нём дремлет владыка вулканов.'},
+  {id:'egg_northward',  name:'Яйцо Северного Хранителя',el:'frost', rarity:6, source:'unique', unique:true, fixed:'aurora',      look:{emoji:'❄️'},dragons:['aurora'],      desc:'Хранит стужу полюса.'},
+  {id:'egg_emerald',    name:'Яйцо Изумрудного Леса',   el:'venom', rarity:6, source:'unique', unique:true, fixed:'worldserpent',look:{emoji:'🐍'},dragons:['worldserpent'],desc:'Сердце древнего леса.'},
+  // — секретные (скрыты до выполнения условия) —
+  {id:'egg_eclipse',    name:'Яйцо Затмения',        el:'shade', rarity:6, source:'secret', secret:true, fixed:'voidmaw', cond:'Победи босса без единого лечения',   look:{emoji:'🌘'}, dragons:['voidmaw'],            desc:'Тьма, что помнит свет.'},
+  {id:'egg_stormcrown', name:'Яйцо Грозовой Короны',  el:'storm', rarity:5, source:'secret', secret:true,                  cond:'Открой все сундуки региона',         look:{emoji:'🌩️'}, dragons:['thundercall','tempest'], desc:'Гремит, когда рядом гроза.'},
+  {id:'egg_purity',     name:'Яйцо Первой Стихии',    el:'any',   rarity:6, source:'secret', secret:true,                  cond:'Пройди бой одной стихией без потерь', look:{emoji:'⭐'}, dragons:['voidmaw','pyrelord','aurora','worldserpent'], desc:'Отклик на верность одной стихии.'},
+];
+const eggCatalogById = id => EGG_CATALOG.find(e=>e.id===id);
+function eggTypesForSource(src){ return EGG_CATALOG.filter(e=>e.source===src && !e.unique && !e.secret); }
+
 // украшения хаба: ставятся в декоративные слоты на карте поселения
 const DECORATIONS=[
   {id:'statue',   name:'Драконья статуя', icon:'🗿', rarity:2, desc:'Каменный страж поселения.'},
@@ -427,28 +459,33 @@ function renderTreasury(){
    Слабость и механика подсказаны в свитках легенд. Победа = трофей + материал восхождения. */
 const WORLD_BOSSES=[
   {world:'emberreach', id:'boss_fire',  name:'Владыка Пламени',   icon:'🔥', speciesBase:'pyrelord',
-   weakTo:'frost', hpMult:2.2, atkMult:1.15,
-   mech:null,
+   weakTo:'frost', weakness:'Уязвим к льду. Береги ману на ульту в фазе ярости.', hpMult:2.2, atkMult:1.15,
+   mech:null, rewardEgg:'egg_ashking',
+   phases:[{at:0.7,kind:'enrage',msg:'разгорается — удары чаще!'},{at:0.4,kind:'rage',msg:'впадает в ЯРОСТЬ! (+урон)'},{at:0.15,kind:'final',msg:'копит Испепеляющий удар — берегись!'}],
    trophyId:'trophy_fire',
    lore:'Даже вечный огонь боится холода, что старше самого пламени.'},
   {world:'mirelot', id:'boss_venom', name:'Матерь Топей',      icon:'🕸️', speciesBase:'blightfang',
-   weakTo:'fire', hpMult:2.2, atkMult:1.15,
-   mech:null,
+   weakTo:'fire', weakness:'Уязвима к огню. В фазе щита пробивай броню сильными приёмами.', hpMult:2.2, atkMult:1.15,
+   mech:null, rewardEgg:'egg_emerald',
+   phases:[{at:0.7,kind:'shield',msg:'оплетает себя коконом (щит)'},{at:0.4,kind:'rage',msg:'приходит в ЯРОСТЬ! (+урон)'},{at:0.15,kind:'final',msg:'готовит Чумной шквал!'}],
    trophyId:'trophy_venom',
    lore:'Пламя — единственное, что заставляет её отступить.'},
   {world:'glacior', id:'boss_frost', name:'Владыка Стужи',     icon:'❄️', speciesBase:'permafrost',
-   weakTo:'fire', hpMult:2.3, atkMult:1.1,
-   mech:null,
+   weakTo:'fire', weakness:'Уязвим к огню. Щит держится 2 удара — бей сильным приёмом.', hpMult:2.3, atkMult:1.1,
+   mech:null, rewardEgg:'egg_northward',
+   phases:[{at:0.7,kind:'shield',msg:'воздвигает ледяной панцирь (щит)'},{at:0.4,kind:'rage',msg:'трещит от ЯРОСТИ! (+урон)'},{at:0.15,kind:'final',msg:'копит Вечную мерзлоту!'}],
    trophyId:'trophy_frost',
    lore:'Лишь ярость пламени способна растопить его вечную броню.'},
   {world:'stormpeak', id:'boss_storm', name:'Владыка Бурь',      icon:'⚡', speciesBase:'thundercall',
-   weakTo:null, hpMult:2.4, atkMult:1.2,
-   mech:'stall3',
+   weakTo:null, weakness:'Бьёт трижды и замирает — в этот миг он беззащитен, бей сильнейшим.', hpMult:2.4, atkMult:1.2,
+   mech:'stall3', rewardEgg:'egg_royal',
+   phases:[{at:0.4,kind:'enrage',msg:'ускоряется — удары чаще!'},{at:0.15,kind:'final',msg:'копит Небесный гнев!'}],
    trophyId:'trophy_storm',
    lore:'Он бьёт трижды, а на четвёртый раз замирает — в этот миг он беззащитен.'},
   {world:'voidedge', id:'boss_shade', name:'Владыка Пустоты',   icon:'🌑', speciesBase:'worldserpent',
-   weakTo:'fire', hpMult:2.5, atkMult:1.2,
-   mech:'vamp',
+   weakTo:'fire', weakness:'Уязвим к огню и впитывает жизнь — дави быстро, не давай лечиться.', hpMult:2.5, atkMult:1.2,
+   mech:'vamp', rewardEgg:'egg_ancient',
+   phases:[{at:0.7,kind:'enrage',msg:'жаждет тьмы — вампиризм усилен!'},{at:0.4,kind:'rage',msg:'впадает в ЯРОСТЬ! (+урон)'},{at:0.15,kind:'final',msg:'готовит Беззвёздную ночь!'}],
    trophyId:'trophy_shade',
    lore:'Лишь свет чистого пламени способен обжечь того, кто соткан из мрака.'},
 ];
@@ -480,6 +517,80 @@ const POI_CHOICES = [
   {q:'Странный светящийся гриб.',
    a:{t:'✨ Собрать спор', reward:'dust'}, b:{t:'🪙 Обойти и найти клад', reward:'gold'}},
 ];
+
+/* ============================================================
+   ИССЛЕДОВАНИЕ МИРА (данные отдельно от логики)
+   WEATHER — погода (визуал), BIOME_META — атмосфера биома,
+   WORLD_EVENTS — события по редкости с несколькими исходами.
+   ============================================================ */
+const WEATHER = [
+  {id:'clear', name:'Ясно',   emoji:'☀️', tint:'rgba(255,240,190,0.05)', weight:34},
+  {id:'rain',  name:'Дождь',  emoji:'🌧️', tint:'rgba(60,90,140,0.16)',  weight:20},
+  {id:'snow',  name:'Снег',   emoji:'❄️', tint:'rgba(200,225,255,0.14)', weight:16},
+  {id:'storm', name:'Гроза',  emoji:'⛈️', tint:'rgba(40,40,80,0.22)',   weight:12},
+  {id:'fog',   name:'Туман',  emoji:'🌫️', tint:'rgba(200,200,210,0.20)', weight:18},
+];
+function rollWeather(region){
+  // биом слегка влияет: лёд → чаще снег, буря → чаще гроза
+  const w=WEATHER.map(x=>({x, w:x.weight
+    + (region&&region.scene==='ice'&&x.id==='snow'?18:0)
+    + (region&&region.el==='storm'&&x.id==='storm'?16:0)
+    + (region&&region.scene==='jungle'&&x.id==='rain'?12:0)}));
+  const tot=w.reduce((a,b)=>a+b.w,0); let r=Math.random()*tot;
+  for(const e of w){ if((r-=e.w)<=0) return e.x; } return WEATHER[0];
+}
+const BIOME_META = {
+  fire:  {name:'Огненный мир',  atmo:'Реки лавы и пепельные ветра.', emoji:'🌋'},
+  jungle:{name:'Ядовитый мир',  atmo:'Топи, споры и хищные лозы.',   emoji:'🌿'},
+  ice:   {name:'Ледяной мир',   atmo:'Вечная стужа и хрустальный наст.', emoji:'🏔️'},
+  storm: {name:'Штормовой мир', atmo:'Грозовые фронты и парящие острова.', emoji:'⛰️'},
+  shade: {name:'Теневой мир',   atmo:'Беззвёздная мгла и древние руины.', emoji:'🌑'},
+};
+// события: rarity common/uncommon/rare/epic/legendary; opts — исходы (осмотреть/обойти/исследовать/уйти)
+const WORLD_EVENTS = [
+  // — обычные —
+  {rarity:'common', icon:'🪺', name:'Заброшенное гнездо', q:'Пустое гнездо на скале. Заглянуть?',
+   opts:[{t:'🔎 Осмотреть', reward:'egg'},{t:'🪙 Обойти', reward:'gold'},{t:'🚪 Уйти', reward:'none'}]},
+  {rarity:'common', icon:'💧', name:'Тихий водопад', q:'За водопадом что-то поблёскивает.',
+   opts:[{t:'🔦 Заглянуть', reward:'dust'},{t:'🪙 Собрать монеты', reward:'gold'},{t:'🚪 Уйти', reward:'none'}]},
+  {rarity:'common', icon:'🗿', name:'Древняя статуя', q:'Каменный страж смотрит вдаль.',
+   opts:[{t:'✨ Изучить руны', reward:'codex'},{t:'🪙 Поискать клад', reward:'gold'},{t:'🚪 Уйти', reward:'none'}]},
+  {rarity:'common', icon:'🏕️', name:'Старый лагерь', q:'Погасший костёр странников.',
+   opts:[{t:'📦 Обыскать', reward:'dust'},{t:'🍖 Найти припасы', reward:'gold'},{t:'🚪 Уйти', reward:'none'}]},
+  // — необычные —
+  {rarity:'uncommon', icon:'🏚️', name:'Разрушенная башня', q:'Обвалившаяся башня магов.',
+   opts:[{t:'🧗 Подняться', reward:'relic'},{t:'🔮 Искать свиток', reward:'scroll'},{t:'🚪 Уйти', reward:'none'}]},
+  {rarity:'uncommon', icon:'⛩️', name:'Старый храм', q:'Забытое святилище в тумане.',
+   opts:[{t:'🙏 Помолиться', reward:'egg'},{t:'💎 Обыскать алтарь', reward:'dust'},{t:'🚪 Уйти', reward:'none'}]},
+  {rarity:'uncommon', icon:'🪵', name:'Магическое дерево', q:'Дерево гудит от древней силы.',
+   opts:[{t:'🌿 Коснуться', reward:'scroll'},{t:'🪙 Собрать плоды', reward:'gold'},{t:'🚪 Уйти', reward:'none'}]},
+  // — редкие —
+  {rarity:'rare', icon:'🐉', name:'Редкий дракон', q:'Вдали мелькнул невиданный силуэт!',
+   opts:[{t:'🔎 Проследить', reward:'egg_rare'},{t:'🪙 Не рисковать', reward:'gold'},{t:'🚪 Уйти', reward:'none'}]},
+  {rarity:'rare', icon:'🌫️', name:'Таинственный туман', q:'Мгла скрывает что-то ценное.',
+   opts:[{t:'🌫️ Войти', reward:'relic'},{t:'🔮 Позвать эхо', reward:'scroll'},{t:'🚪 Уйти', reward:'none'}]},
+  {rarity:'rare', icon:'🕳️', name:'Кристальная пещера', q:'Своды сияют самоцветами.',
+   opts:[{t:'⛏️ Добыть', reward:'shards'},{t:'🥚 Искать кладку', reward:'egg_rare'},{t:'🚪 Уйти', reward:'none'}]},
+  // — эпические —
+  {rarity:'epic', icon:'🌀', name:'Древний портал', q:'Кольцо портала пульсирует силой.',
+   opts:[{t:'🌀 Шагнуть', reward:'egg_epic'},{t:'💠 Собрать эссенцию', reward:'shards'},{t:'🚪 Уйти', reward:'none'}]},
+  {rarity:'epic', icon:'🏝️', name:'Неизвестный остров', q:'Парящий остров вне карт.',
+   opts:[{t:'🗺️ Исследовать', reward:'chest'},{t:'🥚 Искать гнездо', reward:'egg_epic'},{t:'🚪 Уйти', reward:'none'}]},
+  // — легендарные —
+  {rarity:'legendary', icon:'🐾', name:'Следы исполина', q:'Гигантские следы уходят к горизонту…',
+   opts:[{t:'👣 Идти по следу', reward:'egg_legend'},{t:'💰 Забрать оброненное', reward:'chest'},{t:'🚪 Уйти', reward:'none'}]},
+];
+function rollWorldEventRarity(){
+  const t=(typeof GB!=='undefined'&&GB.World&&GB.World.eventRarity)||{common:60,uncommon:25,rare:10,epic:4,legendary:1};
+  const order=['legendary','epic','rare','uncommon','common']; const tot=Object.values(t).reduce((a,b)=>a+b,0);
+  let r=Math.random()*tot; for(const k of order.slice().reverse()){ if((r-=t[k])<=0) return k; } return 'common';
+}
+function rollWorldEvent(){
+  const order=['common','uncommon','rare','epic','legendary'];
+  let rr=rollWorldEventRarity();
+  for(let i=order.indexOf(rr);i>=0;i--){ const pool=WORLD_EVENTS.filter(e=>e.rarity===order[i]); if(pool.length) return pool[Math.floor(Math.random()*pool.length)]; }
+  return WORLD_EVENTS[0];
+}
 
 /* ======================= АРТЕФАКТЫ =======================
    base — бонус на 1 уровне; per — прибавка за уровень ковки.
@@ -581,11 +692,11 @@ const artifactById = id => ARTIFACTS.find(a=>a.id===id);
 
 // стоимость ковки артефакта со своего текущего уровня на следующий (мягкая, без долгого гринда)
 function forgeCost(art, level){
-  return Math.round((15 + art.rarity*8) * Math.pow(1.5, level-1));
+  return Math.round((GB.Economy.forgeBase + art.rarity*GB.Economy.forgeRarityMul) * Math.pow(GB.Economy.forgeGrowth, level-1));
 }
 // доп. расход пыли на высоких уровнях ковки (с 5-го): делает пыль дефицитной
 function forgeDustCost(level){
-  return level>=5 ? (level-4)*10 : 0;
+  return level>=GB.Economy.forgeDustFrom ? (level-(GB.Economy.forgeDustFrom-1))*GB.Economy.forgeDustStep : 0;
 }
 const FORGE_MAX = 8;
 
@@ -598,7 +709,7 @@ function forgeLevel(){ return Math.max(SMITHY_MIN, Math.min(SMITHY_MAX, S.forgeL
 // можно ли ковать артефакт данной редкости при текущем уровне кузни
 function canForgeRarity(rarity){ return rarity <= forgeLevel(); }
 // стоимость улучшения кузни с уровня lvl на lvl+1
-function smithyCost(lvl){ return {gold:Math.round(600*Math.pow(1.85,lvl-3)), dust:(lvl-2)*30}; }
+function smithyCost(lvl){ return {gold:Math.round(GB.Economy.smithyBase*Math.pow(GB.Economy.smithyGrowth,lvl-3)), dust:(lvl-2)*GB.Economy.smithyDustStep}; }
 
 // суммарные бонусы к статам конкретного экземпляра (с учётом уровня ковки и дебафов)
 function artifactBonus(inst){
@@ -625,8 +736,35 @@ function artifactFx(inst){
   return out;
 }
 // суммарные эффекты всех надетых артефактов дракона
+/* ============================================================
+   DRAGON_META — РОЛИ, УНИКАЛЬНЫЕ ПАССИВКИ, ДАННЫЕ КОЛЛЕКЦИИ (данные отдельно от логики)
+   role — боевой архетип. passive.fx — бонусы (используют боевые хуки: critPct, vampPct,
+   healPct, manaRegen, dmgRedPct, dodgePct). Все пассивки УНИКАЛЬНЫ. Концепция видов не меняется.
+   ============================================================ */
+const DRAGON_META = {
+  ember:      {role:'Воин',       passive:{name:'Тёплая кровь',   fx:{manaRegen:1},           desc:'Быстрее копит ману в бою.'},              habitat:'Кузни деревень Эмберрича', fact:'Греет руки кузнецам холодной ночью.'},
+  cinderpup:  {role:'Берсерк',    passive:{name:'Хвост-факел',    fx:{critPct:10},            desc:'+10% к шансу критического удара.'},        habitat:'Соломенные крыши и сеновалы', fact:'Носится по кузням и поджигает всё подряд.'},
+  magma:      {role:'Защитник',   passive:{name:'Лавовое нутро',  fx:{dmgRedPct:12},          desc:'−12% получаемого урона.'},                 habitat:'Расплавленные жилы вулканов', fact:'Ступает по лаве как по тропинке.'},
+  pyrelord:   {role:'Воин',       passive:{name:'Венец пламени',  fx:{critPct:6,healPct:3},   desc:'+6% крит и лёгкое самолечение.'},          habitat:'Жерла древних вулканов', fact:'Его рёв плавит сталь на расстоянии.'},
+  glacier:    {role:'Защитник',   passive:{name:'Ледяной панцирь',fx:{dmgRedPct:10},          desc:'−10% получаемого урона.'},                 habitat:'Замёрзшие горные пики', fact:'Оставляет за собой дорожку инея.'},
+  permafrost: {role:'Защитник',   passive:{name:'Несокрушимый',   fx:{dmgRedPct:15},          desc:'−15% получаемого урона.'},                 habitat:'Ледники, спящие столетиями', fact:'Пробуждается лишь в самые лютые зимы.'},
+  aurora:     {role:'Поддержка',  passive:{name:'Северное сияние',fx:{healPct:4,manaRegen:1}, desc:'Лечится каждый ход и копит ману.'},        habitat:'Полярные небеса', fact:'Её дыхание — северный свет.'},
+  sporewing:  {role:'Следопыт',   passive:{name:'Споровый шлейф', fx:{vampPct:8},             desc:'Впитывает 8% нанесённого урона.'},         habitat:'Ядовитые топи Мирелота', fact:'Сеет пыльцу, скользя над болотом.'},
+  blightfang: {role:'Контроллер', passive:{name:'Гнилое дыхание', fx:{vampPct:5,dmgRedPct:4}, desc:'Вампиризм и лёгкая стойкость.'},           habitat:'Палая листва и коряги', fact:'Отравляет всё, к чему прикоснётся.'},
+  worldserpent:{role:'Контроллер',passive:{name:'Кольца мира',    fx:{dmgRedPct:8,healPct:3}, desc:'Стойкость и самолечение.'},                habitat:'Корни всех земель', fact:'Говорят, его тело опоясывает мир.'},
+  tempest:    {role:'Стрелок',    passive:{name:'Седлок ветров',  fx:{dodgePct:10},           desc:'10% шанс уклониться от удара.'},            habitat:'Грозовые фронты', fact:'Седлает молнии как скакунов.'},
+  thundercall:{role:'Стрелок',    passive:{name:'Скорость молнии',fx:{critPct:8,dodgePct:5},  desc:'Крит и уклонение.'},                       habitat:'Штормовые вершины', fact:'Крылья рассекают воздух с громом.'},
+  umbra:      {role:'Берсерк',    passive:{name:'Тенеход',        fx:{critPct:12},            desc:'+12% к шансу крита.'},                     habitat:'Тени полуденных скал', fact:'Днём его почти не видно.'},
+  nightwyrm:  {role:'Следопыт',   passive:{name:'Бесшумный',      fx:{dodgePct:8,vampPct:4},  desc:'Уклонение и вампиризм.'},                  habitat:'Новолунные чащи', fact:'Жертва не слышит его до последнего мига.'},
+  voidmaw:    {role:'Берсерк',    passive:{name:'Эхо пустоты',    fx:{vampPct:10,critPct:5},  desc:'Мощный вампиризм и крит.'},                habitat:'Беззвёздная бездна', fact:'Старше самих гор.'},
+};
+function dragonRole(id){ return (DRAGON_META[id]&&DRAGON_META[id].role)||'Воин'; }
+function dragonPassive(id){ return DRAGON_META[id]&&DRAGON_META[id].passive; }
+function dragonPassiveFx(id){ const p=dragonPassive(id); return (p&&p.fx)||{}; }
+function dragonMeta(id){ return DRAGON_META[id]||{}; }
+
 function equipFx(d){
-  const out={critPct:0,manaMax:0,manaRegen:0,healPct:0,vampPct:0};
+  const out={critPct:0,manaMax:0,manaRegen:0,healPct:0,vampPct:0,dmgRedPct:0,dodgePct:0};
   if(!d.equip) return out;
   for(const invUid of Object.values(d.equip)){
     const inst=artInst(invUid); if(!inst) continue;

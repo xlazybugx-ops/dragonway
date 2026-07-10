@@ -31,8 +31,8 @@ const AR_KITS={
           {id:'drain',name:'Поглощ.',icon:'🕳️',kind:'proj',cd:6,mana:20,range:350,mul:2.0,pspd:540,life:0.6} ],
 };
 const AR_ROLE={fire:'🔥',frost:'🧊',venom:'🟢',storm:'⚡',shade:'🌑'};
-function ar_mitig(raw,def){ return Math.max(1, Math.round(raw*(80/(80+(def||0))))); }
-function ar_elMul(att,def){ if(ADVANTAGE[att]===def)return 1.28; if(ADVANTAGE[def]===att)return 0.85; return 1; }
+function ar_mitig(raw,def){ return Math.max(1, Math.round(raw*(GB.Arcade.mitigConst/(GB.Arcade.mitigConst+(def||0))))); }
+function ar_elMul(att,def){ if(ADVANTAGE[att]===def)return GB.Arcade.elementAdv; if(ADVANTAGE[def]===att)return GB.Arcade.elementWeak; return 1; }
 
 let arc=null;
 
@@ -40,10 +40,10 @@ function ar_makeEnemy(sp,lvl,role,cx,cy){
   const fd={id:sp.id,level:Math.max(1,lvl),xp:0,curHp:0,morph:rollMorph()};
   const foe=makeCombatant(fd,true);
   // role: 'wild' (одиночка), 'leader' (вожак стаи), 'add' (рядовой)
-  const hpMul = role==='wild'?2.6 : role==='leader'?1.9 : 1.25;
-  const dmgMul = role==='wild'?1.9 : 1.55;
+  const hpMul = role==='wild'?GB.Arcade.hpMulWild : role==='leader'?GB.Arcade.hpMulLeader : GB.Arcade.hpMulAdd;
+  const dmgMul = role==='wild'?GB.Arcade.dmgMulWild : GB.Arcade.dmgMulPack;
   const rar=sp.rarity||1;
-  const hp=Math.round(foe.maxHp*hpMul*(1+(rar-1)*0.12));
+  const hp=Math.round(foe.maxHp*hpMul*(1+(rar-1)*GB.Arcade.rarityHpBonus));
   return { sp, el:foe.el, role, x:cx, y:cy, r: role==='add'?18:(rar>=4||role==='leader'?26:20),
     color:(ELEMENTS[foe.el]||{}).color||'#c25b3a', icon:sp.sigil||'👹',
     hp, maxHp:hp, atk:Math.round(foe.atk*dmgMul), def:foe.def,
@@ -126,6 +126,7 @@ function buildArcAbilities(){
   d.innerHTML='⚡<span class="ac-cd"></span><span class="ac-nm">Рывок</span>';
   const fd=e=>{e.preventDefault();arcDash();};
   d.addEventListener('touchstart',fd,{passive:false}); d.addEventListener('mousedown',fd); box.appendChild(d);
+  arc._abBtns=box.querySelectorAll('.ac-btn'); // ПЕРФ: кэш кнопок (не querySelectorAll каждый кадр)
 }
 
 const arcJoy={active:false,id:null,cx:0,cy:0,dx:0,dy:0,max:52};
@@ -304,18 +305,19 @@ function arcUnit(x,y,r,col,icon,flash){ const ctx=arc.ctx;
   ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.fillStyle=flash?'#fff':col;ctx.shadowColor=col;ctx.shadowBlur=flash?20:8;ctx.fill();ctx.shadowBlur=0;
   ctx.font=(r*1.3)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(icon,x,y+1);ctx.textBaseline='alphabetic'; }
 function arcHUD(){ const P=arc.P;
-  const hp=document.getElementById('acHp'); if(hp)hp.style.width=(P.hp/P.maxHp*100)+'%';
-  const sh=document.getElementById('acSh'); if(sh)sh.style.width=(Math.min(1,(P.shield||0)/P.maxHp)*100)+'%';
-  const mn=document.getElementById('acMana'); if(mn)mn.style.width=(P.mana/P.maxMana*100)+'%';
-  const foe=document.getElementById('acFoe'); if(foe){ const al=ar_alive().length;
-    foe.innerHTML = arc.isDen ? ('👾 Врагов: <b>'+al+'</b> / '+arc.enemies.length) : ''; }
-  const btns=document.querySelectorAll('#acAb .ac-btn');
+  if(!arc._hud) arc._hud={hp:document.getElementById('acHp'),sh:document.getElementById('acSh'),mana:document.getElementById('acMana'),foe:document.getElementById('acFoe')}; // ПЕРФ: кэш ссылок HUD
+  const h=arc._hud, prevAl=arc._prevAl;
+  if(h.hp)h.hp.style.width=(P.hp/P.maxHp*100)+'%';
+  if(h.sh)h.sh.style.width=(Math.min(1,(P.shield||0)/P.maxHp)*100)+'%';
+  if(h.mana)h.mana.style.width=(P.mana/P.maxMana*100)+'%';
+  if(h.foe && arc.isDen){ let al=0; for(const e of arc.enemies) if(!e.dead)al++; if(al!==prevAl){ arc._prevAl=al; h.foe.innerHTML='👾 Врагов: <b>'+al+'</b> / '+arc.enemies.length; } } // ПЕРФ: счётчик без аллокации + обновление текста только при изменении
+  const btns=arc._abBtns||(arc._abBtns=document.querySelectorAll('#acAb .ac-btn'));
   P.kit.forEach((sk,i)=>{const el=btns[i];if(!el)return;el.querySelector('.ac-cd').style.transform='scaleY('+(sk._t/sk.cd)+')';el.classList.toggle('nomana',P.mana<sk.mana);});
   const dEl=btns[P.kit.length]; if(dEl)dEl.querySelector('.ac-cd').style.transform='scaleY('+(P.dashT/P.dashCd)+')';
 }
 // —— завершение: возврат в полёт ——
 function arcFinish(win){ if(!arc||arc.over)return; arc.over=true;
-  if(win && typeof incubateEggs==='function') incubateEggs(2); // инкубация за победу в полёте
+  if(win && typeof incubateEggs==='function') incubateEggs(GB.Eggs.incBattle); // инкубация за победу в полёте
   if(win && typeof S!=='undefined') S.tutorialGuard=false;
   cancelAnimationFrame(arc.raf);
   window.removeEventListener('resize',arc.resize);

@@ -196,6 +196,7 @@ function renderCodex(){
   SPECIES.forEach(sp=>{
     const found=S.discovered[sp.id];
     const owned=S.dragons.filter(d=>d.id===sp.id).length;
+    const meta=(typeof dragonMeta==='function')?dragonMeta(sp.id):{}; const passv=(typeof dragonPassive==='function')?dragonPassive(sp.id):null;
     const seen=S.morphsSeen[sp.id]||{};
     let displayMorph='common';
     if(found){
@@ -215,6 +216,7 @@ function renderCodex(){
       <div class="dname">${found?sp.name:'???'}</div>
       ${found?elTag(sp.el):'<span class="dmeta">Не открыт</span>'}
       <div class="dmeta" style="margin-top:8px">${found?`${RARITY_NAME[sp.rarity]} · в логове: ${owned}`:'Поймай, чтобы открыть'}</div>
+      ${found?`<div class="dmeta dragon-role" title="${(meta.habitat?'Обитает: '+meta.habitat+' · ':'')}Любит: ${(typeof favFood==='function')?favFood({id:sp.id}):'—'}${meta.fact?' · '+meta.fact:''}">🛡️ ${(typeof dragonRole==='function')?dragonRole(sp.id):''}${passv?` · ✨ ${passv.name}`:''}</div>`:''}
       ${found?`<div class="mdots" title="Собранные окрасы">${morphDots}</div>`:''}`;
     g.appendChild(div);
   });
@@ -284,13 +286,32 @@ function switchView(v){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function renderAll(){renderLedger();renderLair();renderCodex();
+function renderAll(){renderLedger(); // ПЕРФ: тяжёлые разделы рендерим только когда видимы (иначе перерисуются при switchView)
+  if($('#lair').classList.contains('on'))renderLair();
+  if($('#codex').classList.contains('on'))renderCodex();
   if($('#forge').classList.contains('on'))renderForge();
   if($('#roost').classList.contains('on'))renderRoost();
   if($('#spire').classList.contains('on'))renderSpire();}
 
 
 // вкладка «Вехи»: коллекционные цели с наградами
+// Кодекс владык: имя/стихия/слабость после встречи, история — после победы
+function bossCodexHTML(){
+  if(typeof WORLD_BOSSES==='undefined') return '';
+  const seen=S.bossSeen||{}, kills=S.bossKills||{};
+  let rows='';
+  for(const bo of WORLD_BOSSES){
+    const met=!!seen[bo.id], beaten=(typeof bossDefeated==='function')&&bossDefeated(bo.id), k=kills[bo.id]||0;
+    if(!met){ rows+=`<div class="mile-row"><span class="mile-icon">❔</span><span class="mile-body"><span class="mile-name">Неизвестный владыка</span><span class="mile-desc">Встреть его в глубинах мира.</span></span></div>`; continue; }
+    const weak=bo.weakTo?`Слабость: ${(ELEMENTS[bo.weakTo]||{}).name||bo.weakTo}`:'Слабость: особая механика';
+    rows+=`<div class="mile-row ${beaten?'claimed':''}"><span class="mile-icon">${bo.icon}</span><span class="mile-body">`
+      +`<span class="mile-name">${bo.name}${beaten?` · <span style="color:var(--gold)">повержен ${k}×</span>`:''}</span>`
+      +`<span class="mile-desc">${weak}${beaten?' · '+bo.lore:''}</span>`
+      +`<span class="mile-desc" style="opacity:.8">${bo.weakness||''}</span>`
+      +`</span>${beaten?'<span class="mile-done">☠️</span>':'<span class="mile-reward">?</span>'}</div>`;
+  }
+  return `<div class="boss-codex-head" style="margin:14px 0 6px;font-weight:700">☠️ Владыки миров</div><div class="miles-list">${rows}</div>`;
+}
 function renderMilestones(){
   const box=$('#codexMiles'); if(!box) return;
   const done=MILESTONES.filter(m=>milestoneClaimed(m.id)).length;
@@ -316,6 +337,7 @@ function renderMilestones(){
     </div>`;
   });
   html+='</div>';
+  html+=bossCodexHTML();
   box.innerHTML=html;
   box.querySelectorAll('[data-mile]').forEach(b=>b.onclick=()=>{claimMilestone(b.dataset.mile);renderMilestones();});
 }

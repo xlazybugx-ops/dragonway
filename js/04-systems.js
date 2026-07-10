@@ -51,7 +51,30 @@ function hintOnce(id, html){
 }
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 
-function toast(html){const t=$('#toast');t.innerHTML=html;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+// УВЕДОМЛЕНИЯ: очередь с приоритетом (critical/important/info/deco), по одному за раз
+const _TOAST_PRIO={critical:0,important:1,info:2,deco:3};
+const _toastQ=[]; let _toastBusy=false;
+function toast(html,prio){
+  _toastQ.push({html, p:(_TOAST_PRIO[prio]!=null?_TOAST_PRIO[prio]:2)});
+  _toastQ.sort((a,b)=>a.p-b.p); // критические — вперёд
+  if(!_toastBusy) _toastFlush();
+}
+function _toastFlush(){
+  const t=$('#toast'); if(!t){_toastBusy=false;return;}
+  if(!_toastQ.length){_toastBusy=false; return;}
+  _toastBusy=true; const it=_toastQ.shift();
+  t.className=''; t.classList.add('show'); if(it.p===0)t.classList.add('prio-critical'); else if(it.p===1)t.classList.add('prio-important');
+  t.innerHTML=it.html; clearTimeout(t._t);
+  t._t=setTimeout(()=>{ t.classList.remove('show'); setTimeout(_toastFlush,180); }, it.p<=1?2800:1900);
+}
+// ДОСТУПНОСТЬ: режимы через классы body (высокий контраст, крупный текст, левша, цветовая слепота)
+function applyA11y(){ const a=S.a11y||{}, b=document.body; if(!b)return;
+  b.classList.toggle('a11y-contrast',!!a.contrast);
+  b.classList.toggle('a11y-large',!!a.large);
+  b.classList.toggle('a11y-left',!!a.lefthand);
+  b.classList.toggle('a11y-cb',!!a.colorblind);
+}
+function toggleA11y(key){ if(!S.a11y)S.a11y={}; S.a11y[key]=!S.a11y[key]; applyA11y(); if(typeof persist==='function')persist(); }
 function floatText(txt,color){const f=$('#float');f.textContent=txt;f.style.color=color;f.classList.remove('go');void f.offsetWidth;f.classList.add('go');}
 
 function weightedSpecies(){
@@ -82,9 +105,9 @@ function eggCount(){ return eggsArray().length; }
 // катим редкость яйца по тиру биома + ГАРАНТИЯ (пити): чем дольше без эпического+, тем выше шанс
 function rollEggRarity(tier){
   tier=tier||1;
-  const base = tier>=3 ? [0,20,34,26,13,5,2] : tier===2 ? [0,42,32,17,6,2,1] : [0,64,26,7,2,1,0];
-  const pity = Math.min(60,(S.eggPity||0)*4);
-  const w = base.map((x,r)=> r>=3 ? x*(1+pity/30) : x); // гарантия усиливает band r>=3, сохраняя порядок редкостей
+  const base = tier>=3 ? GB.Eggs.rollBase.t3 : tier===2 ? GB.Eggs.rollBase.t2 : GB.Eggs.rollBase.t1;
+  const pity = Math.min(GB.Eggs.pityCap,(S.eggPity||0)*GB.Eggs.pityStep);
+  const w = base.map((x,r)=> r>=3 ? x*(1+pity/GB.Eggs.pityDiv) : x); // гарантия усиливает band r>=3, сохраняя порядок редкостей
   const total=w.reduce((a,b)=>a+b,0); let x=Math.random()*total;
   for(let r=1;r<=6;r++){ if((x-=w[r])<=0){ if(r>=3)S.eggPity=0; else S.eggPity=(S.eggPity||0)+1; return r; } }
   return 1;
@@ -104,8 +127,8 @@ function addEgg(el, tier=1, rarity){
 // наследование окраса: чем выше редкость ЯЙЦА, тем вероятнее редкий морф у дракона
 function rollMorphByEggRarity(r){
   const pool=(typeof MORPHS!=='undefined'?MORPHS:[{id:'common',weight:1}]).filter(m=> r>=4 ? m.id!=='common' : true);
-  const k=(r-1)*0.35;
-  const adj=pool.map(m=>({m, w:(m.weight||1)*Math.pow(46/(m.weight||1), k)}));
+  const k=(r-1)*GB.Eggs.morphK;
+  const adj=pool.map(m=>({m, w:(m.weight||1)*Math.pow(GB.Eggs.morphRef/(m.weight||1), k)}));
   const tot=adj.reduce((a,b)=>a+b.w,0); let x=Math.random()*tot;
   for(const a of adj){ if((x-=a.w)<=0) return a.m.id; }
   return pool[0].id;
@@ -114,6 +137,36 @@ function incubateEggs(n=1){
   let any=false;
   for(const e of eggsArray()){ if(e.incNeed && (e.inc||0)<e.incNeed){ e.inc=Math.min(e.incNeed,(e.inc||0)+n); any=true; } }
   return any;
+}
+// ===== ЯЙЦА V2: получение по КАТАЛОГУ и ИСТОЧНИКАМ =====
+function addCatalogEgg(id){
+  const def=(typeof eggCatalogById==='function')?eggCatalogById(id):null; if(!def) return addEgg();
+  if(def.unique){ if(!S.eggsUnique)S.eggsUnique={}; if(S.eggsUnique[id]) return null; S.eggsUnique[id]=true; }
+  if(def.secret){ if(!S.eggsSecret)S.eggsSecret={}; S.eggsSecret[id]=true; }
+  const el = def.el==='any' ? ELEMENTS_LIST[rnd(0,ELEMENTS_LIST.length-1)] : def.el;
+  const egg=addEgg(el, Math.min(3,def.rarity), def.rarity);
+  egg.catId=id; if(def.fixed) egg.fixed=def.fixed;
+  if(!S.eggStats)S.eggStats={}; S.eggStats[id]=(S.eggStats[id]||0)+1;
+  return egg;
+}
+// ролл яйца из конкретного источника (у каждого источника — свой пул, без единой таблицы)
+function rollEggFromSource(src, tier){
+  const cfg=((typeof GB!=='undefined'&&GB.Eggs.sources)||{})[src]||{rarityFloor:1};
+  const typed=(typeof eggTypesForSource==='function')?eggTypesForSource(src):[];
+  for(const t of typed){ if(Math.random()<(t.drop||0)*0.5) return addCatalogEgg(t.id); }
+  const r=Math.max(cfg.rarityFloor||1, rollEggRarity(tier||1));
+  const el=ELEMENTS_LIST[rnd(0,ELEMENTS_LIST.length-1)];
+  const egg=addEgg(el, Math.min(3,r), r); egg.catId='egg_'+el;
+  if(!S.eggStats)S.eggStats={}; S.eggStats['egg_'+el]=(S.eggStats['egg_'+el]||0)+1;
+  return egg;
+}
+// разблокировать/выдать секретное яйцо по выполнению условия
+function unlockSecretEgg(id){
+  const d=(typeof eggCatalogById==='function')?eggCatalogById(id):null; if(!d||!d.secret) return;
+  const first=!(S.eggsSecret&&S.eggsSecret[id]);
+  const egg=addCatalogEgg(id);
+  if(first && typeof toast==='function') toast(`🕵️ Тайна раскрыта — <b>${d.name}</b>! Загляни в Кодекс Яиц.`);
+  return egg;
 }
 // выбрать вид дракона из яйца: стихия фиксирована, редкость ВИДА зависит от РЕДКОСТИ ЯЙЦА
 function speciesFromEgg(egg){

@@ -63,7 +63,7 @@ function lairSorted(){
    ============================================================ */
 const LAIR_STATES=['idle','walk','fly','sleep','play','groom','look','roar','seek'];
 const LAIR_EMOTE={idle:'',walk:'',fly:'',sleep:'💤',play:'♪',groom:'✨',look:'❔',roar:'❕',seek:'🔎'};
-let _lairRAF=0, _lairAgents=null, _lairCtx=null, _lairCv=null, _lairLast=0, _lairEvT=6;
+let _lairRAF=0, _lairAgents=null, _lairCtx=null, _lairCv=null, _lairLast=0, _lairEvT=6, _lairFit=null;
 function _lairMood(d){ const h=d.happy||0; return h>=4?'радостный':h>=3?'воодушевлённый':h===2?'любопытный':h===1?'уставший':'сонный'; }
 function _lairWeights(d){
   const up=(natureById(d.nature)||{}).up, h=d.happy||0;
@@ -90,7 +90,7 @@ function mountLivingLair(wrap){
     vx:0, vy:0, st:'idle', t:1+Math.random()*2, face:Math.random()<.5?1:-1, bob:Math.random()*6, emote:0 }));
   const dpr=Math.min(2,devicePixelRatio||1);
   const fit=()=>{ const w=cv.clientWidth||W; cv.width=w*dpr; cv.height=H*dpr; cv.style.height=H+'px'; _lairCtx.setTransform(dpr,0,0,dpr,0,0); cv._w=w; cv._h=H; };
-  fit(); addEventListener('resize',fit);
+  if(_lairFit)removeEventListener('resize',_lairFit); _lairFit=fit; addEventListener('resize',fit); // ПЕРФ: без накопления слушателей
   cv.onpointerdown=(e)=>{ const r=cv.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
     let best=null,bd=44; for(const a of _lairAgents){ const dd=Math.hypot(a.x-px,a.y-py); if(dd<bd){bd=dd;best=a;} }
     if(best){ best.emote=1.2; best.st='look'; best.t=2; best.bob+=3;
@@ -106,7 +106,7 @@ function _lairSpawnEmote(a,txt){ _lairEmotes.push({x:a.x,y:a.y-24,txt,t:0}); }
 function _lairFrame(now){
   // сам останавливается, когда Логово не на экране — экономия FPS
   const lairOn=$('#lair')&&$('#lair').classList.contains('on');
-  if(!lairOn||!_lairCv||!_lairCtx||!_lairAgents){ _lairRAF=0; return; }
+  if(!lairOn||!_lairCv||!_lairCtx||!_lairAgents){ _lairRAF=0; if(_lairFit){removeEventListener('resize',_lairFit);_lairFit=null;} return; } // ПЕРФ: снять слушатель при остановке
   const dt=Math.min(0.05,(now-_lairLast)/1000); _lairLast=now;
   const W=_lairCv._w||320, H=_lairCv._h||180, ctx=_lairCtx;
   try{ _lairUpdate(dt,W,H); _lairDraw(W,H); }catch(e){ /* никогда не роняем UI */ }
@@ -432,23 +432,37 @@ const EGG_COLORS={
 
 let hatchSel=0; // индекс выбранного яйца в карусели
 // Кодекс Яиц: 5 стихий × 6 редкостей, найдено/неизвестно, % коллекции
+const SRC_LABEL={battle:'обычные бои',elite:'элитные враги',boss:'боссы',tower:'башня',daily:'ежедневные задания',streak:'серии побед',explore:'исследование',chest:'редкие сундуки',secret:'секретное событие',unique:'уникальное'};
+// Кодекс Яиц V2 — по каталогу EGG_CATALOG (изображение/описание/редкость/источник/драконы/статистика)
 function eggCodexHTML(){
-  const seen=S.eggsSeen||{}; let cells='',found=0; const total=ELEMENTS_LIST.length*6;
-  for(const el of ELEMENTS_LIST){ for(let r=1;r<=6;r++){
-    const has=!!seen[el+':'+r]; if(has)found++; const rd=EGG_RARITY[r];
-    cells+=`<div class="egg-codex-cell ${has?'found':'unknown'}" title="${rd.name} · ${ELEMENTS[el].name}">`
-      +(has?`<div class="egg-codex-vis">${eggSVG(el, r>=3?3:1, r)}</div>`:'<div class="egg-codex-q">?</div>')+'</div>';
-  }}
-  const pct=Math.round(found/total*100);
-  return `<div class="egg-codex"><div class="egg-codex-head">📖 Кодекс Яиц — собрано <b>${found}/${total}</b> · ${pct}%</div><div class="egg-codex-grid">${cells}</div></div>`;
+  const stats=S.eggStats||{}, seen=S.eggsSeen||{}, secret=S.eggsSecret||{};
+  const baseOpened=(id)=>{ const m=/^egg_(fire|frost|venom|storm|shade)$/.exec(id); if(!m)return false; const el=m[1]; return Object.keys(seen).some(k=>k.indexOf(el+':')===0); };
+  const list=(typeof EGG_CATALOG!=='undefined')?EGG_CATALOG:[];
+  let cells='',found=0;
+  for(const e of list){
+    const rd=EGG_RARITY[e.rarity]||EGG_RARITY[1];
+    const cnt=stats[e.id]||0;
+    const opened = cnt>0 || baseOpened(e.id);
+    const hiddenSecret = e.secret && !secret[e.id] && !opened;
+    if(opened)found++;
+    if(hiddenSecret){ cells+='<div class="egg-codex-cell unknown" title="Секретное яйцо — откроется особым условием"><div class="egg-codex-q">🔒</div></div>'; continue; }
+    const dr=e.dragons.map(id=>((typeof speciesById==='function'&&speciesById(id))||{}).name||id).join(', ');
+    const tip=(e.name+' · '+rd.name+' — '+e.desc+' · Источник: '+(SRC_LABEL[e.source]||e.source)+(e.cond?' · Условие: '+e.cond:'')+' · Виды: '+dr+(cnt?' · Получено '+cnt+'×':'')).replace(/"/g,'&quot;');
+    cells+='<div class="egg-codex-cell '+(opened?'found':'unknown')+'" style="box-shadow:inset 0 0 0 2px '+(opened?rd.frame:'rgba(255,255,255,.08)')+'" title="'+tip+'">'
+      + (opened?('<div class="egg-codex-vis">'+eggSVG(e.el==='any'?'shade':e.el, e.rarity>=3?3:1, e.rarity)+'</div><span class="egg-codex-em">'+e.look.emoji+'</span>'):'<div class="egg-codex-q">?</div>')
+      + '</div>';
+  }
+  const pct=Math.round(found/(list.length||1)*100);
+  return '<div class="egg-codex"><div class="egg-codex-head">📖 Кодекс Яиц — открыто <b>'+found+'/'+list.length+'</b> · '+pct+'%</div><div class="egg-codex-grid catalog">'+cells+'</div><div class="egg-codex-foot">🔒 — секретные яйца открываются особыми условиями</div></div>';
 }
 // переработка яйца в пыль (яйца НЕ продаются — только переработка)
 function recycleEgg(idx){
   const eggs=eggsArray(); if(idx<0||idx>=eggs.length)return;
-  const egg=eggs[idx], gain=5+(egg.rarity||1)*5;
-  eggs.splice(idx,1); S.dust=(S.dust||0)+gain;
-  floatText('♻ +✦'+gain,'#9fd0ff');
-  toast(`Яйцо переработано в <b>✦${gain} пыли</b>. Яйца не продаются — только переработка.`);
+  const egg=eggs[idx], gain=GB.Eggs.recycleBase+(egg.rarity||1)*GB.Eggs.recyclePerRarity;
+  const shards=(egg.rarity||1)>=4 ? (egg.rarity||1)*GB.Eggs.shardsFromRarity : 0;
+  eggs.splice(idx,1); S.dust=(S.dust||0)+gain; if(shards)S.shards=(S.shards||0)+shards;
+  floatText('♻ +✦'+gain+(shards?' +🔮'+shards:''),'#9fd0ff');
+  toast(`Яйцо переработано: <b>✦${gain} пыли</b>${shards?` и <b>🔮${shards} осколков</b>`:''}. Яйца не продаются — только переработка.`);
   if(hatchSel>=eggs.length)hatchSel=Math.max(0,eggs.length-1);
   persist(); renderLedger(); renderHatch();
 }
@@ -480,7 +494,7 @@ function renderHatch(){
         ${incBar}
       </div>
       <button class="btn hatch-one" data-hatch="${i}" ${ready?'':'disabled'}>${ready?'Высидеть 🥚':'🔒 Дозревает'}</button>
-      <button class="btn ghost egg-recycle" data-recycle="${i}">♻ +✦${5+(egg.rarity||1)*5}</button>
+      <button class="btn ghost egg-recycle" data-recycle="${i}">♻ +✦${GB.Eggs.recycleBase+(egg.rarity||1)*GB.Eggs.recyclePerRarity}</button>
     </div>`;
   }).join('');
   wrap.innerHTML=`
