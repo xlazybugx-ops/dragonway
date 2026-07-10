@@ -338,7 +338,7 @@ function renderFlight(){
       if(opt.reward==='gold'){const g=rnd(f.region.gold[0],f.region.gold[1]);S.gold+=g;f.stats.gold+=g;txt=`🪙 +${g}`;}
       else if(opt.reward==='dust'){const du=rnd(8,18);S.dust+=du;txt=`✦ +${du} пыли`;}
       else if(opt.reward==='egg'){addEgg(f.region.el,f.region.biomeN);f.stats.eggs++;txt='🥚 Яйцо!';}
-      else if(opt.reward==='relic'){const art=biomeArtifact(f.region);addArtifact(art.id,1);f.stats.relics++;txt=`${art.icon} ${art.name}!`;}
+      else if(opt.reward==='relic'){ if(featureUnlocked('spire')){const art=biomeArtifact(f.region);addArtifact(art.id,1);f.stats.relics++;txt=`${art.icon} ${art.name}!`;} else {const g=rnd(f.region.gold[0],f.region.gold[1]);S.gold+=g;f.stats.gold+=g;txt=`🪙 +${g}`;} }
       f.floats.push({x:item.x,y:item.y,t:0,txt});
       f.cnt.treasure++; renderLedger();
     });
@@ -347,6 +347,7 @@ function renderFlight(){
   /* --- сбор предмета --- */
   function pickup(it){
     it.taken=true;
+    if(typeof incubateEggs==='function') incubateEggs(1); // исследование инкубирует яйца
     const R=f.region;let txt=it.icon+' +1';
     if(it.type==='coin'||it.type==='gem'){S.gold+=it.val;f.stats.gold+=it.val;f.cnt.treasure++;txt=`${it.icon} +${it.val}`;}
     else if(it.type==='egg'){addEgg(R.el,R.biomeN);f.stats.eggs++;f.cnt.treasure++;txt='🥚 Яйцо!';}

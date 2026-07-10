@@ -264,6 +264,11 @@ function ensureScreenBar(v){
   sec.insertBefore(bar, sec.firstChild);
 }
 function switchView(v){
+  // поэтапное открытие: механика недоступна до нужного уровня
+  if(FEATURE_MIN[v] && !featureUnlocked(v)){
+    toast(`🔒 <b>${FEATURE_NAME[v]}</b> откроется на уровне ${FEATURE_MIN[v]} (сейчас ур.${progLevel()}). Расти в боях!`);
+    return;
+  }
   if(v!=='hub') S._treasuryOpen=false;
   $$('.view').forEach(s=>s.classList.toggle('on',s.id===v));
   ensureScreenBar(v);

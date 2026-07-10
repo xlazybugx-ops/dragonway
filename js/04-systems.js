@@ -78,22 +78,50 @@ function eggsArray(){
 }
 const ELEMENTS_LIST=['fire','frost','venom','storm','shade'];
 function eggCount(){ return eggsArray().length; }
-function addEgg(el, tier=1){
-  eggsArray().push({el:el||ELEMENTS_LIST[rnd(0,ELEMENTS_LIST.length-1)], tier:tier||1});
+// ===== ПОЛУЧЕНИЕ ЯЙЦА =====
+// катим редкость яйца по тиру биома + ГАРАНТИЯ (пити): чем дольше без эпического+, тем выше шанс
+function rollEggRarity(tier){
+  tier=tier||1;
+  const base = tier>=3 ? [0,20,34,26,13,5,2] : tier===2 ? [0,42,32,17,6,2,1] : [0,64,26,7,2,1,0];
+  const pity = Math.min(60,(S.eggPity||0)*4);
+  const w = base.map((x,r)=> r>=3 ? x*(1+pity/30) : x); // гарантия усиливает band r>=3, сохраняя порядок редкостей
+  const total=w.reduce((a,b)=>a+b,0); let x=Math.random()*total;
+  for(let r=1;r<=6;r++){ if((x-=w[r])<=0){ if(r>=3)S.eggPity=0; else S.eggPity=(S.eggPity||0)+1; return r; } }
+  return 1;
 }
-// выбрать вид дракона из яйца: стихия фиксирована, редкость зависит от глубины
+function markEggSeen(el,r){ if(!S.eggsSeen)S.eggsSeen={}; S.eggsSeen[el+':'+r]=true; }
+// addEgg(el, tier, rarity?) — обратно совместимо; новые яйца получают редкость, инкубацию и метку в кодекс
+function addEgg(el, tier=1, rarity){
+  el = el||ELEMENTS_LIST[rnd(0,ELEMENTS_LIST.length-1)];
+  const r = rarity || rollEggRarity(tier);
+  const def = EGG_RARITY[Math.max(1,Math.min(6,r))];
+  const egg = { el, tier:tier||1, rarity:r, inc:0, incNeed:def.incNeed||0 };
+  eggsArray().push(egg);
+  markEggSeen(el,r);
+  return egg;
+}
+// инкубация: любое игровое действие (бой/находка) продвигает ВСЕ яйца. Без реальных таймеров.
+// наследование окраса: чем выше редкость ЯЙЦА, тем вероятнее редкий морф у дракона
+function rollMorphByEggRarity(r){
+  const pool=(typeof MORPHS!=='undefined'?MORPHS:[{id:'common',weight:1}]).filter(m=> r>=4 ? m.id!=='common' : true);
+  const k=(r-1)*0.35;
+  const adj=pool.map(m=>({m, w:(m.weight||1)*Math.pow(46/(m.weight||1), k)}));
+  const tot=adj.reduce((a,b)=>a+b.w,0); let x=Math.random()*tot;
+  for(const a of adj){ if((x-=a.w)<=0) return a.m.id; }
+  return pool[0].id;
+}
+function incubateEggs(n=1){
+  let any=false;
+  for(const e of eggsArray()){ if(e.incNeed && (e.inc||0)<e.incNeed){ e.inc=Math.min(e.incNeed,(e.inc||0)+n); any=true; } }
+  return any;
+}
+// выбрать вид дракона из яйца: стихия фиксирована, редкость ВИДА зависит от РЕДКОСТИ ЯЙЦА
 function speciesFromEgg(egg){
-  const el=egg.el, tier=egg.tier||1;
+  const el=egg.el;
   const pool=SPECIES.filter(s=>s.el===el);
   if(!pool.length) return weightedSpecies();
-  // глубже биом → сильнее уклон к редким видам этой стихии
-  const adj=pool.map(s=>{
-    let w;
-    if(tier>=3) w=Math.pow(1.6, s.rarity);        // ядро: редкие частые
-    else if(tier===2) w=Math.pow(1.15, s.rarity); // глубина: чуть чаще редкие
-    else w=Math.pow(0.4, s.rarity-1);             // поверхность: обычные
-    return {s, w:w*100};
-  });
+  const bias=(eggDef(egg).bias)||0.45;
+  const adj=pool.map(s=>({s, w:Math.pow(bias, s.rarity-1)*100}));
   const total=adj.reduce((a,b)=>a+b.w,0);
   let r=Math.random()*total;
   for(const x of adj){ if((r-=x.w)<=0) return x.s; }

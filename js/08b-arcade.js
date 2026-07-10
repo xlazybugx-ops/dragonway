@@ -32,7 +32,7 @@ const AR_KITS={
 };
 const AR_ROLE={fire:'🔥',frost:'🧊',venom:'🟢',storm:'⚡',shade:'🌑'};
 function ar_mitig(raw,def){ return Math.max(1, Math.round(raw*(80/(80+(def||0))))); }
-function ar_elMul(att,def){ if(ADVANTAGE[att]===def)return 1.4; if(ADVANTAGE[def]===att)return 0.7; return 1; }
+function ar_elMul(att,def){ if(ADVANTAGE[att]===def)return 1.28; if(ADVANTAGE[def]===att)return 0.85; return 1; }
 
 let arc=null;
 
@@ -211,6 +211,7 @@ function arcHitP(rawDmg,el){ const P=arc.P; if(P.iframe>0)return;
   if(P.shield>0){const ab=Math.min(P.shield,dmg);P.shield-=ab;dmg-=ab;arc.floats.push({x:P.x,y:P.y-P.r-6,txt:'🛡'+ab,col:'#bcdcff',t:0,life:0.9});if(dmg<=0){P.iframe=0.28;return;}}
   P.hp-=dmg;P.iframe=0.5;P.hurt=0.35;arc.shake=Math.min(arc.shake+5,11);arcBurst(P.x,P.y,'#ff5d52',12);
   arc.floats.push({x:P.x,y:P.y-P.r-6,txt:'-'+dmg,col:'#ff8a8a',t:0,life:0.9});
+  if(typeof S!=='undefined' && S.tutorialGuard && P.hp<1)P.hp=1; // обучение без поражения
   if(P.hp<=0){P.hp=0;arcFinish(false);} }
 function arcBurst(x,y,col,n){for(let i=0;i<n;i++){const a=rand(0,6.28),s=rand(40,180);arc.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(.3,.6),t:0,col,r:rand(2,4)});}}
 function arcSlash(P,t){const a=Math.atan2(t.y-P.y,t.x-P.x);for(let i=0;i<6;i++)arc.parts.push({x:P.x+Math.cos(a)*30,y:P.y+Math.sin(a)*30,vx:Math.cos(a)*rand(60,160),vy:Math.sin(a)*rand(60,160),life:.3,t:0,col:'#fff',r:3});}
@@ -314,6 +315,8 @@ function arcHUD(){ const P=arc.P;
 }
 // —— завершение: возврат в полёт ——
 function arcFinish(win){ if(!arc||arc.over)return; arc.over=true;
+  if(win && typeof incubateEggs==='function') incubateEggs(2); // инкубация за победу в полёте
+  if(win && typeof S!=='undefined') S.tutorialGuard=false;
   cancelAnimationFrame(arc.raf);
   window.removeEventListener('resize',arc.resize);
   window.removeEventListener('mousemove',arc._mm); window.removeEventListener('mouseup',arc._mu);

@@ -5,6 +5,7 @@
 /* ======================= СОСТОЯНИЕ ======================= */
 let S = {
   gold:300, eggs:[{el:'fire',tier:1},{el:'frost',tier:1},{el:'venom',tier:1},{el:'storm',tier:1}], dust:0,
+  eggPity:0, eggsSeen:{}, // система яиц: гарантия и кодекс
   settlement:'Драконьи Земли',
   portalLevel:1,
   forgeLevel:3,
@@ -86,6 +87,9 @@ const NATURES=[
   {id:'guarded',  name:'Осторожный',     icon:'⛨',  up:'def', down:'spd', desc:'Защита ценой скорости'},
 ];
 const natureById=id=>NATURES.find(n=>n.id===id)||NATURES[0];
+// любимая еда по стихии вида (косметика/доверие, на баланс не влияет)
+const FAVFOOD={fire:'🌶️ огнецвет', frost:'🐟 ледяная рыба', venom:'🍄 споровый гриб', storm:'⚡ грозовой плод', shade:'🫐 сумеречная ягода'};
+function favFood(d){ const sp=speciesById(d.id); return (sp&&FAVFOOD[sp.el])||'🍖 мясо'; }
 function rollNature(){ return NATURES[rnd(0,NATURES.length-1)].id; }
 // множитель характера для конкретного стата (в долях, +/-)
 function natureMod(natureId,key){
@@ -146,7 +150,30 @@ function genomeAvgMult(genes){
 }
 
 // пологая кривая: до ур.100 реально дойти (~линейный рост требований)
-const xpToNext = lvl => Math.round(40 + lvl*10 + lvl*lvl*0.8);
+const xpToNext = lvl => Math.round(45 * Math.pow(lvl, 1.15)); // плавная степенная кривая ≈ 1 уровень / 8–12 мин
+
+// ===== ПОЭТАПНОЕ ОТКРЫТИЕ МЕХАНИК (по уровню сильнейшего дракона) =====
+const FEATURE_MIN  = { forge:3, spire:5, roost:8 };
+const FEATURE_NAME = { forge:'Кузница', spire:'Шпиль Мироздания', roost:'Гнездилище Рода' };
+function progLevel(){ return (S.dragons&&S.dragons.length) ? Math.max.apply(null,S.dragons.map(d=>d.level||1)) : 1; }
+function featureUnlocked(key){ const m=FEATURE_MIN[key]; return !m || progLevel()>=m; }
+
+// ===== РЕДКОСТЬ ЯИЦ =====
+// 6 тиров. incNeed — сколько игровых действий (бой/находка) нужно на инкубацию (0 = сразу).
+// bias — уклон пула видов к редким (выше = чаще редкие виды). frame/glow — визуал рамки.
+const EGG_RARITY = [
+  null,
+  {r:1, key:'common',    name:'Обычное',     frame:'#9c8b6a', glow:'#e7d9b4', incNeed:0,  bias:0.45, title:''},
+  {r:2, key:'rare',      name:'Редкое',      frame:'#3f8fd6', glow:'#bfe0ff', incNeed:3,  bias:1.00, title:'из Редкого яйца'},
+  {r:3, key:'epic',      name:'Эпическое',   frame:'#a861d8', glow:'#e2c4ff', incNeed:6,  bias:1.45, title:'из Эпического яйца'},
+  {r:4, key:'legendary', name:'Легендарное', frame:'#e7b53b', glow:'#ffe9a6', incNeed:10, bias:1.90, title:'Легендарнорождённый'},
+  {r:5, key:'mythic',    name:'Мифическое',  frame:'#d23b6a', glow:'#ffc2d6', incNeed:16, bias:2.35, title:'Мифический'},
+  {r:6, key:'ancient',   name:'Древнее',     frame:'#2fb8a8', glow:'#b8fff2', incNeed:24, bias:2.80, title:'Древний'},
+];
+function eggRarity(egg){ return (egg&&egg.rarity) ? egg.rarity : (egg&&egg.tier?Math.min(3,egg.tier):1); }
+function eggDef(egg){ return EGG_RARITY[Math.max(1,Math.min(6,eggRarity(egg)))]; }
+// готово ли яйцо: у старых яиц (без incNeed) инкубация не требуется — обратная совместимость
+function eggIncReady(egg){ if(egg.incNeed==null) return true; return (egg.inc||0)>=egg.incNeed; }
 const speciesById = id => SPECIES.find(s=>s.id===id);
 
 // найти экземпляр артефакта в инвентаре по invUid

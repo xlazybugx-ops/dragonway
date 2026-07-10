@@ -53,6 +53,14 @@ const decorById=id=>DECORATIONS.find(d=>d.id===id);
 /* ===== КОЛЛЕКЦИОННЫЕ ВЕХИ =====
    Большие цели коллекционера. Проверяются на лету, награда забирается один раз. */
 const MILESTONES=[
+  {id:'gold_10k', icon:'🪙', name:'Драконий клад', desc:'Накопи 10 000 золота',
+   check:()=>S.gold>=10000, progress:()=>[Math.min(10000,S.gold),10000], reward:{gold:500}},
+  {id:'all_elements', icon:'🌈', name:'Пять стихий', desc:'Владей драконом каждой стихии',
+   check:()=>ELEMENTS_LIST.every(el=>S.dragons.some(d=>speciesById(d.id).el===el)), progress:()=>[ELEMENTS_LIST.filter(el=>S.dragons.some(d=>speciesById(d.id).el===el)).length,5], reward:{gold:600,dust:20}},
+  {id:'first_boss', icon:'👑', name:'Первый владыка', desc:'Победи первого владыку мира',
+   check:()=>WORLD_BOSSES.some(b=>bossDefeated(b.id)), progress:()=>[WORLD_BOSSES.some(b=>bossDefeated(b.id))?1:0,1], reward:{gold:800,dust:30}},
+  {id:'first_legend', icon:'✨', name:'Легендарный питомец', desc:'Получи легендарного дракона (★4+)',
+   check:()=>S.dragons.some(d=>speciesById(d.id).rarity>=4), progress:()=>[S.dragons.some(d=>speciesById(d.id).rarity>=4)?1:0,1], reward:{gold:700,dust:25}},
   {id:'all_species',  icon:'🐉', name:'Собиратель видов',    desc:'Открой всех 15 видов драконов',
    check:()=>SPECIES.every(sp=>S.discovered[sp.id]), progress:()=>[SPECIES.filter(sp=>S.discovered[sp.id]).length,SPECIES.length], reward:{gold:2000,dust:100}},
   {id:'lore_ember',   icon:'📜', name:'Летописец Огня',      desc:'Собери все свитки Огненного мира',
@@ -590,7 +598,7 @@ function forgeLevel(){ return Math.max(SMITHY_MIN, Math.min(SMITHY_MAX, S.forgeL
 // можно ли ковать артефакт данной редкости при текущем уровне кузни
 function canForgeRarity(rarity){ return rarity <= forgeLevel(); }
 // стоимость улучшения кузни с уровня lvl на lvl+1
-function smithyCost(lvl){ return {gold:Math.round(600*Math.pow(2.0,lvl-3)), dust:(lvl-2)*30}; }
+function smithyCost(lvl){ return {gold:Math.round(600*Math.pow(1.85,lvl-3)), dust:(lvl-2)*30}; }
 
 // суммарные бонусы к статам конкретного экземпляра (с учётом уровня ковки и дебафов)
 function artifactBonus(inst){

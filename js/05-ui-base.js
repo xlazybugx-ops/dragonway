@@ -8,6 +8,9 @@ function renderLedger(){
   $('#eggs').textContent=eggCount();
   $('#count').textContent=S.dragons.length;
   $('#dust').textContent=S.dust;
+  // пыль как валюта появляется вместе с Кузницей (этап 15–30 мин)
+  const dustEl=$('#dust'), dustItem=dustEl&&dustEl.closest?dustEl.closest('.tb-item'):null;
+  if(dustItem) dustItem.style.display=featureUnlocked('forge')?'':'none';
   const pl=$('#tbPlace'); if(pl) pl.textContent=S.settlement||'Драконьи Земли';
 }
 
@@ -54,10 +57,121 @@ function lairSorted(){
   return arr;
 }
 
+/* ============================================================
+   ЖИВОЕ ЛОГОВО — автономные драконы (канвас, лёгкий ИИ, без влияния на баланс)
+   Поведение из характера (nature) + настроения (happy). rAF работает только когда экран Логова открыт.
+   ============================================================ */
+const LAIR_STATES=['idle','walk','fly','sleep','play','groom','look','roar','seek'];
+const LAIR_EMOTE={idle:'',walk:'',fly:'',sleep:'💤',play:'♪',groom:'✨',look:'❔',roar:'❕',seek:'🔎'};
+let _lairRAF=0, _lairAgents=null, _lairCtx=null, _lairCv=null, _lairLast=0, _lairEvT=6;
+function _lairMood(d){ const h=d.happy||0; return h>=4?'радостный':h>=3?'воодушевлённый':h===2?'любопытный':h===1?'уставший':'сонный'; }
+function _lairWeights(d){
+  const up=(natureById(d.nature)||{}).up, h=d.happy||0;
+  const w={idle:3,walk:3,fly:2,sleep:2,play:2,groom:1.4,look:1.6,roar:1,seek:1.4};
+  if(up==='spd'){w.fly+=3;w.walk+=2;w.sleep-=1;}
+  if(up==='atk'){w.roar+=2;w.play+=2;}
+  if(up==='def'){w.groom+=2;w.idle+=2;}
+  if(up==='hp'){w.sleep+=3;w.idle+=1;w.fly-=1;}
+  if(h>=4){w.play+=2;w.fly+=1;w.seek+=1;} else if(h<=1){w.sleep+=3;w.play-=1;w.roar-=1;}
+  return w;
+}
+function _lairPick(d){ const w=_lairWeights(d); let t=0; for(const k in w)t+=Math.max(0,w[k]);
+  let x=Math.random()*t; for(const k in w){ if((x-=Math.max(0,w[k]))<=0) return k; } return 'idle'; }
+function mountLivingLair(wrap){
+  // канвас-сцена сверху ростера (не заменяет карточки — они остаются ниже для управления)
+  const box=document.createElement('div'); box.className='living-lair';
+  const cv=document.createElement('canvas'); cv.className='lair-canvas'; cv.id='lairCanvas';
+  const cap=document.createElement('div'); cap.className='living-lair-cap'; cap.textContent='🏡 Логово живёт своей жизнью — коснись дракона';
+  box.appendChild(cv); box.appendChild(cap); wrap.appendChild(box);
+  _lairCv=cv; _lairCtx=cv.getContext('2d');
+  const list=S.dragons.slice(0,12); // до 12 агентов ради производительности
+  const W=cv.clientWidth||Math.min(360,innerWidth-32), H=180;
+  _lairAgents=list.map((d,i)=>({ d, x:30+Math.random()*(W-60), y:70+Math.random()*(H-90),
+    vx:0, vy:0, st:'idle', t:1+Math.random()*2, face:Math.random()<.5?1:-1, bob:Math.random()*6, emote:0 }));
+  const dpr=Math.min(2,devicePixelRatio||1);
+  const fit=()=>{ const w=cv.clientWidth||W; cv.width=w*dpr; cv.height=H*dpr; cv.style.height=H+'px'; _lairCtx.setTransform(dpr,0,0,dpr,0,0); cv._w=w; cv._h=H; };
+  fit(); addEventListener('resize',fit);
+  cv.onpointerdown=(e)=>{ const r=cv.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
+    let best=null,bd=44; for(const a of _lairAgents){ const dd=Math.hypot(a.x-px,a.y-py); if(dd<bd){bd=dd;best=a;} }
+    if(best){ best.emote=1.2; best.st='look'; best.t=2; best.bob+=3;
+      _lairSpawnEmote(best, ['❤','💖','🎵','✨'][Math.floor(Math.random()*4)]);
+      if(Math.random()<0.5 && typeof toast==='function')
+        toast(`<b>${dragonName(best.d)}</b> · настроение: ${_lairMood(best.d)} · любит ${favFood(best.d)}`); } };
+  _lairLast=performance.now(); _lairEvT=5+Math.random()*5;
+  if(_lairRAF)cancelAnimationFrame(_lairRAF);
+  _lairRAF=requestAnimationFrame(_lairFrame);
+}
+const _lairEmotes=[];
+function _lairSpawnEmote(a,txt){ _lairEmotes.push({x:a.x,y:a.y-24,txt,t:0}); }
+function _lairFrame(now){
+  // сам останавливается, когда Логово не на экране — экономия FPS
+  const lairOn=$('#lair')&&$('#lair').classList.contains('on');
+  if(!lairOn||!_lairCv||!_lairCtx||!_lairAgents){ _lairRAF=0; return; }
+  const dt=Math.min(0.05,(now-_lairLast)/1000); _lairLast=now;
+  const W=_lairCv._w||320, H=_lairCv._h||180, ctx=_lairCtx;
+  try{ _lairUpdate(dt,W,H); _lairDraw(W,H); }catch(e){ /* никогда не роняем UI */ }
+  _lairRAF=requestAnimationFrame(_lairFrame);
+}
+function _lairUpdate(dt,W,H){
+  // редкие мини-события (косметические)
+  _lairEvT-=dt;
+  if(_lairEvT<=0 && _lairAgents.length){ _lairEvT=8+Math.random()*10;
+    const a=_lairAgents[Math.floor(Math.random()*_lairAgents.length)];
+    const find=['✨ кристалл','🌸 цветок','🦋 бабочка','🍄 гриб','🥚 яйцо?'][Math.floor(Math.random()*5)];
+    a.st='seek'; a.t=2.5; _lairSpawnEmote(a, find.split(' ')[0]);
+    if(typeof toast==='function' && Math.random()<0.5) toast(`${dragonName(a.d)} нашёл(ла) ${find} в логове!`);
+  }
+  for(const a of _lairAgents){
+    a.t-=dt; a.bob+=dt*(a.st==='fly'?9:5); if(a.emote>0)a.emote-=dt;
+    if(a.t<=0){ a.st=_lairPick(a.d); a.t=1.6+Math.random()*3;
+      if(a.st==='walk'||a.st==='seek'){ a.tx=30+Math.random()*(W-60); a.ty=70+Math.random()*(H-90); }
+      if(a.st==='fly'){ a.tx=30+Math.random()*(W-60); a.ty=24+Math.random()*(H-120); } }
+    let sp=0;
+    if(a.st==='walk'||a.st==='seek') sp=26;
+    else if(a.st==='fly') sp=60;
+    if(sp&&a.tx!=null){ const dx=a.tx-a.x, dy=a.ty-a.y, dl=Math.hypot(dx,dy)||1;
+      if(dl>4){ a.x+=dx/dl*sp*dt; a.y+=dy/dl*sp*dt; a.face=dx<0?-1:1; } else a.t=Math.min(a.t,0.2); }
+    // мягкое разведение соседей (чтобы «садились рядом», но не слипались)
+    for(const b of _lairAgents){ if(b===a)continue; const dx=a.x-b.x,dy=a.y-b.y,dd=Math.hypot(dx,dy);
+      if(dd<26&&dd>0){ a.x+=dx/dd*6*dt; a.y+=dy/dd*6*dt; if(a.st==='play'||b.st==='play'){ if(Math.random()<0.01)_lairSpawnEmote(a,'♪'); } } }
+    a.x=Math.max(22,Math.min(W-22,a.x)); a.y=Math.max(40,Math.min(H-16,a.y));
+  }
+  for(const e of _lairEmotes){ e.t+=dt; e.y-=14*dt; } 
+  for(let i=_lairEmotes.length-1;i>=0;i--) if(_lairEmotes[i].t>1.1)_lairEmotes.splice(i,1);
+}
+function _lairDraw(W,H){
+  const ctx=_lairCtx; ctx.clearRect(0,0,W,H);
+  // мягкий пол логова
+  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(60,48,96,.0)'); g.addColorStop(1,'rgba(40,30,70,.25)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  const order=[..._lairAgents].sort((a,b)=>a.y-b.y);
+  for(const a of order){
+    const st=stageForLevel(a.d.level||1)||1;
+    const size = st>=100?30: st>=60?26: st>=25?22:18; // стадия роста → размер
+    const bobY = a.st==='sleep'?0 : Math.sin(a.bob)*(a.st==='fly'?5:2.5);
+    const yy=a.y+bobY;
+    // тень
+    ctx.beginPath(); ctx.ellipse(a.x, a.y+size*0.55, size*0.7, size*0.24, 0,0,6.283); ctx.fillStyle='rgba(0,0,0,.28)'; ctx.fill();
+    // дракон (эмодзи-силуэт вида), отражение по направлению
+    ctx.save(); ctx.translate(a.x,yy); ctx.scale(a.face,1);
+    ctx.font=size+'px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.globalAlpha=a.st==='sleep'?0.85:1;
+    ctx.fillText((speciesById(a.d.id).sigil)||'🐉',0,0); ctx.restore();
+    ctx.globalAlpha=1;
+    // эмоция состояния
+    const em=(a.emote>0?'💗':LAIR_EMOTE[a.st])||'';
+    if(em){ ctx.font='13px system-ui'; ctx.textAlign='center'; ctx.fillText(em, a.x+size*0.5, yy-size*0.6); }
+  }
+  ctx.textAlign='center'; ctx.font='bold 13px system-ui';
+  for(const e of _lairEmotes){ ctx.globalAlpha=Math.max(0,1-e.t/1.1); ctx.fillText(e.txt,e.x,e.y); }
+  ctx.globalAlpha=1;
+}
+
 function renderLair(){
   if(typeof renderDaily==='function' && $('#dailyPanel')) renderDaily();
   const wrap=$('#lairRoster'); wrap.innerHTML='';
   if(!S.dragons.length){wrap.innerHTML='<div class="empty">Логово пустует. Высиди яйцо в Гнезде, чтобы обрести первого дракона.</div>';$('#detailPanel').style.display='none';return;}
+  mountLivingLair(wrap); // живое логово сверху
   const sorted=lairSorted();
   // панель сортировки
   const sortBar=document.createElement('div'); sortBar.className='lair-sort';
@@ -287,22 +401,25 @@ function restDragon(d){
 /* ===== ГНЕЗДО ===== */
 /* ===== ГНЕЗДО: карусель яиц-ям ===== */
 // отдельный дизайн яйца для каждой стихии (SVG)
-function eggSVG(el, tier){
+function eggSVG(el, tier, rarity){
   const c=EGG_COLORS[el]||EGG_COLORS.fire;
+  const rd=(typeof EGG_RARITY!=='undefined'?(EGG_RARITY[Math.max(1,Math.min(6,rarity||1))]):null)||{r:rarity||1,frame:c.dark,glow:c.light};
   const spots = el==='shade'
     ? `<circle cx="46" cy="52" r="4" fill="${c.spot}" opacity=".8"/><circle cx="60" cy="70" r="3" fill="${c.spot}" opacity=".7"/><circle cx="52" cy="86" r="3.5" fill="${c.spot}" opacity=".7"/>`
     : `<ellipse cx="44" cy="54" rx="4" ry="5" fill="${c.spot}" opacity=".75"/><ellipse cx="62" cy="66" rx="3.5" ry="4.5" fill="${c.spot}" opacity=".7"/><ellipse cx="50" cy="82" rx="4" ry="5" fill="${c.spot}" opacity=".7"/><ellipse cx="66" cy="86" rx="3" ry="4" fill="${c.spot}" opacity=".6"/>`;
-  // тир-корона: чем глубже биом, тем «богаче» яйцо (сияние)
-  const glow = tier>=3 ? `<ellipse cx="54" cy="64" rx="40" ry="46" fill="${c.light}" opacity=".18"/>` : (tier===2?`<ellipse cx="54" cy="64" rx="36" ry="42" fill="${c.light}" opacity=".1"/>`:'');
+  // свечение и рамка по РЕДКОСТИ яйца
+  const glow = `<ellipse cx="54" cy="64" rx="42" ry="48" fill="${rd.glow}" opacity="${rd.r>=4?0.30:rd.r>=2?0.16:0.06}"/>`;
+  const frame = rd.r>=2 ? `<ellipse cx="54" cy="64" rx="37" ry="47" fill="none" stroke="${rd.frame}" stroke-width="${rd.r>=4?3:2}" opacity=".9"/>` : '';
+  const crown = rd.r>=3 ? `<path d="M54 16 l3 7 l7 1 l-5 5 l1 7 l-6 -3 l-6 3 l1 -7 l-5 -5 l7 -1 Z" fill="${rd.frame}" opacity=".95"/>` : '';
+  const sparks = rd.r>=4 ? `<circle cx="33" cy="40" r="2.2" fill="${rd.glow}"/><circle cx="77" cy="52" r="1.8" fill="${rd.glow}"/><circle cx="70" cy="94" r="2" fill="${rd.glow}"/>` : '';
   return `<svg viewBox="0 0 108 128" xmlns="http://www.w3.org/2000/svg">
     ${glow}
-    <defs><radialGradient id="eg${el}${tier}" cx="40%" cy="35%" r="70%">
+    <defs><radialGradient id="eg${el}${tier}${rd.r}" cx="40%" cy="35%" r="70%">
       <stop offset="0%" stop-color="${c.light}"/><stop offset="60%" stop-color="${c.base}"/><stop offset="100%" stop-color="${c.dark}"/>
     </radialGradient></defs>
-    <ellipse cx="54" cy="64" rx="34" ry="44" fill="url(#eg${el}${tier})" stroke="${c.dark}" stroke-width="2"/>
+    <ellipse cx="54" cy="64" rx="34" ry="44" fill="url(#eg${el}${tier}${rd.r})" stroke="${c.dark}" stroke-width="2"/>
     <ellipse cx="44" cy="44" rx="10" ry="14" fill="#fff" opacity=".22"/>
-    ${spots}
-    ${tier>=3?`<path d="M54 20 l3 7 l7 1 l-5 5 l1 7 l-6 -3 l-6 3 l1 -7 l-5 -5 l7 -1 Z" fill="${c.light}" opacity=".9"/>`:''}
+    ${spots}${frame}${crown}${sparks}
   </svg>`;
 }
 const EGG_COLORS={
@@ -314,6 +431,27 @@ const EGG_COLORS={
 };
 
 let hatchSel=0; // индекс выбранного яйца в карусели
+// Кодекс Яиц: 5 стихий × 6 редкостей, найдено/неизвестно, % коллекции
+function eggCodexHTML(){
+  const seen=S.eggsSeen||{}; let cells='',found=0; const total=ELEMENTS_LIST.length*6;
+  for(const el of ELEMENTS_LIST){ for(let r=1;r<=6;r++){
+    const has=!!seen[el+':'+r]; if(has)found++; const rd=EGG_RARITY[r];
+    cells+=`<div class="egg-codex-cell ${has?'found':'unknown'}" title="${rd.name} · ${ELEMENTS[el].name}">`
+      +(has?`<div class="egg-codex-vis">${eggSVG(el, r>=3?3:1, r)}</div>`:'<div class="egg-codex-q">?</div>')+'</div>';
+  }}
+  const pct=Math.round(found/total*100);
+  return `<div class="egg-codex"><div class="egg-codex-head">📖 Кодекс Яиц — собрано <b>${found}/${total}</b> · ${pct}%</div><div class="egg-codex-grid">${cells}</div></div>`;
+}
+// переработка яйца в пыль (яйца НЕ продаются — только переработка)
+function recycleEgg(idx){
+  const eggs=eggsArray(); if(idx<0||idx>=eggs.length)return;
+  const egg=eggs[idx], gain=5+(egg.rarity||1)*5;
+  eggs.splice(idx,1); S.dust=(S.dust||0)+gain;
+  floatText('♻ +✦'+gain,'#9fd0ff');
+  toast(`Яйцо переработано в <b>✦${gain} пыли</b>. Яйца не продаются — только переработка.`);
+  if(hatchSel>=eggs.length)hatchSel=Math.max(0,eggs.length-1);
+  persist(); renderLedger(); renderHatch();
+}
 function renderHatch(){
   const wrap=$('#hatchWrap'); if(!wrap) return;
   const eggs=eggsArray();
@@ -328,15 +466,21 @@ function renderHatch(){
   if(hatchSel<0) hatchSel=0;
   const cards=eggs.map((egg,i)=>{
     const el=ELEMENTS[egg.el];
+    const rd=eggDef(egg), ready=eggIncReady(egg);
+    const need=(egg.incNeed!=null)?egg.incNeed:0, cur=Math.min(need,egg.inc||0);
+    const incBar = need>0
+      ? `<div class="egg-inc"><div class="egg-inc-bar"><i style="width:${Math.round(cur/need*100)}%;background:${rd.frame}"></i></div><span class="egg-inc-t">${ready?'🐣 Готово к вылуплению!':'🥚 Инкубация '+cur+' / '+need}</span></div>`
+      : `<div class="egg-tier">${el.name}</div>`;
     return `<div class="carousel-card egg-card" data-idx="${i}">
       <div class="egg-pit">
-        <div class="egg-visual" id="eggVis${i}">${eggSVG(egg.el, egg.tier)}</div>
+        <div class="egg-visual" id="eggVis${i}">${eggSVG(egg.el, egg.tier, egg.rarity)}</div>
       </div>
       <div class="egg-info">
-        <div class="egg-el">${el.name}</div>
-        <div class="egg-tier">${BIOME_TIERLABEL[egg.tier||1].split(' · ')[1]||'Поверхность'}</div>
+        <div class="egg-el" style="color:${rd.frame};font-weight:700">${rd.name} · ${el.name}</div>
+        ${incBar}
       </div>
-      <button class="btn hatch-one" data-hatch="${i}">Высидеть 🥚</button>
+      <button class="btn hatch-one" data-hatch="${i}" ${ready?'':'disabled'}>${ready?'Высидеть 🥚':'🔒 Дозревает'}</button>
+      <button class="btn ghost egg-recycle" data-recycle="${i}">♻ +✦${5+(egg.rarity||1)*5}</button>
     </div>`;
   }).join('');
   wrap.innerHTML=`
@@ -346,7 +490,8 @@ function renderHatch(){
       <div class="carousel-track" id="eggTrack">${cards}</div>
       <button class="carousel-arrow" id="eggNext">›</button>
     </div>
-    <p class="hint" style="text-align:center;margin-top:10px">Из яйца дракон рождается в случайном окрасе и с уникальным характером. Глубокие биомы дарят редкие виды.</p>`;
+    <p class="hint" style="text-align:center;margin-top:10px">Редкие яйца дозревают в бою и странствиях — <b>играй, а не жди</b>. Чем выше редкость яйца, тем ценнее окрас и вид дракона.</p>
+    ${eggCodexHTML()}`;
   const track=$('#eggTrack');
   const scrollTo=i=>{const card=track.children[i];if(card)card.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});};
   $('#eggPrev').onclick=()=>{hatchSel=Math.max(0,hatchSel-1);scrollTo(hatchSel);};
@@ -355,6 +500,7 @@ function renderHatch(){
     if(arcadeEnabled&&arcadeEnabled())startHatchRhythm(+b.dataset.hatch);
     else hatchEggAt(+b.dataset.hatch,false);
   });
+  wrap.querySelectorAll('[data-recycle]').forEach(b=>b.onclick=()=>recycleEgg(+b.dataset.recycle));
   setTimeout(()=>scrollTo(hatchSel),30);
 }
 
@@ -410,6 +556,10 @@ function hatchEggAt(idx,perfectRhythm){
     eggs.splice(idx,1);
     const wasNew=!S.discovered[sp.id];
     const d=addDragon(sp.id,1);
+    // наследование: редкость яйца → окрас и титул дракона
+    const egRar=(typeof eggRarity==='function')?eggRarity(egg):1;
+    if(egRar>=2){ if(typeof rollMorphByEggRarity==='function') d.morph=rollMorphByEggRarity(egRar);
+      d.eggRarity=egRar; const _rd=EGG_RARITY[egRar]; if(_rd&&_rd.title) d.title=_rd.title; }
     const m=morphById(d.morph);
     floatText('🎉',ELEMENTS[sp.el].color);
     const morphTxt = m.id==='common' ? '' : ` <span style="color:${m.swatch}">· окрас «${m.name}»${m.shiny?' ✨':''}</span>`;

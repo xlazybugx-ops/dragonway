@@ -111,8 +111,14 @@ function daysBetween(a,b){
   if(!a||!b) return 999;
   return Math.round((new Date(b)-new Date(a))/86400000);
 }
+// задание доступно, только если его механика уже открыта (не даём невыполнимых)
+function questAvailable(id){
+  if(id==='forge'||id==='recycle') return featureUnlocked('forge');
+  if(id==='breed'||id==='mutate')  return featureUnlocked('roost');
+  return true;
+}
 function rollDailyQuests(){
-  const pool=[...QUEST_POOL];
+  const pool=[...QUEST_POOL].filter(q=>questAvailable(q.id));
   const out=[];
   for(let i=0;i<3 && pool.length;i++){
     const idx=Math.floor(Math.random()*pool.length);
@@ -128,6 +134,7 @@ function runDaily(){
   if(S.lastDaily!==today){
     // считаем, сколько дней играли всего (для приятной статистики, без давления)
     S.daysPlayed=(S.daysPlayed||0)+1;
+    S.loginDay=(S.loginDay||0)+1; // позиция в 7-дневном цикле входа
     S.lastDaily=today;
     S.chestReady=true;
     // сердечки за ночь чуть остывают — драконы ждут заботы (мягко, по одному)
@@ -171,20 +178,42 @@ function claimQuest(id){
   toast(`Награда получена: <b>${rewardText(r)}</b>!`);
   renderLedger(); renderDaily(); persist();
 }
-// ежедневный подарок: всегда щедрый и одинаково радостный, без стрик-условий
-function chestReward(){
-  return {gold:150, eggs:1, dust:25};
-}
+// 7-дневный цикл входа: награда растёт, день 7 — легендарная (локально, без реальных таймеров)
+const STREAK_REWARDS=[
+  {gold:200},                                   // День 1 — золото
+  {gold:260, dust:30},                          // День 2 — золото + пыль
+  {gold:320, eggs:1},                           // День 3 — редкий ресурс (яйцо)
+  {gold:420, dust:50},                          // День 4
+  {gold:560, eggs:1, dust:50},                  // День 5
+  {gold:760, dust:90},                          // День 6
+  {gold:1400, eggs:2, dust:180, legendary:true} // День 7 — легендарная награда
+];
+function streakDay(){ return (((S.loginDay||1)-1)%7); } // 0..6
+function chestReward(){ return STREAK_REWARDS[streakDay()]; }
 function claimChest(){
   if(!S.chestReady) return;
   const r=chestReward();
   if(r.gold) S.gold+=r.gold;
-  if(r.eggs){for(let i=0;i<r.eggs;i++)addEgg(ELEMENTS_LIST[rnd(0,4)],1);}
+  if(r.eggs){for(let i=0;i<r.eggs;i++)addEgg(ELEMENTS_LIST[rnd(0,4)], r.legendary?3:1);}
   if(r.dust) S.dust+=r.dust;
+  if(r.legendary && typeof addChest==='function') addChest(3); // легендарный сундук в награду
   S.chestReady=false;
   floatText('ПОДАРОК ОТКРЫТ','#d9a441');
-  toast(`🎁 Подарок дня: <b>${rewardText(r)}</b>! Загляни завтра за новым.`);
+  toast(`🎁 Подарок дня ${streakDay()+1}/7: <b>${rewardText(r)}</b>${r.legendary?' 🏆 <b>ЛЕГЕНДАРНЫЙ ДЕНЬ!</b>':''}! Загляни завтра за новым.`);
   renderLedger(); renderDaily(); persist();
+}
+
+// полоса прогресса «к чему идёшь»: ближайшая разблокировка, коллекции
+function progressStripHTML(){
+  const lvl=(typeof progLevel==='function')?progLevel():1;
+  let next=null;
+  for(const k of ['forge','spire','roost']){ if(typeof featureUnlocked==='function' && !featureUnlocked(k)){ next={k,min:FEATURE_MIN[k]}; break; } }
+  const unlockTxt = next ? `🔓 До «${FEATURE_NAME[next.k]}»: <b>${Math.max(1,next.min-lvl)} ур.</b>` : '🔓 Все механики открыты';
+  const disc=(typeof SPECIES!=='undefined')?SPECIES.filter(sp=>S.discovered&&S.discovered[sp.id]).length:0;
+  const specTot=(typeof SPECIES!=='undefined')?SPECIES.length:15;
+  const seen=S.eggsSeen?Object.keys(S.eggsSeen).length:0;
+  const eggPct=Math.round(seen/((typeof ELEMENTS_LIST!=='undefined'?ELEMENTS_LIST.length:5)*6)*100);
+  return `<div class="progress-strip">${unlockTxt} · 🐉 Виды <b>${disc}/${specTot}</b> · 🥚 Кодекс <b>${eggPct}%</b></div>`;
 }
 
 /* ===== РЕНДЕР ЕЖЕДНЕВНОЙ ПАНЕЛИ (в Логове) ===== */
@@ -210,10 +239,11 @@ function renderDaily(){
   }).join('');
 
   box.innerHTML=`
+    ${progressStripHTML()}
     <div class="daily-top">
       <div class="chest-wrap">
         ${S.chestReady
-          ? `<button class="btn chest-btn" id="chestBtn">🎁 Открыть подарок дня · ${rewardText(r)}</button>`
+          ? `<button class="btn chest-btn" id="chestBtn">🎁 Подарок дня ${streakDay()+1}/7 · ${rewardText(r)}${r.legendary?' 🏆':''}</button>`
           : `<div class="chest-done">🎁 Подарок получен! Возвращайся завтра за новым сюрпризом.</div>`}
       </div>
     </div>
@@ -358,6 +388,7 @@ function newGameFromOnboard(){
   S.dust=60;
   S.sel=d.uid;
   S.settlement=onboard.settlement||'Драконьи Земли';
+  S.tutorialGuard=true; // первый бой — гарантированная победа
 }
 
 function newGame(){
@@ -366,6 +397,7 @@ function newGame(){
   S.dust=60;
   S.sel=S.dragons[0].uid;
   S.settlement='Драконьи Земли';
+  S.tutorialGuard=true;
 }
 
 const loaded=loadGame();

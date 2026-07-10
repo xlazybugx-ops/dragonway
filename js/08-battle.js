@@ -116,10 +116,10 @@ function startBattle(myDragon,foeSpec,reward,bossDef){
 }
 
 const MOVES = {
-  fire:  [{n:'Огненный плевок',pow:1.0,t:'Базовый урон стихии огня'},{n:'Залп углей',pow:1.5,t:'Сильный удар, ×0.7 шанс попасть'}],
-  frost: [{n:'Ледяной шип',pow:1.0,t:'Базовый урон стихии льда'},{n:'Метель',pow:1.5,t:'Сильный удар, ×0.7 шанс попасть'}],
-  venom: [{n:'Кислотный укус',pow:1.0,t:'Базовый урон яда'},{n:'Споровая буря',pow:1.5,t:'Сильный удар, ×0.7 шанс попасть'}],
-  storm: [{n:'Громовой разряд',pow:1.0,t:'Базовый урон бури'},{n:'Шторм молний',pow:1.5,t:'Сильный удар, ×0.7 шанс попасть'}],
+  fire:  [{n:'Огненный плевок',pow:1.0,t:'Базовый урон стихии огня'},{n:'Залп углей',pow:1.7,t:'Сильный удар, ×0.7 шанс попасть'}],
+  frost: [{n:'Ледяной шип',pow:1.0,t:'Базовый урон стихии льда'},{n:'Метель',pow:1.7,t:'Сильный удар, ×0.7 шанс попасть'}],
+  venom: [{n:'Кислотный укус',pow:1.0,t:'Базовый урон яда'},{n:'Споровая буря',pow:1.7,t:'Сильный удар, ×0.7 шанс попасть'}],
+  storm: [{n:'Громовой разряд',pow:1.0,t:'Базовый урон бури'},{n:'Шторм молний',pow:1.7,t:'Сильный удар, ×0.7 шанс попасть'}],
   shade: [{n:'Теневой коготь',pow:1.0,t:'Базовый урон тени'},{n:'Поглощение',pow:1.3,t:'Бьёт и лечит на 40% урона'}],
 };
 const GUARD={n:'Защита',pow:0,t:'Готовится: следующий удар по тебе слабее, лечит немного'};
@@ -137,7 +137,7 @@ function renderBattle(){
   const canUlt = b.me.ult && b.me.mana>=b.me.ult.manaCost;
   // оценка урона приёма по текущим статам (диапазон с учётом стихии)
   const estDmg=(pow)=>{
-    const base=b.me.atk*pow*0.7 - b.foe.def*0.6;
+    const base=0.58*(b.me.atk*b.me.atk/(b.me.atk+b.foe.def))*pow;
     const mult=advMult(b.me.el,b.foe.el);
     const lo=Math.max(1,Math.round(base*0.85*mult));
     const hi=Math.max(1,Math.round(base*1.15*mult));
@@ -199,36 +199,40 @@ function renderBattle(){
 function pushLog(html){battle.log.push(html);const lt=$('#battleLatest');if(lt){lt.innerHTML=html;lt.classList.remove('flash');void lt.offsetWidth;lt.classList.add('flash');}}
 
 function advMult(attEl,defEl){
-  if(ADVANTAGE[attEl]===defEl)return 1.4;
-  if(ADVANTAGE[defEl]===attEl)return 0.7;
+  if(ADVANTAGE[attEl]===defEl)return 1.28;
+  if(ADVANTAGE[defEl]===attEl)return 0.85;
   return 1;
 }
 
 function doStrike(att,def,move,labelClass,accMult){
   accMult = accMult||1;
   // ультимативка и заклинания не промахиваются; сильные обычные приёмы — могут
-  if(att.isFoe && move.pow>=1.5 && !move.isUlt && !move.isSpell && Math.random()>0.7){
+  if(move.pow>=1.5 && !move.isUlt && !move.isSpell && Math.random()>0.7){
     pushLog(`<span>${att.sp.name} промахнулся «${move.n}».</span>`);
     return {dmg:0,miss:true};
   }
-  const base = att.atk*move.pow*0.7 - def.def*0.6;
+  const raw = 0.58*(att.atk*att.atk/(att.atk+def.def));
+  const base = raw*move.pow;
   let dmg = Math.max(1, Math.round(base * (rnd(85,115)/100)));
   dmg=Math.round(dmg*accMult); // бонус/штраф от мини-игры тайминга
   let mult=advMult(att.el,def.el);
   // босс: явная слабость из свитков (переопределяет стихийную таблицу)
   if(def.isBoss && battle && battle.boss){
-    if(battle.boss.weakTo){ mult = att.el===battle.boss.weakTo ? 1.4 : Math.min(mult,1.0); }
+    if(battle.boss.weakTo){ mult = att.el===battle.boss.weakTo ? 1.28 : Math.min(mult,1.0); }
     if(battle.bossStalled){ mult*=1.6; } // застывший босс беззащитен
   }
   dmg=Math.round(dmg*mult);
   if(!att.isFoe && att.happy5) dmg=Math.round(dmg*1.05); // счастливый дракон старается (+5%)
   if(def.guarding){dmg=Math.round(dmg*0.55);def.guarding=false;}
   if(def.parryMult){dmg=Math.round(dmg*def.parryMult);def.parryMult=0;}
-  const critChance = att.isFoe ? 0 : ((att.fx&&att.fx.critPct)||0)/100; // криты — навык и реликвии, не жребий
-  const crit=(accMult>=2)|| Math.random()<critChance;
-  if(crit && accMult<2)dmg=Math.round(dmg*1.6);
+  // КРИТ отделён от идеального тайминга: базовый шанс + резвость(скорость) + реликвии; урон ×1.5
+  const spdCrit = Math.max(-0.04, Math.min(0.14, (att.spd - def.spd)*0.006));
+  const critChance = att.isFoe ? (0.05 + spdCrit) : (0.08 + spdCrit + ((att.fx&&att.fx.critPct)||0)/100);
+  const crit = Math.random() < critChance;
+  if(crit)dmg=Math.round(dmg*1.5);
   sfx(crit?'crit':'hit');
   def.hp-=dmg;
+  if(S.tutorialGuard && battle && def===battle.me && def.hp<1) def.hp=1; // обучение без поражения
   let extra='';
   if(mult>1)extra=' <span class="gold">(стихия превосходит!)</span>';
   else if(mult<1)extra=' <span style="color:var(--ink-dim)">(стихия слаба)</span>';
@@ -238,7 +242,7 @@ function doStrike(att,def,move,labelClass,accMult){
   const vamp=(att.fx&&att.fx.vampPct)||0;
   if(vamp>0 && dmg>0){const heal=Math.max(1,Math.round(dmg*vamp/100));att.hp=Math.min(att.maxHp,att.hp+heal);pushLog(`<span class="heal">🩸 ${att.sp.name} впитывает ${heal} жизни (вампиризм).</span>`);}
   // лечение от тени/поглощения и от лечащих ульт
-  if(move.n==='Поглощение'){const heal=Math.round(dmg*0.4);att.hp=Math.min(att.maxHp,att.hp+heal);pushLog(`<span class="heal">${att.sp.name} впитывает ${heal} жизни.</span>`);}
+  if(move.n==='Поглощение'){const heal=Math.round(dmg*0.25);att.hp=Math.min(att.maxHp,att.hp+heal);pushLog(`<span class="heal">${att.sp.name} впитывает ${heal} жизни.</span>`);}
   if(move.heal){const heal=Math.round(att.maxHp*0.5);att.hp=Math.min(att.maxHp,att.hp+heal);pushLog(`<span class="heal">${att.sp.name} исцеляется на ${heal}!</span>`);}
   return {dmg,crit,mult};
 }
@@ -293,16 +297,16 @@ function playerMove(move){
     startTimingStrike(move);
   } else {
     // без мини-игры — скрытая компенсация точности
-    resolvePlayerStrike(move, 1.25);
+    resolvePlayerStrike(move, 1.0);
   }
 }
 // выполнить удар игрока с множителем точности из мини-игры
 function resolvePlayerStrike(move, accMult){
   const b=battle;
   // комбо: точные попадания подряд наращивают урон (×1.1 → ×1.2 → ×1.3)
-  if(accMult>=1.4){ b.combo=Math.min(3,(b.combo||0)+1); if(b.combo>1)floatText('Комбо ×'+(1+b.combo*0.1).toFixed(1),'#ffd24a'); }
-  else if(accMult<1.2){ b.combo=0; }
-  const comboMult=1+(b.combo||0)*0.1;
+  if(accMult>=1.25){ b.combo=Math.min(3,(b.combo||0)+1); if(b.combo>1)floatText('Комбо ×'+(1+b.combo*0.05).toFixed(2),'#ffd24a'); }
+  else if(accMult<1.0){ b.combo=0; }
+  const comboMult=1+(b.combo||0)*0.05;
   animate('me','cast');animate('foe','hit');
   const r=doStrike(b.me,b.foe,move,null,accMult*comboMult);
   if(r.dmg&&r.mult>1)floatText('стихия!',ELEMENTS[b.me.el].color);
@@ -368,9 +372,9 @@ function startTimingStrike(move){
   // pointerdown = мгновенный отклик на касание (click на мобильных запаздывает и глотается жестами)
   box.querySelector('#timingHit').onpointerdown=(e)=>{
     e.preventDefault();
-    if(pos>=perfStart&&pos<=perfEnd) finish(2.0,'⭐ ИДЕАЛЬНО!','#ffd24a');
-    else if(pos>=goodStart&&pos<=goodEnd) finish(1.4,'✯ Точно!','#7fb24a');
-    else finish(0.8,'промах…','#c5544a');
+    if(pos>=perfStart&&pos<=perfEnd) finish(1.25,'⭐ ИДЕАЛЬНО!','#ffd24a');
+    else if(pos>=goodStart&&pos<=goodEnd) finish(1.10,'✯ Точно!','#7fb24a');
+    else finish(0.85,'промах…','#c5544a');
   };
   box.querySelector('#timingSkip').onpointerdown=(e)=>{e.preventDefault();finish(1.0,null,null);};
 }
@@ -379,7 +383,7 @@ function startTimingStrike(move){
    Два поля подряд. Активация только при попадании в обе области.
    Крит по центру каждой: обе в центр → сокрушительный ×2.25. */
 function startUltMinigame(move){
-  const stage=$('#battleStage'); if(!stage){resolvePlayerStrike(move,1.5);return;}
+  const stage=$('#battleStage'); if(!stage){resolvePlayerStrike(move,1.0);return;}
   const box=document.createElement('div');
   box.className='timing-overlay';
   box.innerHTML=`
@@ -440,7 +444,7 @@ function startUltMinigame(move){
       m1.classList.add('locked');
       if(hit1===null){
         // промах по первой — ульта срывается, бьёт ослабленно, мана уже потрачена
-        return finishUlt(0.6,'ульта сорвалась…','#c5544a');
+        return finishUlt(0.65,'ульта сорвалась…','#c5544a');
       }
       phase=2; pos=0; dir=1;
     } else {
@@ -448,12 +452,12 @@ function startUltMinigame(move){
       const badge=box.querySelector('#ultBadge2');
       badge.classList.add(hit2==='crit'?'ok-crit':(hit2==='good'?'ok':'miss'));
       if(hit2===null){
-        return finishUlt(0.6,'вторая зона мимо…','#c5544a');
+        return finishUlt(0.65,'вторая зона мимо…','#c5544a');
       }
       // обе зоны поражены → сила по сумме
-      if(hit1==='crit'&&hit2==='crit') finishUlt(2.25,'💥 СОКРУШИТЕЛЬНО!','#ffd24a');
-      else if(hit1==='crit'||hit2==='crit') finishUlt(1.9,'⭐ Мощно!','#ffd24a');
-      else finishUlt(1.5,'✯ Ульта прошла!','#7fb24a');
+      if(hit1==='crit'&&hit2==='crit') finishUlt(1.30,'💥 СОКРУШИТЕЛЬНО!','#ffd24a');
+      else if(hit1==='crit'||hit2==='crit') finishUlt(1.15,'⭐ Мощно!','#ffd24a');
+      else finishUlt(1.0,'✯ Ульта прошла!','#7fb24a');
     }
   };
   box.querySelector('#ultSkip').onpointerdown=(e)=>{e.preventDefault();finishUlt(1.0,null,null);};
@@ -607,6 +611,8 @@ function finishWaveRun(){
 }
 
 function endBattle(win){
+  if(win && typeof incubateEggs==='function') incubateEggs(2); // инкубация яиц за победу
+  if(win) S.tutorialGuard=false;
   const b=battle;b.over=true;
   const me=b.me.ref; // настоящий дракон
   me.curHp=Math.max(0,Math.round(b.me.hp));
@@ -619,7 +625,7 @@ function endBattle(win){
     let eggMsg='';
     if(Math.random()<0.3){const bt=(battle.fromFlight&&flight)?flight.region.biomeN:1; addEgg(b.foe.el,bt); eggMsg=' Враг обронил <b>🥚 яйцо</b>!';}
     let artMsg='';
-    if(Math.random()<0.22){
+    if(Math.random()<0.22 && featureUnlocked('spire')){
       const maxR=Math.min(5, Math.max(1, Math.ceil(b.foe.level/3)+1));
       const art=weightedArtifact(maxR);
       addArtifact(art.id,1);
@@ -651,8 +657,12 @@ function endBattle(win){
       }
     }
   } else {
-    pushLog(`<span class="dmg">Ох!</span> ${dragonName(b.me.ref)} устал и сдался. Покорми его и дай отдохнуть в Логове — и снова в бой!`);
-    floatText('УВЫ…','#c5544a');
+    // ни один бой не заканчивается без награды — утешительные золото и опыт
+    const solaceGold=Math.max(5,Math.round((b.reward||20)*0.15));
+    const solaceXp=Math.max(4,Math.round((b.foe.level||1)*3));
+    S.gold+=solaceGold; if(b.me.ref)grantXp(b.me.ref,solaceXp);
+    pushLog(`<span class="dmg">Ох!</span> ${dragonName(b.me.ref)} устал и сдался, но набрался опыта: <span class="gold">+${solaceGold}🪙</span> и <span class="gold">+${solaceXp} опыта</span>.`);
+    floatText('+'+solaceGold+'🪙','#d9a441');
     sfx('lose');
   }
   const end=$('#battleEnd');

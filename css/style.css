@@ -969,3 +969,30 @@
 .arcade-fs .ac-btn.nomana{filter:grayscale(.7) brightness(.7)}
 .arcade-fs .ac-cd{position:absolute;inset:0;background:rgba(8,6,20,.72);transform-origin:bottom;transform:scaleY(0);pointer-events:none}
 .arcade-fs .ac-nm{position:absolute;bottom:1px;left:0;right:0;text-align:center;font-size:8px;font-weight:700;opacity:.7}
+
+/* ===== ЯЙЦА: редкость, инкубация, Кодекс ===== */
+.egg-inc{margin-top:4px}
+.egg-inc-bar{height:8px;border-radius:5px;background:rgba(0,0,0,.35);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.egg-inc-bar>i{display:block;height:100%;border-radius:5px;transition:width .2s}
+.egg-inc-t{display:block;font-size:11px;opacity:.85;margin-top:3px;text-align:center}
+.egg-recycle{margin-top:6px;font-size:12px;padding:6px 10px}
+.egg-codex{margin-top:16px;padding:12px;border-radius:14px;background:rgba(20,16,42,.5)}
+.egg-codex-head{font-size:13px;font-weight:700;margin-bottom:8px;text-align:center}
+.egg-codex-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-width:360px;margin:0 auto}
+.egg-codex-cell{aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.egg-codex-cell.unknown .egg-codex-q{font-size:18px;font-weight:700;opacity:.35}
+.egg-codex-vis{width:78%;height:78%}
+.egg-codex-vis svg{width:100%;height:100%;display:block}
+
+/* ===== ПОЛОСА ПРОГРЕССА (первый час) ===== */
+.progress-strip{margin:0 0 10px;padding:8px 12px;border-radius:12px;background:rgba(30,26,58,.5);
+  font-size:12px;text-align:center;opacity:.95;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.progress-strip b{color:var(--gold,#e7b53b)}
+
+/* ===== ЖИВОЕ ЛОГОВО ===== */
+.living-lair{margin:0 0 12px;border-radius:16px;overflow:hidden;position:relative;
+  background:radial-gradient(120% 90% at 50% 0%, rgba(80,64,130,.35), rgba(24,18,44,.55));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.lair-canvas{display:block;width:100%;height:180px;touch-action:manipulation}
+.living-lair-cap{position:absolute;left:0;right:0;bottom:0;padding:5px 10px;font-size:11px;text-align:center;
+  opacity:.75;background:linear-gradient(0deg, rgba(10,8,24,.55), rgba(10,8,24,0))}
