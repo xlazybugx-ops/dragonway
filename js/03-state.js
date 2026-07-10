@@ -24,6 +24,7 @@ let S = {
   marketDust:null,   // дневной лимит обмена пыли на Рынке
   milestonesClaimed:{}, // забранные коллекционные вехи
   waveBest:0,        // рекорд арены волн
+  lairLevel:1,       // уровень логова → вместимость активных драконов (ЧАСТЬ 3)
   dragons:[],      // {uid,id,level,xp,curHp,morph,equip,genes,gen,nature}
   discovered:{},   // species id -> true
   morphsSeen:{},   // species id -> {morphId:true}
@@ -224,6 +225,9 @@ function addDragon(speciesId, level=1, morph=null, genes=null, gen=1, nature=nul
            nature: nature || rollNature(),
            name:null, happy:5, lastFed:0, talentPicks:{}};
   d.curHp=statsOf(d).maxHp;
+  // ЧАСТЬ 3: если в логове нет места — новый дракон уходит в резерв (не пропадает)
+  if(typeof lairCap==='function' && S.dragons.filter(x=>!x.reserve).length>=lairCap()) d.reserve=true;
+  d.isNew=true; // для фильтра «новые» в Заповеднике
   S.dragons.push(d);
   if(!S.discovered[speciesId]){S.discovered[speciesId]=true;}
   S.morphsSeen[speciesId] = S.morphsSeen[speciesId] || {};
@@ -321,6 +325,7 @@ function grantXp(d, amount){
     d.curHp = statsOf(d).maxHp; // на новом уровне исцеляется
   }
   if(d.level>=MAX_LEVEL) d.xp=0;
+  if(leveled && typeof levelUpFx==='function') levelUpFx(d); // празднование уровня
   // оповестить об открытии новых талантов в Шпиле
   if(leveled){
     const tree=treeOf(d.id);

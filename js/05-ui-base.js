@@ -84,8 +84,8 @@ function mountLivingLair(wrap){
   const cap=document.createElement('div'); cap.className='living-lair-cap'; cap.textContent='🏡 Логово живёт своей жизнью — коснись дракона';
   box.appendChild(cv); box.appendChild(cap); wrap.appendChild(box);
   _lairCv=cv; _lairCtx=cv.getContext('2d');
-  const list=S.dragons.slice(0,12); // до 12 агентов ради производительности
-  const W=cv.clientWidth||Math.min(360,innerWidth-32), H=180;
+  const list=S.dragons.filter(d=>!d.reserve).slice(0,12); // ДОМ СТАИ: только активная стая (резерв — в Заповеднике)
+  const W=cv.clientWidth||Math.min(360,innerWidth-32), H=200;
   _lairAgents=list.map((d,i)=>({ d, x:30+Math.random()*(W-60), y:70+Math.random()*(H-90),
     vx:0, vy:0, st:'idle', t:1+Math.random()*2, face:Math.random()<.5?1:-1, bob:Math.random()*6, emote:0 }));
   const dpr=Math.min(2,devicePixelRatio||1);
@@ -95,8 +95,8 @@ function mountLivingLair(wrap){
     let best=null,bd=44; for(const a of _lairAgents){ const dd=Math.hypot(a.x-px,a.y-py); if(dd<bd){bd=dd;best=a;} }
     if(best){ best.emote=1.2; best.st='look'; best.t=2; best.bob+=3;
       _lairSpawnEmote(best, ['❤','💖','🎵','✨'][Math.floor(Math.random()*4)]);
-      if(Math.random()<0.5 && typeof toast==='function')
-        toast(`<b>${dragonName(best.d)}</b> · настроение: ${_lairMood(best.d)} · любит ${favFood(best.d)}`); } };
+      S.sel=best.d.uid; // тап по дракону открывает его свиток
+      if(typeof renderDetail==='function'){ renderDetail(best.d); const dp=$('#detailPanel'); if(dp) setTimeout(()=>dp.scrollIntoView({behavior:'smooth',block:'nearest'}),40); } } };
   _lairLast=performance.now(); _lairEvT=5+Math.random()*5;
   if(_lairRAF)cancelAnimationFrame(_lairRAF);
   _lairRAF=requestAnimationFrame(_lairFrame);
@@ -170,54 +170,55 @@ function _lairDraw(W,H){
 function renderLair(){
   if(typeof renderDaily==='function' && $('#dailyPanel')) renderDaily();
   const wrap=$('#lairRoster'); wrap.innerHTML='';
-  if(!S.dragons.length){wrap.innerHTML='<div class="empty">Логово пустует. Высиди яйцо в Гнезде, чтобы обрести первого дракона.</div>';$('#detailPanel').style.display='none';return;}
-  mountLivingLair(wrap); // живое логово сверху
-  const sorted=lairSorted();
-  // панель сортировки
-  const sortBar=document.createElement('div'); sortBar.className='lair-sort';
-  const mode=S.lairSort||'level-desc';
-  sortBar.innerHTML=`<span class="lair-sort-label">Сортировка:</span>
-    <select id="lairSortSel" class="lair-sort-sel">
-      <option value="level-desc"${mode==='level-desc'?' selected':''}>По уровню ↓</option>
-      <option value="level-asc"${mode==='level-asc'?' selected':''}>По уровню ↑</option>
-      <option value="rarity"${mode==='rarity'?' selected':''}>По редкости</option>
-      <option value="name"${mode==='name'?' selected':''}>По имени</option>
-    </select>
-    <span class="lair-count">🐉 ${S.dragons.length}</span>`;
-  wrap.appendChild(sortBar);
-  // карусель: стрелки + горизонтальная лента карточек
-  const car=document.createElement('div'); car.className='carousel';
-  const prev=document.createElement('button'); prev.className='carousel-arrow prev'; prev.innerHTML='‹'; prev.setAttribute('aria-label','Назад');
-  const next=document.createElement('button'); next.className='carousel-arrow next'; next.innerHTML='›'; next.setAttribute('aria-label','Вперёд');
-  const track=document.createElement('div'); track.className='carousel-track'; track.id='lairTrack';
-  sorted.forEach(d=>{
-    const card=dragonCard(d,{selectable:true,onclick:selectDragon});
-    card.classList.add('carousel-card');
-    card.dataset.uid=d.uid;
-    track.appendChild(card);
-  });
-  car.appendChild(prev); car.appendChild(track); car.appendChild(next);
-  wrap.appendChild(car);
-  // обработчик сортировки
-  $('#lairSortSel').onchange=(e)=>{ S.lairSort=e.target.value; persist(); renderLair(); };
-  // прокрутка стрелками на ширину видимой области
-  const scrollAmt=()=>Math.max(track.clientWidth*0.8, 200);
-  prev.onclick=()=>track.scrollBy({left:-scrollAmt(),behavior:'smooth'});
-  next.onclick=()=>track.scrollBy({left: scrollAmt(),behavior:'smooth'});
-  // прятать стрелки на краях
-  const updateArrows=()=>{
-    prev.classList.toggle('hidden', track.scrollLeft<=4);
-    next.classList.toggle('hidden', track.scrollLeft+track.clientWidth>=track.scrollWidth-4);
-  };
-  track.addEventListener('scroll', updateArrows, {passive:true});
-  setTimeout(updateArrows, 50);
-  // прокрутить к выбранному дракону
-  if(S.sel){
-    const c=[...track.children].find(ch=>ch.dataset.uid===S.sel);
-    if(c) setTimeout(()=>{ c.scrollIntoView({inline:'center',block:'nearest',behavior:'auto'}); updateArrows(); },0);
-  }
+  if(!S.dragons.length){ wrap.innerHTML='<div class="empty">Логово пустует. Высиди яйцо в Гнезде, чтобы обрести первого дракона.</div>'; $('#detailPanel').style.display='none'; return; }
+  const activeList=S.dragons.filter(d=>!d.reserve);
+  // 1) ДОМ СТАИ — живая сцена (только активная стая); тап по дракону открывает свиток
+  mountLivingLair(wrap);
+  // 2) УРОВЕНЬ ЛОГОВА + вход в управление стаей/Заповедником
+  const _cap=(typeof lairCap==='function')?lairCap():4, _act=activeList.length;
+  const _nx=(typeof lairNext==='function')?lairNext():null;
+  const lvlBar=document.createElement('div'); lvlBar.className='lair-level';
+  lvlBar.innerHTML=`<span class="ll-badge">🏰<b>ур.${S.lairLevel||1}</b></span>`
+    +`<span class="ll-cap${_act>=_cap?' full':''}">${_act}/${_cap}🐉</span>`
+    +`<button class="flock-open-btn tap" id="flockMgrBtn" title="Стая и Заповедник">⚙️ Стая</button>`
+    +(_nx?`<button class="ll-up tap" id="lairUpBtn">⬆️ ${_nx.cap}🐉</button>`:`<span class="ll-max">макс</span>`);
+  wrap.appendChild(lvlBar);
+  // 3) ИНКУБАТОР — компактная полоса
+  const incHtml=lairIncubatorHTML();
+  if(incHtml){ const box=document.createElement('div'); box.className='lair-incub tap'; box.innerHTML=incHtml;
+    box.onclick=()=>switchView('hatch'); wrap.appendChild(box); }
+  // 4) ОДНО СЛЕДУЮЩЕЕ ДЕЙСТВИЕ
+  const act=lairNextAction();
+  if(act){ const b=document.createElement('button'); b.className='lair-next tap'; b.innerHTML=act.label; b.onclick=act.fn; wrap.appendChild(b); }
+  // проводка
+  const _upBtn=$('#lairUpBtn'); if(_upBtn) _upBtn.onclick=()=>upgradeLair();
+  const _mgrBtn=$('#flockMgrBtn'); if(_mgrBtn) _mgrBtn.onclick=()=>openFlockManager();
+  // свиток выбранного (управление — в бот-шите ⚙️ Стая; детали — тапом по дракону)
   if(S.sel && S.dragons.some(d=>d.uid===S.sel)) renderDetail(S.dragons.find(d=>d.uid===S.sel));
   else $('#detailPanel').style.display='none';
+}
+
+/* Инкубатор: компактный статус ближайшего яйца */
+function lairIncubatorHTML(){
+  const eggs=(typeof eggsArray==='function')?eggsArray():[];
+  if(!eggs.length) return '';
+  const readyN=eggs.filter(e=>e.incNeed&&(e.inc||0)>=e.incNeed).length;
+  const inc=eggs.find(e=>e.incNeed&&(e.inc||0)<e.incNeed);
+  if(readyN) return `<span class="li-ic">🐣</span><span class="li-body"><b>${readyN}</b> ${readyN===1?'яйцо готово':'яиц готовы'} к вылуплению</span><span class="li-go">Гнездо ›</span>`;
+  if(inc){ const pct=Math.round((inc.inc||0)/inc.incNeed*100);
+    const bar=(typeof pbarHTML==='function')?pbarHTML(inc.inc||0,inc.incNeed,'inc',false):'';
+    return `<span class="li-ic">🥚</span><span class="li-body">Инкубация · <b>${pct}%</b>${bar}</span><span class="li-go">Гнездо ›</span>`; }
+  return `<span class="li-ic">🥚</span><span class="li-body"><b>${eggs.length}</b> ${eggs.length===1?'яйцо ждёт':'яиц ждут'} своего часа</span><span class="li-go">Гнездо ›</span>`;
+}
+
+/* Одно следующее действие — приоритет по состоянию логова */
+function lairNextAction(){
+  const eggs=(typeof eggsArray==='function')?eggsArray():[];
+  if(S.chestReady) return {label:'🎁 Забрать подарок дня', fn:()=>{ const dp=$('#dailyPanel'); if(dp)dp.scrollIntoView({behavior:'smooth',block:'center'}); }};
+  if(eggs.some(e=>e.incNeed&&(e.inc||0)>=e.incNeed)) return {label:'🐣 Высиди готовое яйцо', fn:()=>switchView('hatch')};
+  if(typeof lairUpgradeCheck==='function'){ const c=lairUpgradeCheck(); if(c&&c.ok) return {label:'⬆️ Улучши логово', fn:()=>upgradeLair()}; }
+  if(eggs.length) return {label:'🥚 Загляни в Гнездо', fn:()=>switchView('hatch')};
+  return {label:'🗺️ Отправься в странствие', fn:()=>switchView('explore')};
 }
 
 function selectDragon(d){
@@ -264,6 +265,7 @@ function renderDetail(d){
           <span class="happy-hearts" title="Настроение">${'💖'.repeat(d.happy||0)}${'🤍'.repeat(HAPPY_MAX-(d.happy||0))}</span>
           <button class="btn care-btn" id="feedBtn">🍖 Покормить · 🪙${FOOD_COST}</button>
           <button class="btn care-btn" id="petBtn">💖 Погладить</button>
+          <button class="btn care-btn" onclick="toggleReserve(${d.uid})" title="Отправить в резерв">💤 В резерв</button>
         </div>
         <p class="lede" style="margin-bottom:10px">${d.name?`<b>${d.name}</b> — это ${sp.name.toLowerCase()}. `:''}${sp.lore} <br>${morphLine}${modBits?` <span style="color:var(--gold)">(${modBits})</span>`:''}<br><span style="color:var(--ink-dim)">Сильнее против стихии: <b style="color:${ELEMENTS[ADVANTAGE[sp.el]].color}">${adv}</b>.</span></p>
         <div class="statline"><span>Жизнь</span><b>${d.curHp} / ${st.maxHp}</b></div>
@@ -455,6 +457,16 @@ function eggCodexHTML(){
   const pct=Math.round(found/(list.length||1)*100);
   return '<div class="egg-codex"><div class="egg-codex-head">📖 Кодекс Яиц — открыто <b>'+found+'/'+list.length+'</b> · '+pct+'%</div><div class="egg-codex-grid catalog">'+cells+'</div><div class="egg-codex-foot">🔒 — секретные яйца открываются особыми условиями</div></div>';
 }
+// СВЯЗЬ: осколки (из исследования/переработки) → ускорение инкубации яиц
+function warmEgg(idx){
+  const eggs=eggsArray(); if(idx<0||idx>=eggs.length)return; const egg=eggs[idx];
+  const need=egg.incNeed||0; if(!need || (egg.inc||0)>=need) return;
+  const cost=(egg.rarity||1)*GB.Eggs.warmCostPerRarity;
+  if((S.shards||0)<cost){ toast('Нужно больше 🔮 осколков — добудь их в странствиях или переработай яйца.'); return; }
+  S.shards-=cost; egg.inc=Math.min(need,(egg.inc||0)+Math.ceil(need*GB.Eggs.warmProgressFrac));
+  floatText('🔮 Согрето!','#c9b8ff'); toast(`Яйцо согрето осколками (−🔮${cost}). Инкубация ускорена!`);
+  persist(); renderLedger(); renderHatch();
+}
 // переработка яйца в пыль (яйца НЕ продаются — только переработка)
 function recycleEgg(idx){
   const eggs=eggsArray(); if(idx<0||idx>=eggs.length)return;
@@ -495,6 +507,7 @@ function renderHatch(){
       </div>
       <button class="btn hatch-one" data-hatch="${i}" ${ready?'':'disabled'}>${ready?'Высидеть 🥚':'🔒 Дозревает'}</button>
       <button class="btn ghost egg-recycle" data-recycle="${i}">♻ +✦${GB.Eggs.recycleBase+(egg.rarity||1)*GB.Eggs.recyclePerRarity}</button>
+      ${(need>0 && !ready)?`<button class="btn ghost egg-warm" data-warm="${i}" ${((S.shards||0)>=(egg.rarity||1)*GB.Eggs.warmCostPerRarity)?"":"disabled"}>🔮 Согреть · ${(egg.rarity||1)*GB.Eggs.warmCostPerRarity}</button>`:""}
     </div>`;
   }).join('');
   wrap.innerHTML=`
@@ -515,6 +528,7 @@ function renderHatch(){
     else hatchEggAt(+b.dataset.hatch,false);
   });
   wrap.querySelectorAll('[data-recycle]').forEach(b=>b.onclick=()=>recycleEgg(+b.dataset.recycle));
+  wrap.querySelectorAll('[data-warm]').forEach(b=>b.onclick=()=>warmEgg(+b.dataset.warm));
   setTimeout(()=>scrollTo(hatchSel),30);
 }
 
@@ -589,3 +603,83 @@ function hatchEggAt(idx,perfectRhythm){
   },500);
 }
 
+
+/* ============================================================
+   GAME FEEL v2 — Активная стая + Заповедник: один экран, быстрая замена
+   ============================================================ */
+const _flockFilter={el:null,fav:false,onlyNew:false,sort:'level'};
+function openFlockManager(){
+  let sh=document.getElementById('flockSheet');
+  if(!sh){ sh=document.createElement('div'); sh.id='flockSheet';
+    sh.innerHTML='<div class="fs-panel" id="flockPanel"></div>';
+    document.body.appendChild(sh);
+    sh.addEventListener('click',e=>{ if(e.target===sh) closeFlockManager(); }); }
+  sh.classList.add('show'); renderFlockSheet();
+}
+function closeFlockManager(){ const sh=document.getElementById('flockSheet'); if(sh) sh.classList.remove('show'); }
+function _flockCell(d,inFlock){ const sp=speciesById(d.id);
+  const em=(sp&&sp.sigil)||'🐉';
+  const star=d.fav?'⭐':'';
+  const nw=d.isNew?'<span class="fc-badge">🆕</span>':'';
+  return `<button class="${inFlock?'flock-slot':'sanc-cell'} tap${d.fav?' fav':''}" data-uid="${d.uid}">`
+    +`${inFlock?'':nw}<span class="fc-em">${em}</span>`
+    +`<span class="fc-nm">${star}${dragonName(d)}</span>`
+    +`<span class="fc-lv">ур.${d.level} ${RARITY_STAR?('· '+RARITY_STAR(sp.rarity)):''}</span>`
+    +`<span class="fc-act">${inFlock?'→ заповедник':'↩ в стаю'}</span></button>`;
+}
+function _sancFiltered(){
+  let list=S.dragons.filter(d=>d.reserve);
+  if(_flockFilter.el) list=list.filter(d=>speciesById(d.id).el===_flockFilter.el);
+  if(_flockFilter.fav) list=list.filter(d=>d.fav);
+  if(_flockFilter.onlyNew) list=list.filter(d=>d.isNew);
+  const sp=id=>speciesById(id);
+  if(_flockFilter.sort==='level') list.sort((a,b)=>b.level-a.level);
+  else if(_flockFilter.sort==='rarity') list.sort((a,b)=>sp(b.id).rarity-sp(a.id).rarity);
+  return list;
+}
+function renderFlockSheet(){
+  const panel=document.getElementById('flockPanel'); if(!panel)return;
+  const cap=(typeof lairCap==='function')?lairCap():4;
+  const flock=S.dragons.filter(d=>!d.reserve);
+  const els=[['fire','🔥'],['frost','🧊'],['venom','🟢'],['storm','⚡'],['shade','🌑']];
+  let slots='';
+  flock.forEach(d=>slots+=_flockCell(d,true));
+  for(let i=flock.length;i<cap;i++) slots+='<div class="flock-empty">＋</div>';
+  const chips=`<div class="filter-row">`
+    +`<button class="filter-chip tap${!_flockFilter.el?' on':''}" data-el="">Все</button>`
+    +els.map(([e,ic])=>`<button class="filter-chip tap${_flockFilter.el===e?' on':''}" data-el="${e}">${ic}</button>`).join('')
+    +`<button class="filter-chip tap${_flockFilter.fav?' on':''}" data-t="fav">⭐</button>`
+    +`<button class="filter-chip tap${_flockFilter.onlyNew?' on':''}" data-t="new">🆕</button>`
+    +`<button class="filter-chip tap${_flockFilter.sort==='rarity'?' on':''}" data-t="sort">↕${_flockFilter.sort==='rarity'?'редк.':'ур.'}</button>`
+    +`</div>`;
+  const sanc=_sancFiltered();
+  panel.innerHTML=`
+    <div class="fs-head"><h3>Стая и Заповедник</h3><button class="fs-close tap" id="fsClose">✕</button></div>
+    <div class="fs-section-t">🏰 Активная стая · ${flock.length}/${cap}</div>
+    <div class="flock-strip" id="fsFlock">${slots}</div>
+    <div class="fs-section-t">🌿 Заповедник · ${sanc.length}</div>
+    ${chips}
+    <div class="sanc-grid" id="fsSanc">${sanc.length?sanc.map(d=>_flockCell(d,false)).join(''):'<div class="empty" style="grid-column:1/-1">Пусто по фильтру.</div>'}</div>`;
+  panel.querySelector('#fsClose').onclick=closeFlockManager;
+  // клики по стае → в заповедник
+  panel.querySelectorAll('#fsFlock .flock-slot').forEach(b=>b.onclick=()=>{ toggleReserve(+b.dataset.uid); renderFlockSheet(); });
+  // клики по заповеднику → в стаю (+снять «новый»)
+  panel.querySelectorAll('#fsSanc .sanc-cell').forEach(b=>{
+    let hold=null;
+    b.onclick=()=>{ const d=S.dragons.find(x=>x.uid===+b.dataset.uid); if(d)d.isNew=false; toggleReserve(+b.dataset.uid); renderFlockSheet(); };
+    // долгое нажатие — избранное
+    b.addEventListener('touchstart',()=>{ hold=setTimeout(()=>{ _toggleFav(+b.dataset.uid); },500); },{passive:true});
+    b.addEventListener('touchend',()=>clearTimeout(hold));
+    b.oncontextmenu=(e)=>{ e.preventDefault(); _toggleFav(+b.dataset.uid); };
+  });
+  // фильтры
+  panel.querySelectorAll('.filter-chip').forEach(c=>c.onclick=()=>{
+    if(c.dataset.el!==undefined && c.dataset.el!==null && c.hasAttribute('data-el')) _flockFilter.el=c.dataset.el||null;
+    else if(c.dataset.t==='fav') _flockFilter.fav=!_flockFilter.fav;
+    else if(c.dataset.t==='new') _flockFilter.onlyNew=!_flockFilter.onlyNew;
+    else if(c.dataset.t==='sort') _flockFilter.sort=_flockFilter.sort==='level'?'rarity':'level';
+    renderFlockSheet();
+  });
+}
+function _toggleFav(uid){ const d=S.dragons.find(x=>x.uid===uid); if(!d)return; d.fav=!d.fav;
+  if(typeof toast==='function')toast(d.fav?'⭐ В избранном':'Убрано из избранного'); if(typeof persist==='function')persist(); renderFlockSheet(); }

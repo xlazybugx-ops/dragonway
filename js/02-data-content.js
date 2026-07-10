@@ -93,6 +93,15 @@ const MILESTONES=[
    check:()=>WORLD_BOSSES.some(b=>bossDefeated(b.id)), progress:()=>[WORLD_BOSSES.some(b=>bossDefeated(b.id))?1:0,1], reward:{gold:800,dust:30}},
   {id:'first_legend', icon:'✨', name:'Легендарный питомец', desc:'Получи легендарного дракона (★4+)',
    check:()=>S.dragons.some(d=>speciesById(d.id).rarity>=4), progress:()=>[S.dragons.some(d=>speciesById(d.id).rarity>=4)?1:0,1], reward:{gold:700,dust:25}},
+  // — кросс-системные (связывают несколько систем) —
+  {id:'sys_cartographer', icon:'🗺️', name:'Картограф', desc:'Исследуй любой регион на 100% (исследование → награды)',
+   check:()=>Object.values(S.worldExplored||{}).some(v=>v>=100), progress:()=>[Math.min(100,Math.max(0,...Object.values(S.worldExplored||{}),0)),100], reward:{gold:1000,dust:40}},
+  {id:'sys_clutch', icon:'🥚', name:'Хранитель кладки', desc:'Открой 8 типов яиц в Кодексе (бои/боссы/исследование)',
+   check:()=>Object.keys(S.eggStats||{}).length>=8, progress:()=>[Math.min(8,Object.keys(S.eggStats||{}).length),8], reward:{gold:900,dust:35}},
+  {id:'sys_worldlore', icon:'📖', name:'Знаток мира', desc:'Открой 8 событий мира (исследование → Кодекс)',
+   check:()=>Object.keys((S.worldCodex||{}).events||{}).length>=8, progress:()=>[Math.min(8,Object.keys((S.worldCodex||{}).events||{}).length),8], reward:{gold:900,dust:35}},
+  {id:'sys_twotriumph', icon:'☠️', name:'Двойной триумф', desc:'Победи 2 владык (боссы → яйца, легенды, материалы)',
+   check:()=>(typeof WORLD_BOSSES!=='undefined')&&WORLD_BOSSES.filter(b=>bossDefeated(b.id)).length>=2, progress:()=>[(typeof WORLD_BOSSES!=='undefined')?WORLD_BOSSES.filter(b=>bossDefeated(b.id)).length:0,2], reward:{gold:1500,dust:60}},
   {id:'all_species',  icon:'🐉', name:'Собиратель видов',    desc:'Открой всех 15 видов драконов',
    check:()=>SPECIES.every(sp=>S.discovered[sp.id]), progress:()=>[SPECIES.filter(sp=>S.discovered[sp.id]).length,SPECIES.length], reward:{gold:2000,dust:100}},
   {id:'lore_ember',   icon:'📜', name:'Летописец Огня',      desc:'Собери все свитки Огненного мира',
@@ -774,3 +783,42 @@ function equipFx(d){
   return out;
 }
 
+
+/* ============================================================
+   ЧАСТЬ 3 — ЛОГОВО: декларативная таблица уровней вместимости.
+   Добавить уровень = добавить строку. Логика ниже её просто читает.
+   cost: {gold, dust, boss?} — boss = сколько владык мира надо победить.
+   ============================================================ */
+const LAIR_LEVELS=[
+  {lvl:1, cap:4,  cost:null},
+  {lvl:2, cap:6,  cost:{gold:800,   dust:15}},
+  {lvl:3, cap:8,  cost:{gold:2600,  dust:40}},
+  {lvl:4, cap:10, cost:{gold:6500,  dust:80,  boss:1}},
+  {lvl:5, cap:12, cost:{gold:15000, dust:150, boss:2}},
+];
+function lairRow(lvl){ lvl=lvl||(S&&S.lairLevel)||1; return LAIR_LEVELS.find(r=>r.lvl===lvl)||LAIR_LEVELS[0]; }
+function lairCap(){ return lairRow().cap; }
+function lairNext(){ return LAIR_LEVELS.find(r=>r.lvl===((S&&S.lairLevel)||1)+1)||null; }
+function lairActiveCount(){ return (S&&S.dragons?S.dragons.filter(d=>!d.reserve).length:0); }
+function bossesBeatenCount(){ return (typeof WORLD_BOSSES!=='undefined')?WORLD_BOSSES.filter(b=>bossDefeated(b.id)).length:0; }
+function lairUpgradeCheck(){ const nx=lairNext(); if(!nx) return {ok:false,reason:'max'};
+  const c=nx.cost;
+  if((S.gold||0)<c.gold) return {ok:false,reason:'gold', next:nx};
+  if((S.dust||0)<(c.dust||0)) return {ok:false,reason:'dust', next:nx};
+  if(c.boss&&bossesBeatenCount()<c.boss) return {ok:false,reason:'boss', next:nx};
+  return {ok:true, next:nx}; }
+function upgradeLair(){ const chk=lairUpgradeCheck();
+  if(!chk.ok){ if(typeof toast==='function'){
+      if(chk.reason==='max')toast('Логово уже максимального уровня.');
+      else if(chk.reason==='gold')toast('Не хватает 🪙 золота на улучшение логова.');
+      else if(chk.reason==='dust')toast('Не хватает ✦ пыли на улучшение логова.');
+      else if(chk.reason==='boss')toast('Сначала одолей владыку мира ('+chk.next.cost.boss+').'); }
+    return; }
+  const c=chk.next.cost; S.gold-=c.gold; S.dust-=(c.dust||0); S.lairLevel=chk.next.lvl;
+  if(typeof toast==='function')toast('🏰 Логово улучшено до ур. '+chk.next.lvl+' · вместимость '+chk.next.cap+' 🐉');
+  if(typeof questEvent==='function')questEvent('lair');
+  if(typeof persist==='function')persist(); if(typeof renderLair==='function')renderLair(); }
+function toggleReserve(uid){ const d=S.dragons.find(x=>x.uid===uid); if(!d)return;
+  if(d.reserve){ if(lairActiveCount()>=lairCap()){ if(typeof toast==='function')toast('В логове нет места — улучши логово или освободи слот.'); return; } d.reserve=false; }
+  else { if(lairActiveCount()<=1){ if(typeof toast==='function')toast('В логове должен остаться хотя бы один дракон.'); return; } d.reserve=true; }
+  if(typeof persist==='function')persist(); if(typeof renderLair==='function')renderLair(); }

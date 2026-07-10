@@ -156,6 +156,7 @@ function renderBattle(){
   stage.innerHTML=`
   <div class="arena">
     <div class="arena-bg">${sceneSVG(elScene,'battle')}</div>
+    <div class="turn-strip" id="turnStrip"></div>
     <div class="fighters">
       <div class="fighter" id="fMe">
         ${sigilHTML(b.me.sp,b.me.morph,'fs',b.me.level)}
@@ -163,14 +164,16 @@ function renderBattle(){
         ${elTag(b.me.el)} ${morphBadge(b.me.morph)}
         ${hpBar(b.me)}
         ${manaBar(b.me)}
+        <div class="fx-chips" id="meFx"></div>
       </div>
       <div class="versus">⚔</div>
       <div class="fighter" id="fFoe">
         ${sigilHTML(b.foe.sp,b.foe.morph,'fs',b.foe.level)}
-        <div class="fname">Дикий ${b.foe.sp.name} <span style="color:var(--ink-dim)">ур.${b.foe.level}</span></div>
+        <div class="fname"><span class="tgt-badge" title="Твоя цель">⌖</span> ${b.boss?b.boss.name:('Дикий '+b.foe.sp.name)} <span style="color:var(--ink-dim)">ур.${b.foe.level}</span></div>
         ${elTag(b.foe.el)} ${morphBadge(b.foe.morph)}
         ${hpBar(b.foe)}
         ${manaBar(b.foe)}
+        <div class="fx-chips" id="foeFx"></div>
       </div>
     </div>
   </div>
@@ -198,6 +201,7 @@ function renderBattle(){
     else move=MOVES[b.me.el][+k.slice(1)];
     playerMove(move);
   });
+  renderBattleStatus();
 }
 
 function pushLog(html){battle.log.push(html);const lt=$('#battleLatest');if(lt){lt.innerHTML=html;lt.classList.remove('flash');void lt.offsetWidth;lt.classList.add('flash');}}
@@ -609,6 +613,34 @@ function renderHpOnly(){
   };
   upd(fighters[0],b.me);
   upd(fighters[1],b.foe);
+  renderBattleStatus();
+}
+
+/* ЧИТАЕМОСТЬ БОЯ: очередь ходов, действующие эффекты, цель, готовность ульты */
+function renderBattleStatus(){
+  const b=battle; if(!b) return;
+  const ts=document.getElementById('turnStrip');
+  if(ts){ const meNow=!b.over;
+    const foeName=b.boss?b.boss.name:'Соперник';
+    ts.innerHTML=`<span class="ts-chip ${meNow?'now':''}">🐲 Ты</span>`
+      +`<span class="ts-arrow">→</span>`
+      +`<span class="ts-chip ${meNow?'':'now'}">${(b.foe.sp&&b.foe.sp.sigil)||'👹'} ${foeName}</span>`; }
+  const meChips=[];
+  if(b.me.guarding)meChips.push(['🛡️','Защита']);
+  if(b.me.parryMult)meChips.push(['⚔️','Парирование готово']);
+  if((b.combo||0)>1)meChips.push(['🔥×'+b.combo,'Комбо']);
+  const foeChips=[];
+  if(b.foe.guarding)foeChips.push(['🛡️','Защита']);
+  if((b.bossShield||0)>0)foeChips.push(['🔰'+b.bossShield,'Щит: пробей ударами']);
+  if(b.bossEnrage)foeChips.push(['😡','Ярость: бьёт сильнее']);
+  if(b.bossStalled)foeChips.push(['💫','Застыл: беззащитен']);
+  const put=(id,arr)=>{ const el=document.getElementById(id); if(!el)return;
+    el.innerHTML=arr.map(c=>`<span class="fx-chip" title="${c[1]}">${c[0]}</span>`).join(''); };
+  put('meFx',meChips); put('foeFx',foeChips);
+  const ub=document.querySelector('#moveBox .move-ult');
+  if(ub){ const canUlt=b.me.ult&&b.me.mana>=b.me.ult.manaCost&&!b.over; ub.classList.toggle('ready',!!canUlt); }
+  const sb=document.querySelector('#moveBox .move-spell');
+  if(sb){ const canSp=b.me.spell&&b.me.mana>=b.me.spell.manaCost&&!b.over; sb.classList.toggle('ready',!!canSp); }
 }
 
 /* ===== АРЕНА ВОЛН =====

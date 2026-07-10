@@ -12,7 +12,8 @@ function worldRegionName(){ return (flight&&flight.region&&(flight.region.name||
 function worldSeen(kind,id){ if(!S.worldCodex)S.worldCodex={events:{},biomes:{},weather:{}}; if(!S.worldCodex[kind])S.worldCodex[kind]={}; S.worldCodex[kind][id]=true; }
 function worldEventSeen(ev){ if(ev&&ev.name)worldSeen('events',ev.name); }
 function exploreProgress(){ if(!flight)return; if(!S.worldExplored)S.worldExplored={};
-  const k=worldRegionKey(), step=(typeof GB!=='undefined'&&GB.World&&GB.World.exploreStep)||4;
+  const roleB=(flight&&flight.d&&typeof dragonRole==='function'&&dragonRole(flight.d.id)==='Следопыт')?((GB.Eggs&&GB.Eggs.exploreRoleBonus)||1.5):1; // СВЯЗЬ: дракон-Следопыт исследует быстрее
+  const k=worldRegionKey(), step=Math.round((((typeof GB!=='undefined'&&GB.World&&GB.World.exploreStep)||4))*roleB);
   const prev=S.worldExplored[k]||0, cur=Math.min(100,prev+step); S.worldExplored[k]=cur;
   const ms=(typeof GB!=='undefined'&&GB.World&&GB.World.exploreMilestones)||[25,50,100];
   for(let i=0;i<ms.length;i++){ if(prev<ms[i]&&cur>=ms[i]){ const g=((GB.World&&GB.World.exploreRewardGold)||60)*(i+1); S.gold+=g; if(typeof toast==='function')toast(`🗺️ ${worldRegionName()} исследован на ${ms[i]}%! +${g}🪙`); } } }
@@ -160,7 +161,7 @@ function buildFlightTier(region){
       x:90+Math.random()*(W-180),y:170+Math.random()*(H-340),r:16,taken:false,pulse:Math.random()*6});};
     put('🪙','coin',18+bn*3,coinVal);
     put('💎','gem',4+bn*2,coinVal*3);
-    put('🥚','egg',3);
+    // ЧАСТЬ 2: яйца больше НЕ разбросаны по карте — теперь это редкая награда за победы/события/боссов
     put('🎁','chest',2);
     put('🔑','key',1+(bn>1?1:0));
     put('📜','scroll',1+(bn>1?1:0));
@@ -187,7 +188,7 @@ function buildFlightTier(region){
         speed:rare?150:110+Math.random()*40,defeated:false,cool:0};};
     f.wilds=[wildAt(0.3), wildAt(0.7)];
     if(bn>=2)f.wilds.push(wildAt(0.5,true));
-    for(let i=0;i<5;i++)f.clouds.push({x:Math.random()*W,y:Math.random()*H,r:240+Math.random()*220,
+    for(let i=0;i<3;i++)f.clouds.push({x:Math.random()*W,y:Math.random()*H,r:240+Math.random()*220,
       vx:6+Math.random()*10,vy:(Math.random()-.5)*5});
 
     // портал: на ярусы 1-2 — переход выше, на последнем — возвращение домой

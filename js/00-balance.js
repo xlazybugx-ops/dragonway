@@ -61,6 +61,9 @@ const GAME_BALANCE = {
       secret:  { rarityFloor:5, weightBoost:4 },   // секретные события
     },
     shardsFromRarity: 3,                    // осколков при переработке = rarity*этого (с 4+)
+    warmCostPerRarity: 2,                   // осколков за «согреть» = rarity*этого
+    warmProgressFrac: 0.4,                  // сколько инкубации добавляет «согреть»
+    exploreRoleBonus: 1.5,                  // множитель прогресса исследования для роли Следопыт
   },
   // ——— ИССЛЕДОВАНИЕ МИРА (02/07) ———
   World: {

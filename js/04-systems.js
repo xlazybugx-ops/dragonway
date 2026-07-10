@@ -76,6 +76,14 @@ function applyA11y(){ const a=S.a11y||{}, b=document.body; if(!b)return;
 }
 function toggleA11y(key){ if(!S.a11y)S.a11y={}; S.a11y[key]=!S.a11y[key]; applyA11y(); if(typeof persist==='function')persist(); }
 function floatText(txt,color){const f=$('#float');f.textContent=txt;f.style.color=color;f.classList.remove('go');void f.offsetWidth;f.classList.add('go');}
+/* Полировка: празднование повышения уровня — вспышка + число + вибро */
+function levelUpFx(d){ try{
+  if(typeof floatText==='function') floatText('⬆️ Уровень '+d.level+'!','#ffd24a');
+  let el=document.getElementById('lvlFlash');
+  if(!el){ el=document.createElement('div'); el.id='lvlFlash'; document.body.appendChild(el); }
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  if(typeof S!=='undefined'&&S.soundOn&&typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate([10,40,10]);
+}catch(e){} }
 
 function weightedSpecies(){
   // вес обратно растёт с редкостью
@@ -114,15 +122,41 @@ function rollEggRarity(tier){
 }
 function markEggSeen(el,r){ if(!S.eggsSeen)S.eggsSeen={}; S.eggsSeen[el+':'+r]=true; }
 // addEgg(el, tier, rarity?) — обратно совместимо; новые яйца получают редкость, инкубацию и метку в кодекс
-function addEgg(el, tier=1, rarity){
+function addEgg(el, tier=1, rarity, opts){
   el = el||ELEMENTS_LIST[rnd(0,ELEMENTS_LIST.length-1)];
   const r = rarity || rollEggRarity(tier);
   const def = EGG_RARITY[Math.max(1,Math.min(6,r))];
   const egg = { el, tier:tier||1, rarity:r, inc:0, incNeed:def.incNeed||0 };
   eggsArray().push(egg);
   markEggSeen(el,r);
+  if(!(opts&&opts.silent) && typeof eggCeremony==='function') eggCeremony(egg); // ЦЕРЕМОНИЯ получения
   return egg;
 }
+
+/* ЕДИНЫЙ ПРОГРЕСС-БАР: уровень/инкубация/логово/биомы/репутация/исследование */
+function pbarHTML(cur,max,kind,showCap){
+  const pct=max>0?Math.max(0,Math.min(100,Math.round(cur/max*100))):0;
+  return '<div class="pbar" data-kind="'+(kind||'')+'"><i style="width:'+pct+'%"></i>'
+    +(showCap?'<span class="pbar-cap">'+cur+' / '+max+'</span>':'')+'</div>';
+}
+
+/* ЦЕРЕМОНИЯ ЯЙЦА — нижняя карточка, не модалка, короткая анимация */
+function eggCeremony(egg, def){ try{
+  if(typeof document==='undefined')return;
+  let el=document.getElementById('eggCeremony');
+  if(!el){ el=document.createElement('div'); el.id='eggCeremony'; document.body.appendChild(el);
+    el.addEventListener('click',()=>el.classList.remove('show')); }
+  const r=Math.max(1,Math.min(6,(egg&&egg.rarity)||1));
+  const rd=(typeof EGG_RARITY!=='undefined'&&EGG_RARITY[r])||{name:'',color:'#d9a441'};
+  const emo=(def&&def.look&&def.look.emoji)||((egg&&egg.el)&&({fire:'\uD83D\uDD25',frost:'\uD83E\uDDCA',venom:'\uD83D\uDFE2',storm:'\u26A1',shade:'\uD83C\uDF11'})[egg.el])||'\uD83E\uDD5A';
+  const nm=(def&&def.name)||(rd.name?rd.name+' яйцо':'Яйцо');
+  el.innerHTML='<div class="ec-egg">'+emo+'</div><div class="ec-txt"><div class="ec-title">🥚 Новое яйцо!</div>'
+    +'<div class="ec-name" style="color:'+(rd.color||'#d9a441')+'">'+nm+'</div>'
+    +'<div class="ec-sub">Отнеси в Гнездо, чтобы высидеть</div></div>';
+  el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2600);
+  if(typeof S!=='undefined'&&S.soundOn&&typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(16);
+}catch(e){} }
 // инкубация: любое игровое действие (бой/находка) продвигает ВСЕ яйца. Без реальных таймеров.
 // наследование окраса: чем выше редкость ЯЙЦА, тем вероятнее редкий морф у дракона
 function rollMorphByEggRarity(r){
@@ -144,8 +178,9 @@ function addCatalogEgg(id){
   if(def.unique){ if(!S.eggsUnique)S.eggsUnique={}; if(S.eggsUnique[id]) return null; S.eggsUnique[id]=true; }
   if(def.secret){ if(!S.eggsSecret)S.eggsSecret={}; S.eggsSecret[id]=true; }
   const el = def.el==='any' ? ELEMENTS_LIST[rnd(0,ELEMENTS_LIST.length-1)] : def.el;
-  const egg=addEgg(el, Math.min(3,def.rarity), def.rarity);
+  const egg=addEgg(el, Math.min(3,def.rarity), def.rarity, {silent:true});
   egg.catId=id; if(def.fixed) egg.fixed=def.fixed;
+  if(typeof eggCeremony==='function') eggCeremony(egg, def);
   if(!S.eggStats)S.eggStats={}; S.eggStats[id]=(S.eggStats[id]||0)+1;
   return egg;
 }

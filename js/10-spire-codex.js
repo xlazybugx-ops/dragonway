@@ -255,8 +255,9 @@ function renderLore(){
 
 /* ===== ВКЛАДКИ ===== */
 const VIEW_TITLES={lair:'Логово',hatch:'Гнездо',explore:'Странствие',arena:'Турнир',roost:'Гнездилище Рода',forge:'Кузница',spire:'Шпиль Мироздания',codex:'Кодекс видов'};
+const PRIMARY_TABS={hub:1,lair:1,explore:1,codex:1,profile:1};
 function ensureScreenBar(v){
-  if(v==='hub') return;
+  if(PRIMARY_TABS[v]) return; // у основных разделов — нижняя навигация, без кнопки «На главную»
   const sec=$('#'+v); if(!sec) return;
   if(sec.querySelector(':scope > .screen-bar')) return;
   const bar=document.createElement('div');
@@ -283,6 +284,9 @@ function switchView(v){
   if(v==='spire')renderSpire();
   if(v==='lair')renderLair();
   if(v==='hatch')renderHatch();
+  if(v==='profile' && typeof renderProfile==='function')renderProfile();
+  if(typeof bindTabbar==='function')bindTabbar();
+  if(typeof renderTabbar==='function')renderTabbar(v);
   window.scrollTo({top:0,behavior:'smooth'});
 }
 

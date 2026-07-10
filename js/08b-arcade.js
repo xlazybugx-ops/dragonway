@@ -106,7 +106,7 @@ function startArcadeFight(dragon, ent, opts){
 
   P.target = enemies[0];
   arc={fsA,ctx,cv,resize,WORLD,P,enemies,dragon,ent,opts,isDen,
-    proj:[],zones:[],floats:[],parts:[],cam:{x:0,y:0},shake:0,over:false,raf:0,last:performance.now()};
+    proj:[],zones:[],fx:[],floats:[],parts:[],cam:{x:0,y:0},shake:0,over:false,raf:0,last:performance.now()};
 
   buildArcAbilities();
   bindArcInput();
@@ -120,8 +120,13 @@ function buildArcAbilities(){
   const box=document.getElementById('acAb'); box.innerHTML='';
   arc.P.kit.forEach((sk,i)=>{ const el=document.createElement('div'); el.className='ac-btn';
     el.innerHTML=sk.icon+'<span class="ac-cd"></span><span class="ac-nm">'+sk.name+'</span>';
-    const f=e=>{e.preventDefault();arcUse(i);};
-    el.addEventListener('touchstart',f,{passive:false}); el.addEventListener('mousedown',f); box.appendChild(el); });
+    // ЧАСТЬ БОЙ: нажал → предпросмотр (зона/траектория/цели), отпустил → подтверждение и удар
+    const dn=e=>{e.preventDefault();arcAimStart(i);};
+    const up=e=>{e.preventDefault();arcAimCommit();};
+    el.addEventListener('touchstart',dn,{passive:false}); el.addEventListener('touchend',up,{passive:false});
+    el.addEventListener('touchcancel',arcAimCancel);
+    el.addEventListener('mousedown',dn); el.addEventListener('mouseup',up); el.addEventListener('mouseleave',arcAimCancel);
+    box.appendChild(el); });
   const d=document.createElement('div'); d.className='ac-btn dash';
   d.innerHTML='⚡<span class="ac-cd"></span><span class="ac-nm">Рывок</span>';
   const fd=e=>{e.preventDefault();arcDash();};
@@ -164,20 +169,36 @@ function arcUse(i){ if(!arc||arc.over)return; const P=arc.P, sk=P.kit[i]; if(!sk
   let t=P.target; if(t&&t.dead)t=P.target=ar_nearest();
   if(arcNeedTarget(sk)){ if(!t){arcWarn('нет цели','#ffd36b');return;} if(dist(P,t)>sk.range){arcWarn('далеко','#ffd36b');return;} }
   P.mana-=sk.mana; sk._t=sk.cd; P.globalCd=0.8; if(t)P.facing=Math.atan2(t.y-P.y,t.x-P.x);
-  if(sk.kind==='melee'){ arcHitE(t,sk.mul,sk); arcSlash(P,t); }
+  if(sk.kind==='melee'){ arcZoneFx(t.x,t.y,t.r+14,'#ffd36b',true); arcHitE(t,sk.mul,sk); arcSlash(P,t); }
   else if(sk.kind==='proj'){ const a=Math.atan2(t.y-P.y,t.x-P.x);
     arc.proj.push({x:P.x,y:P.y,vx:Math.cos(a)*sk.pspd,vy:Math.sin(a)*sk.pspd,r:9,sk,life:1.4}); }
   else if(sk.kind==='self'){
     if(sk.shieldMul){P.shield=Math.round(P.maxHp*sk.shieldMul);arcBurst(P.x,P.y,'#bcdcff',16);arcWarn('щит!','#bcdcff');}
     if(sk.haste){P.haste=sk.haste.dur;P.hasteAtk=sk.haste.atk;P.hasteSpd=sk.haste.spd;arcWarn('ускорение!','#d8b4ff');}
     if(sk.stealth){P.iframe=Math.max(P.iframe,sk.iframe);P.stealth=sk.stealth;arcWarn('покров тьмы','#9a7bd0');}
-    if(sk.aoe){ for(const e of arc.enemies){ if(e.dead)continue; if(dist(P,e)<=sk.aoe){ arcHitE(e,sk.mul,sk);
+    if(sk.aoe){ arcZoneFx(P.x,P.y,sk.aoe,'#ff8a3d'); for(const e of arc.enemies){ if(e.dead)continue; if(dist(P,e)<=sk.aoe){ arcHitE(e,sk.mul,sk);
       if(sk.knock){const a=Math.atan2(e.y-P.y,e.x-P.x);e.x+=Math.cos(a)*sk.knock*0.1;e.y+=Math.sin(a)*sk.knock*0.1;} } }
       arcBurst(P.x,P.y,'#ff8a3d',22);arc.shake=Math.min(arc.shake+7,11); } }
-  else if(sk.kind==='ground'){ arc.zones.push({x:t?t.x:P.x,y:t?t.y:P.y,r:sk.radius,dur:sk.dur,sk,tick:0}); arcWarn('поле!','#9fe6ff'); }
+  else if(sk.kind==='ground'){ const zx=t?t.x:P.x, zy=t?t.y:P.y; arcZoneFx(zx,zy,sk.radius,'#9fe6ff'); arc.zones.push({x:zx,y:zy,r:sk.radius,dur:sk.dur,sk,tick:0}); arcWarn('поле!','#9fe6ff'); }
   else if(sk.kind==='dash'){ const a=Math.atan2(t.y-P.y,t.x-P.x),d=Math.min(sk.range,dist(P,t));
     P.x=clampN(P.x+Math.cos(a)*d,20,arc.WORLD.w-20);P.y=clampN(P.y+Math.sin(a)*d,20,arc.WORLD.h-20);
-    P.iframe=Math.max(P.iframe,sk.iframe); arcHitE(t,sk.mul,sk); arcBurst(P.x,P.y,'#d8b4ff',14); }
+    P.iframe=Math.max(P.iframe,sk.iframe); arcZoneFx(t.x,t.y,t.r+14,'#d8b4ff',true); arcHitE(t,sk.mul,sk); arcBurst(P.x,P.y,'#d8b4ff',14); }
+}
+function arcAimStart(i){ if(!arc||arc.over)return; const sk=arc.P.kit[i]; if(!sk)return; arc.aim={i,sk}; }
+function arcAimCommit(){ if(!arc||arc.over){ if(arc)arc.aim=null; return; } const a=arc.aim; arc.aim=null; if(a) arcUse(a.i); }
+function arcAimCancel(){ if(arc) arc.aim=null; }
+function arcPreviewInfo(){ if(!arc||!arc.aim)return null; const P=arc.P, sk=arc.aim.sk; if(!sk)return null;
+  let t=P.target; if(t&&t.dead)t=ar_nearest();
+  if(sk.kind==='self'&&sk.aoe){ let n=0; for(const e of arc.enemies)if(!e.dead&&dist(P,e)<=sk.aoe)n++;
+    return {type:'circle',x:P.x,y:P.y,r:sk.aoe,col:'#ff8a3d',count:n}; }
+  if(sk.kind==='ground'){ const x=t?t.x:P.x,y=t?t.y:P.y; let n=0; for(const e of arc.enemies)if(!e.dead&&Math.hypot(e.x-x,e.y-y)<=sk.radius)n++;
+    return {type:'circle',x,y,r:sk.radius,col:'#9fe6ff',count:n}; }
+  if(t && sk.chain){ // ЦЕПОЧКА: предсказать перескоки молнии
+    const pts=[{x:t.x,y:t.y}]; const seen=new Set([t]); let src=t;
+    for(let j=0;j<sk.chain;j++){ let nx=null,nd=260; for(const e of arc.enemies){ if(e.dead||seen.has(e))continue; const dd=dist(src,e); if(dd<nd){nx=e;nd=dd;} } if(!nx)break; pts.push({x:nx.x,y:nx.y}); seen.add(nx); src=nx; }
+    const rng=sk.range||9999; return {type:'chain',x:t.x,y:t.y,r:t.r+14,col:'#bfe0ff',pts,count:pts.length,inrange:dist(P,t)<=rng}; }
+  if(t){ const rng=sk.range||9999; return {type:'single',x:t.x,y:t.y,r:t.r+14,col:'#ffd36b',tx:t.x,ty:t.y,count:1,inrange:dist(P,t)<=rng}; }
+  return {type:'none',count:0};
 }
 function arcDash(){ if(!arc||arc.over)return; const P=arc.P; if(P.dashT>0)return;
   let {mx,my}=arcMoveVec(); if(!mx&&!my){mx=Math.cos(P.facing);my=Math.sin(P.facing);}
@@ -214,6 +235,8 @@ function arcHitP(rawDmg,el){ const P=arc.P; if(P.iframe>0)return;
   arc.floats.push({x:P.x,y:P.y-P.r-6,txt:'-'+dmg,col:'#ff8a8a',t:0,life:0.9});
   if(typeof S!=='undefined' && S.tutorialGuard && P.hp<1)P.hp=1; // обучение без поражения
   if(P.hp<=0){P.hp=0;arcFinish(false);} }
+/* ЧАСТЬ 4 — читаемость: краткая зона поражения (плавно появляется, гаснет сразу после удара) */
+function arcZoneFx(x,y,r,col,ring){ if(!arc)return; arc.fx.push({x,y,r,col:col||'#ffd36b',ring:!!ring,t:0,ttl:0.40}); }
 function arcBurst(x,y,col,n){for(let i=0;i<n;i++){const a=rand(0,6.28),s=rand(40,180);arc.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(.3,.6),t:0,col,r:rand(2,4)});}}
 function arcSlash(P,t){const a=Math.atan2(t.y-P.y,t.x-P.x);for(let i=0;i<6;i++)arc.parts.push({x:P.x+Math.cos(a)*30,y:P.y+Math.sin(a)*30,vx:Math.cos(a)*rand(60,160),vy:Math.sin(a)*rand(60,160),life:.3,t:0,col:'#fff',r:3});}
 
@@ -258,6 +281,7 @@ function arcUpdate(dt){ const P=arc.P,WORLD=arc.WORLD;
   for(const f of arc.floats){f.t+=dt;f.y-=26*dt;} arc.floats=arc.floats.filter(f=>f.t<f.life);
   for(const p of arc.parts){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=0.92;p.vy*=0.92;} arc.parts=arc.parts.filter(p=>p.t<p.life);
   arc.shake*=0.86;
+  for(const z of arc.fx)z.t+=dt; arc.fx=arc.fx.filter(z=>z.t<z.ttl);
   arc.cam.x=clampN(P.x-innerWidth/2,0,Math.max(0,WORLD.w-innerWidth));
   arc.cam.y=clampN(P.y-innerHeight/2,0,Math.max(0,WORLD.h-innerHeight));
   arcHUD();
@@ -276,6 +300,15 @@ function arcRender(){ const ctx=arc.ctx,P=arc.P,cam=arc.cam;
   for(const z of arc.zones){ ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,6.283);
     ctx.fillStyle=z.sk.dotMul&&!z.sk.root?'rgba(120,220,120,.15)':'rgba(120,200,255,.15)';ctx.fill();
     ctx.lineWidth=2;ctx.strokeStyle='rgba(150,220,255,.5)';ctx.stroke(); }
+  // ЧАСТЬ 4: транзиентные зоны поражения (fade-in → fade-out)
+  for(const z of arc.fx){ const k=z.t/z.ttl, a=(k<0.3?k/0.3:1-(k-0.3)/0.7);
+    ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,6.283);
+    if(z.ring){ ctx.globalAlpha=Math.max(0,a);ctx.lineWidth=4;ctx.strokeStyle=z.col;ctx.stroke();ctx.globalAlpha=1; }
+    else { ctx.globalAlpha=Math.max(0,a*0.28);ctx.fillStyle=z.col;ctx.fill();
+      ctx.globalAlpha=Math.max(0,a*0.8);ctx.lineWidth=3;ctx.strokeStyle=z.col;ctx.stroke();ctx.globalAlpha=1; } }
+  // ЧАСТЬ 4: линия атаки к текущей цели — исключает двусмысленность одиночного удара
+  if(P.target&&!P.target.dead){ ctx.save();ctx.setLineDash([4,9]);ctx.lineWidth=2;ctx.strokeStyle='rgba(255,211,107,.32)';
+    ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.lineTo(P.target.x,P.target.y);ctx.stroke();ctx.restore(); }
   for(const e of arc.enemies){ if(e.dead||e.telegraph<=0)continue; const prog=1-e.telegraph/e.tele;
     ctx.beginPath();ctx.arc(e.x,e.y,e.atkRange,0,6.283);
     ctx.fillStyle='rgba(255,70,60,'+(0.12+prog*0.28)+')';ctx.fill();
@@ -290,6 +323,29 @@ function arcRender(){ const ctx=arc.ctx,P=arc.P,cam=arc.cam;
     if(e.burns.length){ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('🔥',e.x-10,e.y-e.r-18);}
     if(e.poisons.length){ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('🟢',e.x,e.y-e.r-18);}
     if(e.slow>0){ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('❄️',e.x+10,e.y-e.r-18);} }
+  // ПРЕДПРОСМОТР способности до подтверждения: траектория, зона, задетые цели, счётчик
+  const _aim=arcPreviewInfo();
+  if(_aim){
+    if(_aim.type==='circle'){ ctx.beginPath();ctx.arc(_aim.x,_aim.y,_aim.r,0,6.283);
+      ctx.globalAlpha=0.18;ctx.fillStyle=_aim.col;ctx.fill();ctx.globalAlpha=0.95;
+      ctx.setLineDash([9,6]);ctx.lineWidth=3;ctx.strokeStyle=_aim.col;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+      for(const e of arc.enemies){ if(e.dead)continue; if(Math.hypot(e.x-_aim.x,e.y-_aim.y)<=_aim.r){ ctx.beginPath();ctx.arc(e.x,e.y,e.r+6,0,6.283);ctx.lineWidth=3;ctx.strokeStyle=_aim.col;ctx.stroke(); } }
+      ctx.font='bold 15px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.65)';ctx.fillStyle='#fff';
+      ctx.strokeText('🎯 '+_aim.count,_aim.x,_aim.y-_aim.r-8);ctx.fillText('🎯 '+_aim.count,_aim.x,_aim.y-_aim.r-8);
+    } else if(_aim.type==='single'){
+      ctx.save();ctx.setLineDash([6,7]);ctx.lineWidth=3;ctx.strokeStyle=_aim.inrange?'rgba(255,211,107,.85)':'rgba(255,90,80,.6)';
+      ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.lineTo(_aim.tx,_aim.ty);ctx.stroke();ctx.restore();
+      ctx.beginPath();ctx.arc(_aim.x,_aim.y,_aim.r,0,6.283);ctx.lineWidth=3;ctx.strokeStyle=_aim.inrange?'#ffd36b':'#ff5a50';ctx.stroke();
+      ctx.font='bold 15px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.65)';ctx.fillStyle=_aim.inrange?'#fff':'#ffb3ad';
+      ctx.strokeText(_aim.inrange?'🎯 1':'вне зоны',_aim.x,_aim.y-_aim.r-8);ctx.fillText(_aim.inrange?'🎯 1':'вне зоны',_aim.x,_aim.y-_aim.r-8);
+    } else if(_aim.type==='chain'){
+      ctx.save();ctx.setLineDash([5,6]);ctx.lineWidth=3;ctx.strokeStyle=_aim.inrange?'rgba(191,224,255,.9)':'rgba(255,90,80,.6)';
+      ctx.beginPath();ctx.moveTo(P.x,P.y); for(const pt of _aim.pts)ctx.lineTo(pt.x,pt.y); ctx.stroke();ctx.restore();
+      for(const pt of _aim.pts){ ctx.beginPath();ctx.arc(pt.x,pt.y,16,0,6.283);ctx.lineWidth=3;ctx.strokeStyle=_aim.col;ctx.stroke(); }
+      ctx.font='bold 15px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.65)';ctx.fillStyle='#fff';
+      ctx.strokeText('🎯 '+_aim.count,_aim.x,_aim.y-_aim.r-8);ctx.fillText('🎯 '+_aim.count,_aim.x,_aim.y-_aim.r-8);
+    }
+  }
   const blink=P.iframe>0&&Math.floor(P.iframe*20)%2===0;
   if(!blink){ ctx.globalAlpha=P.stealth>0?0.5:1; arcUnit(P.x,P.y,P.r,P.hurt>0?'#ff8a8a':P.color,P.icon,P.hurt>0); ctx.globalAlpha=1;
     if(P.shield>0){ctx.beginPath();ctx.arc(P.x,P.y,P.r+7,0,6.283);ctx.lineWidth=3;ctx.strokeStyle='rgba(180,220,255,.8)';ctx.stroke();}

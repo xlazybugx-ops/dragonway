@@ -108,6 +108,70 @@ function hubBadge(v){
   if(v==='hatch' && eggCount()>0) return String(eggCount());
   return '';
 }
+/* ============================================================
+   СИСТЕМА «СЛЕДУЮЩИЙ ШАГ»: одна ближайшая цель — что делать, зачем,
+   что получишь, что откроется. Никогда не даём игроку потеряться.
+   ============================================================ */
+function _qReward(q){ try{ const d=questDef(q.id); return d?rewardText(d.reward):'награда'; }catch(e){ return 'награда'; } }
+function nextStep(){
+  const lvl=(typeof progLevel==='function')?progLevel():1;
+  const eggs=(typeof eggsArray==='function')?eggsArray():[];
+  // 1) подарок дня
+  if(S.chestReady) return {icon:'🎁',title:'Забери подарок дня',why:'Ежедневная награда растёт с серией входов',
+    reward:'золото · пыль · яйцо',unlock:'серия продолжится',label:'В Логово',
+    fn:()=>{ switchView('lair'); const dp=$('#dailyPanel'); if(dp)setTimeout(()=>dp.scrollIntoView({behavior:'smooth',block:'center'}),60); }};
+  // 2) готовое яйцо
+  if(eggs.some(e=>e.incNeed&&(e.inc||0)>=e.incNeed)) return {icon:'🐣',title:'Высиди готовое яйцо',
+    why:'Инкубация завершена',reward:'новый дракон',unlock:'сильнее стая',label:'В Гнездо',fn:()=>switchView('hatch')};
+  // 3) готовая веха
+  if(typeof MILESTONES!=='undefined'){ const m=MILESTONES.find(x=>!milestoneClaimed(x.id)&&x.check());
+    if(m) return {icon:m.icon||'🏅',title:'Забери награду: '+m.name,why:'Цель достигнута',
+      reward:(m.reward.gold||0)+'🪙'+(m.reward.dust?' +'+m.reward.dust+'✦':''),unlock:'',label:'В Кодекс',
+      fn:()=>{ switchView('codex'); if(typeof showCodexTab==='function')showCodexTab('miles'); }}; }
+  // 4) ближайшая механика
+  const feats=[['forge','Кузница'],['spire','Шпиль Мироздания'],['roost','Гнездилище Рода']];
+  for(const f of feats){ if(typeof featureUnlocked==='function'&&!featureUnlocked(f[0])){ const need=FEATURE_MIN[f[0]];
+    return {icon:'🔓',title:`Подними дракона до ур.${need}`,why:`Осталось ${Math.max(1,need-lvl)} ур.`,
+      reward:'опыт в боях и странствиях',unlock:f[1],label:'В бой',fn:()=>switchView('arena')}; } }
+  // 5) задание дня
+  const q=(S.quests||[]).find(x=>!x.claimed);
+  if(q && q.done) return {icon:'✨',title:'Забери награду задания',why:questText(q.id),reward:_qReward(q),unlock:'',
+    label:'В Логово',fn:()=>switchView('lair')};
+  if(q) return {icon:q.icon||'✨',title:questText(q.id),why:`Прогресс ${q.prog||0}/${q.goal}`,reward:_qReward(q),unlock:'',
+    label:'Погнали',fn:()=>switchView('explore')};
+  // 6) инкубация идёт
+  const inc=eggs.find(e=>e.incNeed&&(e.inc||0)<e.incNeed);
+  if(inc) return {icon:'🥚',title:'Продвинь инкубацию',why:`Яйцо на ${Math.round((inc.inc||0)/inc.incNeed*100)}% — бои и странствия его греют`,
+    reward:'скоро новый дракон',unlock:'',label:'В странствие',fn:()=>switchView('explore')};
+  // 7) ворота биома (крупные цели середины игры)
+  if(typeof BIOME_MIN_LEVEL!=='undefined'){ for(let b=2;b<=3;b++){ if(lvl<BIOME_MIN_LEVEL[b])
+    return {icon:'⛰️',title:`Подними дракона до ур.${BIOME_MIN_LEVEL[b]}`,why:`Откроется глубина мира`,
+      reward:'редкие виды и добыча',unlock:BIOME_TIERLABEL[b],label:'В бой',fn:()=>switchView('arena')}; } }
+  // 8) улучшение логова
+  if(typeof lairUpgradeCheck==='function'){ const c=lairUpgradeCheck(); if(c&&c.ok)
+    return {icon:'🏰',title:'Улучши логово',why:'Хватает ресурсов',reward:'+вместимость стаи',unlock:'',
+      label:'В Логово',fn:()=>switchView('lair')}; }
+  // 9) владыка мира
+  if(typeof WORLD_BOSSES!=='undefined'){ const bo=WORLD_BOSSES.find(x=>!bossDefeated(x.id));
+    if(bo && lvl>=100) return {icon:'☠️',title:'Брось вызов владыке',why:bo.name+' ждёт',
+      reward:'уникальное яйцо',unlock:'легенда в Кодексе',label:'К владыке',fn:()=>switchView('explore')}; }
+  // по умолчанию
+  return {icon:'🗺️',title:'Отправься в странствие',why:'Золото, опыт и находки',reward:'ресурсы и яйца',
+    unlock:'новые области',label:'В странствие',fn:()=>switchView('explore')};
+}
+function nextStepCardHTML(){
+  const ns=nextStep(); const meta=[];
+  if(ns.reward) meta.push(`🎁 ${ns.reward}`);
+  if(ns.unlock) meta.push(`🔓 ${ns.unlock}`);
+  return `<div class="nextstep">
+    <div class="ns-head">Следующий шаг</div>
+    <div class="ns-main"><span class="ns-ic">${ns.icon}</span>
+      <div class="ns-txt"><div class="ns-title">${ns.title}</div>${ns.why?`<div class="ns-why">${ns.why}</div>`:''}</div></div>
+    ${meta.length?`<div class="ns-meta">${meta.join(' · ')}</div>`:''}
+    <button class="ns-cta tap" id="nextStepBtn">${ns.label||'Вперёд'} →</button>
+    <details class="ns-more"><summary>Все цели</summary>${hubGoalsHTML()}</details>
+  </div>`;
+}
 // UX: инфо-строка главного экрана — цель, инкубация, задания, коллекция, подарок
 function hubGoalsHTML(){
   const parts=[];
@@ -120,6 +184,11 @@ function hubGoalsHTML(){
   const q=(S.quests||[]).filter(x=>!x.claimed).length; if(q) parts.push(`✨ Задания: <b>${q}</b>`);
   const disc=(typeof SPECIES!=='undefined')?SPECIES.filter(sp=>S.discovered&&S.discovered[sp.id]).length:0;
   parts.push(`🐉 Виды: <b>${disc}/${(typeof SPECIES!=='undefined'?SPECIES.length:15)}</b>`);
+  const eggT=Object.keys(S.eggStats||{}).length, eggTot=(typeof EGG_CATALOG!=='undefined'?EGG_CATALOG.length:16);
+  const biomes=Object.keys(((S.worldCodex||{}).biomes)||{}).length;
+  const bossesB=(typeof WORLD_BOSSES!=='undefined')?WORLD_BOSSES.filter(b=>bossDefeated(b.id)).length:0;
+  const knowPct=Math.round(((disc/((typeof SPECIES!=='undefined')?SPECIES.length:15))+(eggT/eggTot)+(biomes/5)+(bossesB/5))/4*100);
+  parts.push(`📖 Знания: <b>${knowPct}%</b>`); // СВЯЗЬ: Кодекс агрегирует все системы
   if(S.chestReady) parts.push('🎁 <b>Подарок дня</b>');
   return `<div class="hub-goals"><div class="hg-row">${parts.join(' · ')}</div></div>`;
 }
@@ -156,7 +225,7 @@ function renderHub(){
   }).join('');
   const ownedCount=(S.decorOwned||[]).length;
   wrap.innerHTML=`
-    ${hubGoalsHTML()}
+    ${nextStepCardHTML()}
     <div class="hub-stage hub-stage-photo">
       <img class="hub-bg" src="images/hub_bg.webp" decoding="async" alt=""
         onerror="this.style.display='none';this.parentNode.classList.add('hub-bg-fallback')">
@@ -169,18 +238,13 @@ function renderHub(){
         <button class="btn ghost hub-deco-btn" id="treasBtn">🎁 Сокровищница${chestCount()?` (${chestCount()})`:''}</button>
         <button class="btn ghost hub-deco-btn" id="marketBtn">🛒 Рынок</button>
         ${ownedCount?`<button class="btn ghost hub-deco-btn" id="decoBtn">🎨 Украшения (${ownedCount})</button>`:''}
-        <button class="btn ghost hub-deco-btn" id="sndBtn" title="Звук">${S.soundOn===false?'🔇':'🔊'}</button>
-        <button class="btn ghost hub-deco-btn" id="saveBtn" title="Экспорт и импорт сейва">💾</button>
-        <button class="btn ghost hub-deco-btn" id="a11yBtn" title="Доступность">♿</button>
       </div>
     </div>`;
   wrap.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>switchView(b.dataset.go));
   const db=$('#decoBtn'); if(db) db.onclick=openDecorManager;
   const tb=$('#treasBtn'); if(tb) tb.onclick=openTreasury;
-  const sv=$('#saveBtn'); if(sv) sv.onclick=openSaveManager;
-  const a11=$('#a11yBtn'); if(a11) a11.onclick=openA11y;
   const mk=$('#marketBtn'); if(mk) mk.onclick=openMarket;
-  const sn=$('#sndBtn'); if(sn) sn.onclick=()=>{S.soundOn=S.soundOn===false?true:false;persist();renderHub();};
+  const nsb=$('#nextStepBtn'); if(nsb) nsb.onclick=()=>{ const ns=nextStep(); if(ns&&ns.fn)ns.fn(); };
 }
 
 // управление украшениями: разместить/убрать по слотам
@@ -670,3 +734,69 @@ function openExpedition(region){
   $('#backMap').onclick=renderMap;
 }
 
+
+/* ============================================================
+   ЕДИНАЯ НАВИГАЦИЯ — 5 разделов (нижняя панель). Прочие функции — внутри.
+   ============================================================ */
+const TAB_OF={hub:'hub',explore:'explore',lair:'lair',codex:'codex',profile:'profile'};
+// вторичные экраны подсвечивают ближайший раздел
+const TAB_PARENT={hatch:'lair',roost:'lair',spire:'lair',arena:'explore',forge:'hub'};
+function renderTabbar(active){
+  const bar=document.getElementById('tabbar'); if(!bar)return;
+  const cur=TAB_OF[active]||TAB_PARENT[active]||'hub';
+  bar.querySelectorAll('.tabbtn').forEach(b=>{
+    const on=b.dataset.tab===cur; b.classList.toggle('on',on);
+    // бейдж на «Команде» — готовый подарок/яйца, на «Кодексе» — новые виды
+    let badge='';
+    if(b.dataset.tab==='lair' && (S.chestReady||eggCount()>0)) badge=S.chestReady?'🎁':String(eggCount());
+    if(b.dataset.tab==='profile'){ const q=(S.quests||[]).filter(x=>!x.claimed&&x.done).length; if(q)badge='●'; }
+    let el=b.querySelector('.tb-badge');
+    if(badge){ if(!el){el=document.createElement('span');el.className='tb-badge';b.appendChild(el);} el.textContent=badge; }
+    else if(el){ el.remove(); }
+  });
+}
+function bindTabbar(){
+  const bar=document.getElementById('tabbar'); if(!bar||bar._bound)return; bar._bound=true;
+  bar.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.tab)));
+}
+
+/* ===== ПРОФИЛЬ: прогресс игрока + служебное (звук/сейв/доступность/рынок) ===== */
+function renderProfile(){
+  const box=$('#profileBody'); if(!box)return;
+  const lvl=progLevel(), dn=S.dragons.length, disc=(typeof SPECIES!=='undefined')?SPECIES.filter(sp=>S.discovered&&S.discovered[sp.id]).length:0;
+  const spTot=(typeof SPECIES!=='undefined')?SPECIES.length:15;
+  const milesDone=(typeof MILESTONES!=='undefined')?MILESTONES.filter(m=>milestoneClaimed(m.id)).length:0;
+  const milesTot=(typeof MILESTONES!=='undefined')?MILESTONES.length:0;
+  const bossesB=(typeof WORLD_BOSSES!=='undefined')?WORLD_BOSSES.filter(b=>bossDefeated(b.id)).length:0;
+  const pb=(typeof pbarHTML==='function')?pbarHTML:(c,m)=>`<div class="bar"><i style="width:${m?Math.round(c/m*100):0}%"></i></div>`;
+  box.innerHTML=`
+    <div class="prof-hero">
+      <div class="prof-badge">🐲</div>
+      <div class="prof-main">
+        <div class="prof-title">Драконовод · ур. ${lvl}</div>
+        <div class="prof-sub">🔥 Серия входов: <b>${S.streak||0}</b> дн.</div>
+      </div>
+    </div>
+    <div class="prof-stats">
+      <div class="stat-card"><span class="sc-ic">🐉</span><b>${dn}</b><small>драконов</small></div>
+      <div class="stat-card"><span class="sc-ic">📖</span><b>${disc}/${spTot}</b><small>видов</small></div>
+      <div class="stat-card"><span class="sc-ic">🏅</span><b>${milesDone}/${milesTot}</b><small>вех</small></div>
+      <div class="stat-card"><span class="sc-ic">☠️</span><b>${bossesB}</b><small>владык</small></div>
+    </div>
+    <div class="prof-sec-t">Достижения</div>
+    ${pb(milesDone,milesTot||1,'rep',false)}
+    <button class="prof-row tap" id="pfMiles"><span>🏅 Вехи и награды</span><span class="pf-arrow">›</span></button>
+    <div class="prof-sec-t">Настройки</div>
+    <div class="prof-grid">
+      <button class="prof-tile tap" id="pfSound"><span class="pt-ic">${S.soundOn===false?'🔇':'🔊'}</span><span>Звук</span></button>
+      <button class="prof-tile tap" id="pfA11y"><span class="pt-ic">♿</span><span>Доступность</span></button>
+      <button class="prof-tile tap" id="pfMarket"><span class="pt-ic">🛒</span><span>Рынок</span></button>
+      <button class="prof-tile tap" id="pfSave"><span class="pt-ic">💾</span><span>Сейв</span></button>
+    </div>`;
+  const go=(id,fn)=>{ const el=$('#'+id); if(el&&fn) el.onclick=fn; };
+  go('pfMiles',()=>{ switchView('codex'); if(typeof showCodexTab==='function')showCodexTab('miles'); });
+  go('pfSound',()=>{ S.soundOn=S.soundOn===false?true:false; if(typeof persist==='function')persist(); renderProfile(); });
+  go('pfA11y', ()=> (typeof openA11y==='function')&&openA11y());
+  go('pfMarket',()=>{ switchView('hub'); if(typeof openMarket==='function')openMarket(); });
+  go('pfSave', ()=> (typeof openSaveManager==='function')&&openSaveManager());
+}
