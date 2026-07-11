@@ -275,7 +275,6 @@ function renderFlight(){
   }catch(e){ console.warn('[flight] возврат из боя:',e); f._pend=null; f.battleWin=undefined; }
   // полёт продолжается после возврата из боя
   if(!f.ended) f.paused=false;
-  console.log('[Драконис] полёт v12: экран собран, пауза='+f.paused);
 
   /* --- управление: джойстик под пальцем + WASD/стрелки --- */
   const stickEl=$('#fcvStick'), knobEl=$('#fcvKnob');
