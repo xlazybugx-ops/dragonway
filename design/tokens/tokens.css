@@ -1,0 +1,91 @@
+/* ============================================================
+   Draconis · COZY STORYBOOK FANTASY — библиотека дизайн-токенов
+   Единый источник правды для нового художественного стиля.
+   НЕ подключается к игре автоматически (фундамент для будущей замены).
+   Подключать: <link rel="stylesheet" href="art/tokens/tokens.css"> когда начнётся миграция.
+   ============================================================ */
+:root{
+  /* ——— БУМАГА / ОСНОВА (тёплая, светлая — «страница книги») ——— */
+  --ds-paper:        #FBF3E4;
+  --ds-paper-2:      #F5E7CE;
+  --ds-paper-warm:   #FDEFD6;
+  --ds-ink:          #4A3B2E;   /* мягко-коричневые «чернила», не чёрный */
+  --ds-ink-soft:     #8A7B66;
+
+  /* ——— НЕБО / АТМОСФЕРА ——— */
+  --ds-sky-day:      #CDE8F5;
+  --ds-sky-peach:    #FFD9B0;
+  --ds-sky-lav:      #D8CBF0;
+
+  /* ——— ПРИРОДНЫЕ МАТЕРИАЛЫ ——— */
+  --ds-emerald:      #6BBE7A;   /* изумрудные леса */
+  --ds-emerald-deep: #2E7D5B;
+  --ds-turquoise:    #63D2C4;   /* бирюзовая вода */
+  --ds-turquoise-dp: #3FB6AE;
+  --ds-sun:          #FFC96B;   /* золотой солнечный свет */
+  --ds-sun-glow:     #FFE3A3;
+  --ds-sunset:       #FF9E5A;   /* оранжевые закаты */
+  --ds-sunset-deep:  #F5794D;
+  --ds-lavender:     #B7A8E0;   /* лавандовые тени */
+  --ds-lavender-dp:  #8E7CC7;
+  --ds-glow-leaf:    #B6F5A0;   /* светящиеся растения */
+  --ds-glow-cyan:    #9EEBF0;
+
+  /* ——— СТИХИИ (мягкие, добрые версии) ——— */
+  --ds-fire:   #FF8A5B;
+  --ds-frost:  #7FD3E8;
+  --ds-venom:  #8FD46A;
+  --ds-storm:  #B79BEA;
+  --ds-shade:  #E08AB0;   /* тень = дружелюбная пыльно-розовая, не мрак */
+
+  /* ——— РЕДКОСТЬ (мгновенно читается) ——— */
+  --ds-rar-common:    #CBB89A;
+  --ds-rar-uncommon:  #7FC98A;
+  --ds-rar-rare:      #6FB7E8;
+  --ds-rar-epic:      #B18AE0;
+  --ds-rar-legendary: #FFC24D;
+  --ds-rar-ancient:   #F08AB4;
+
+  /* ——— ГРАДИЕНТЫ ——— */
+  --ds-grad-sky:    linear-gradient(180deg,#CDE8F5 0%,#FFD9B0 70%,#FFE3A3 100%);
+  --ds-grad-sunset: linear-gradient(180deg,#FFD9B0 0%,#FF9E5A 60%,#F5794D 100%);
+  --ds-grad-forest: linear-gradient(180deg,#8FD46A 0%,#6BBE7A 55%,#2E7D5B 100%);
+  --ds-grad-water:  linear-gradient(180deg,#9EEBF0 0%,#63D2C4 60%,#3FB6AE 100%);
+  --ds-grad-gold:   linear-gradient(180deg,#FFE3A3 0%,#FFC96B 100%);
+  --ds-grad-card:   linear-gradient(180deg,#FFFDF7 0%,#F5E7CE 100%);
+
+  /* ——— ТЕНИ (мягкие, лавандово-тёплые, НИКОГДА не чёрные) ——— */
+  --ds-shadow-sm:  0 2px 6px rgba(142,124,199,.18);
+  --ds-shadow-md:  0 6px 16px rgba(142,124,199,.22);
+  --ds-shadow-lg:  0 12px 30px rgba(142,124,199,.26);
+  --ds-shadow-in:  inset 0 1px 2px rgba(255,255,255,.6);
+  --ds-glow-soft:  0 0 18px rgba(255,201,107,.5);
+  --ds-glow-legend:0 0 26px 4px rgba(255,194,77,.55);
+
+  /* ——— РАДИУСЫ (крупные скругления, iOS-стиль) ——— */
+  --ds-r-xs: 8px;
+  --ds-r-sm: 14px;
+  --ds-r-md: 20px;
+  --ds-r-lg: 28px;
+  --ds-r-xl: 36px;
+  --ds-r-pill: 999px;
+
+  /* ——— КОНТУР / ЛИНИЯ (единая толщина, мягкий коричневый) ——— */
+  --ds-line:   2px;
+  --ds-line-col: rgba(74,59,46,.5);
+
+  /* ——— ТИПОГРАФИКА (дружелюбная, «книжная», не гравюрная) ——— */
+  --ds-font-display: 'Baloo 2','Fredoka',system-ui,sans-serif; /* округлый заголовок */
+  --ds-font-body:    'Nunito','Quicksand',system-ui,sans-serif; /* мягкий текст */
+  --ds-fs-hero:   clamp(28px,7vw,44px);
+  --ds-fs-h2:     clamp(20px,5vw,28px);
+  --ds-fs-body:   15px;
+  --ds-fs-cap:    12px;
+
+  /* ——— ВОЗДУХ / ОТСТУПЫ ——— */
+  --ds-gap-xs: 6px; --ds-gap-sm: 10px; --ds-gap-md: 16px; --ds-gap-lg: 24px; --ds-gap-xl: 36px;
+
+  /* ——— ДВИЖЕНИЕ (тайминги) ——— */
+  --ds-t-fast: 160ms; --ds-t-mid: 220ms; --ds-t-slow: 360ms;
+  --ds-ease:   cubic-bezier(.2,.9,.3,1.1);
+}
