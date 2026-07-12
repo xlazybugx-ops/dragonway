@@ -5,7 +5,7 @@
    Механика и карты перенесены из демо «Полёт над Эмберричем».
    Драконис · Кодекс Чешуи
    ============================================================ */
-let flight=null; // {region, d, stats, ... состояние карты и дракона}
+let flight=null; // {region, d, stats, run, ... состояние карты и дракона}
 /* ===== ИССЛЕДОВАНИЕ МИРА: хелперы наград/прогресса/кодекса ===== */
 function worldRegionKey(){ return (flight&&flight.region&&(flight.region.id||flight.region.worldId))||'?'; }
 function worldRegionName(){ return (flight&&flight.region&&(flight.region.name||flight.region.biome))||'Область'; }
@@ -18,9 +18,10 @@ function exploreProgress(){ if(!flight)return; if(!S.worldExplored)S.worldExplor
   const ms=(typeof GB!=='undefined'&&GB.World&&GB.World.exploreMilestones)||[25,50,100];
   for(let i=0;i<ms.length;i++){ if(prev<ms[i]&&cur>=ms[i]){ const g=((GB.World&&GB.World.exploreRewardGold)||60)*(i+1); S.gold+=g; if(typeof toast==='function')toast(`🗺️ ${worldRegionName()} исследован на ${ms[i]}%! +${g}🪙`); } } }
 function grantWorldReward(reward){ const f=flight; if(!f)return '…'; const R=f.region; let txt='';
-  if(reward==='gold'){const g=rnd(R.gold[0],R.gold[1]);S.gold+=g;f.stats.gold+=g;txt='🪙 +'+g;}
-  else if(reward==='dust'){const du=rnd(8,18);S.dust+=du;txt='✦ +'+du;}
-  else if(reward==='shards'){const sh=rnd(2,6);S.shards=(S.shards||0)+sh;txt='🔮 +'+sh;}
+  const rm=(f.run&&f.run.rewardMul)||1; // REWORK: риск выбранного пути ↔ награда
+  if(reward==='gold'){const g=Math.round(rnd(R.gold[0],R.gold[1])*rm);S.gold+=g;f.stats.gold+=g;txt='🪙 +'+g;}
+  else if(reward==='dust'){const du=Math.round(rnd(8,18)*rm);S.dust+=du;txt='✦ +'+du;}
+  else if(reward==='shards'){const sh=Math.round(rnd(2,6)*rm);S.shards=(S.shards||0)+sh;txt='🔮 +'+sh;}
   else if(reward==='scroll'){const scr=grantScroll(R.worldId,R.biomeN);f.cnt.scroll++;txt=scr?'📜 Свиток легенды!':('🪙 +'+((()=>{const g=rnd(R.gold[0],R.gold[1]);S.gold+=g;return g;})()));}
   else if(reward==='chest'){addChest(Math.min(3,R.biomeN||1));txt='🎁 Сундук!';}
   else if(reward==='relic'){ if(featureUnlocked('spire')){const art=biomeArtifact(R);addArtifact(art.id,1);f.stats.relics++;txt=art.icon+' '+art.name+'!';} else {const g=rnd(R.gold[0],R.gold[1]);S.gold+=g;txt='🪙 +'+g;} }
@@ -119,15 +120,48 @@ function startFlight(region,d){
     worldObj:(typeof WORLDS!=='undefined'&&WORLDS.find(w=>w.id===region.worldId))||null,
     stats:{gold:0,eggs:0,relics:0,xp:0,caught:0,beasts:0}, // накапливается по всем ярусам
     cnt:{treasure:0,scroll:0}, beasts:0,                    // цели текущего яруса
-    W:0,H:0,items:[],storms:[],dens:[],wilds:[],floats:[],clouds:[],
-    drag:null, stam:140, portal:null, paused:true, ended:false,
+    W:0,H:0,items:[],storms:[],dens:[],wilds:[],elites:[],secrets:[],pockets:[],winds:[],floats:[],clouds:[],
+    drag:null, stam:(GB.Run&&GB.Run.staminaMax)||140, portal:null, paused:true, ended:false,
     raf:0, ac:null, _pend:null, battleWin:undefined, bg:null,
+    // REWORK: состояние забега-роглайта — усиления, глубина, риск пути (сбрасывается после странствия)
+    run:{fx:{}, boons:[], depth:0, riskMul:1, rewardMul:1, gate:null, t0:Date.now()},
+    trialEnt:null, trialDone:false, lastDefeat:null,
     sprPng:flySpritePng(d.id,d.level), sprSvg:flySprite(d.id),
   };
   document.body.classList.add('flight-active');
   const fs=$('#flightFs');
   if(fs){ fs.style.display='block'; fs.innerHTML='<div class="fcv-load">Разжигаем миры… <span style="opacity:.55;font-size:12px">сборка v12</span></div>'; }
   buildFlightTier(region);
+}
+
+/* REWORK: применить усиление забега (действует только до конца странствия) */
+function runAddBoon(b){
+  const f=flight; if(!f||!f.run)return;
+  f.run.boons.push(b.icon);
+  for(const k in b.fx){
+    if(k==='healNow'){ const st=statsOf(f.d);
+      f.d.curHp=Math.min(st.maxHp,Math.round((f.d.curHp||0)+st.maxHp*b.fx[k]/100)); }
+    else f.run.fx[k]=(f.run.fx[k]||0)+b.fx[k];
+  }
+}
+/* REWORK: фон увеличенной карты из нарисованной картинки — зеркальная мозаика
+   (не растягиваем одну карту, а собираем большую территорию; рендер в полразрешения) */
+function flyTiledBg(img,W,H){
+  const sc=0.5, c=document.createElement('canvas');
+  c.width=Math.max(64,Math.round(W*sc)); c.height=Math.max(64,Math.round(H*sc));
+  const x=c.getContext('2d');
+  const cols=2, rows=3, tw=c.width/cols, th=c.height/rows;
+  for(let i=0;i<cols;i++)for(let j=0;j<rows;j++){
+    x.save();
+    x.translate(i*tw+(i%2?tw:0), j*th+(j%2?th:0));
+    x.scale(i%2?-1:1, j%2?-1:1);
+    x.drawImage(img,0,0,tw,th);
+    x.restore();
+  }
+  const v=x.createRadialGradient(c.width/2,c.height/2,Math.min(c.width,c.height)*0.4,c.width/2,c.height/2,Math.max(c.width,c.height)*0.72);
+  v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.42)');
+  x.fillStyle=v; x.fillRect(0,0,c.width,c.height);
+  return c;
 }
 
 /* ===== ПОСТРОИТЬ ЯРУС (вызывается на старте и при переходе через портал) ===== */
@@ -141,55 +175,96 @@ function buildFlightTier(region){
   else { const _im=new Image(); _im.onerror=()=>{_denImgCache[_dik]=null; if(flight)flight.denImg=null;}; _im.onload=()=>{_denImgCache[_dik]=_im;}; _im.src=`images/den_${_dik}.png`; f.denImg=_im; }
   loadFlyMap(region,bn,img=>{
     if(!flight||flight!==f)return;
+    // REWORK: карта ~10× больше — не растянутая, а собранная из новых участков
+    const MS=(GB.Run&&GB.Run.mapScale)||3.1;
     let W,H;
-    if(img){ // нарисованная карта: нативное разрешение, резко и без апскейла
+    if(img){ // нарисованная карта → зеркальная мозаика на большую территорию
       const SC=Math.max(1.4,(innerWidth*1.35)/img.width);
-      W=img.width*SC; H=img.height*SC; f.bg=img;
-    } else {  // процедурный фон
-      W=Math.max(innerWidth*1.5,900); H=Math.max(innerHeight*2.2,1400);
-      f.bg=flyBackground(region.scene,Math.round(W),Math.round(H),region.id);
+      W=Math.round(img.width*SC*MS); H=Math.round(img.height*SC*MS);
+      f.bg=flyTiledBg(img,W,H);
+    } else {  // процедурный фон (в полразрешения — экономия памяти, рисуем растянуто)
+      W=Math.round(Math.max(innerWidth*1.5,900)*MS); H=Math.round(Math.max(innerHeight*2.2,1400)*MS);
+      f.bg=flyBackground(region.scene,Math.round(W*0.42),Math.round(H*0.42),region.id);
     }
     f.W=W; f.H=H;
     f.weather=(typeof rollWeather==='function')?rollWeather(region):null; worldSeen('biomes',region.scene); if(f.weather)worldSeen('weather',f.weather.id);
     f.beasts=0; f.cnt={treasure:0,scroll:0};
-    f.items=[];f.storms=[];f.dens=[];f.wilds=[];f.floats=[];f.clouds=[];
-    f.drag={x:W/2,y:H-100,vx:0,vy:0,heading:-Math.PI/2,flap:0,hurt:0,bank:0,trail:[]};
-    f.stam=140; f.paused=false; f.warp=false; f._pend=null; f.battleWin=undefined;
+    f.items=[];f.storms=[];f.dens=[];f.wilds=[];f.elites=[];f.secrets=[];f.pockets=[];f.winds=[];f.floats=[];f.clouds=[];
+    f.trialEnt=null; f.trialDone=false;
+    f.drag={x:W/2,y:H-140,vx:0,vy:0,heading:-Math.PI/2,flap:0,hurt:0,bank:0,trail:[]};
+    f.stam=(GB.Run&&GB.Run.staminaMax)||140; f.paused=false; f.warp=false; f._pend=null; f.battleWin=undefined;
+    // REWORK: туман миникарты — сетка исследованных клеток
+    f.mgN=18; f.mgrid=new Uint8Array(f.mgN*f.mgN); f._miniT=0;
 
-    const coinVal=Math.max(2,Math.round((region.gold[0]+region.gold[1])/20));
-    const put=(icon,type,n,val)=>{for(let i=0;i<n;i++)f.items.push({icon,type,val:val||0,
-      x:90+Math.random()*(W-180),y:170+Math.random()*(H-340),r:16,taken:false,pulse:Math.random()*6});};
-    put('🪙','coin',18+bn*3,coinVal);
-    put('💎','gem',4+bn*2,coinVal*3);
-    // ЧАСТЬ 2: яйца больше НЕ разбросаны по карте — теперь это редкая награда за победы/события/боссов
-    put('🎁','chest',2);
-    put('🔑','key',1+(bn>1?1:0));
-    put('📜','scroll',1+(bn>1?1:0));
-    put('❓','choice',2);
-    put('🍖','food',2+bn);
+    const RN=GB.Run||{};
+    const riskMul=f.run?f.run.riskMul:1, rewardMul=f.run?f.run.rewardMul:1;
+    const coinVal=Math.max(2,Math.round((region.gold[0]+region.gold[1])/20*rewardMul));
+    const put=(icon,type,n,val,zone)=>{for(let i=0;i<n;i++){
+      const zx=zone?zone.x+(Math.random()-.5)*zone.r*1.6:90+Math.random()*(W-180);
+      const zy=zone?zone.y+(Math.random()-.5)*zone.r*1.6:170+Math.random()*(H-340);
+      f.items.push({icon,type,val:val||0,x:Math.max(60,Math.min(W-60,zx)),y:Math.max(120,Math.min(H-80,zy)),r:16,taken:false,pulse:Math.random()*6});}};
+    put('🪙','coin',Math.round((18+bn*3)*2.4),coinVal);
+    put('💎','gem',(4+bn*2)*2,coinVal*3);
+    // яйца НЕ разбросаны по карте — редкая награда за победы/события/испытания
+    put('🎁','chest',3);
+    put('🔑','key',2);
+    put('📜','scroll',2);
+    put('❓','choice',4+bn); // события-решения — чаще: игрок выбирает почти постоянно
+    put('🍖','food',(2+bn)*2);
+    // REWORK: опасные карманы — богатая добыча под охраной элиты (риск ↔ награда)
+    for(let i=0;i<(RN.dangerPockets||2);i++){
+      const pk={x:W*(0.15+Math.random()*0.7), y:H*(0.18+i*0.3+Math.random()*0.2), r:280};
+      f.pockets.push(pk);
+      put('🎁','chest',1,0,pk); put('💎','gem',3,coinVal*4,pk); put('🔑','key',1,0,pk);
+    }
+    // REWORK: секретные зоны — невидимы, открываются при подлёте
+    for(let i=0;i<(RN.secretCount||2);i++)
+      f.secrets.push({x:W*(0.1+Math.random()*0.8), y:H*(0.15+Math.random()*0.65), r:130, found:false});
+    // REWORK: воздушные потоки — быстрые маршруты через большую карту
+    for(let i=0;i<(RN.windLanes||3);i++){
+      const x1=W*(0.15+Math.random()*0.7), y1=H*(0.9-i*0.28);
+      const x2=Math.max(W*0.1,Math.min(W*0.9,x1+(Math.random()-.5)*W*0.5)), y2=Math.max(H*0.08,y1-H*0.3);
+      f.winds.push({x1,y1,x2,y2,w:95});
+    }
     // трасса из колец: пролети все 5 подряд — гарантированный сундук
     f.rings=[];f.ringIdx=0;f.ringTimer=0;f.ringDone=false;
-    {let rx=W*(0.25+Math.random()*0.5), ry=H*0.82;
-     for(let i=0;i<5;i++){f.rings.push({x:Math.max(90,Math.min(W-90,rx)),y:ry,r:52});
-       rx+=(Math.random()-0.5)*W*0.34; ry-=H*0.13;}}
-    for(let i=0;i<1+bn*2;i++)f.storms.push({x:120+Math.random()*(W-240),y:240+Math.random()*(H-480),
+    {let rx=W*(0.25+Math.random()*0.5), ry=H*0.85;
+     for(let i=0;i<5;i++){f.rings.push({x:Math.max(90,Math.min(W-90,rx)),y:ry,r:64});
+       rx+=(Math.random()-0.5)*W*0.3; ry-=H*0.14;}}
+    for(let i=0;i<(1+bn*2)*3;i++)f.storms.push({x:120+Math.random()*(W-240),y:240+Math.random()*(H-480),
       r:60+Math.random()*40,a:Math.random()*6,va:.3+Math.random()*.5,vx:(Math.random()-.5)*40,vy:(Math.random()-.5)*40,
       ph:Math.random()*4}); // фаза цикла: затишье → предупреждение → разряд
     // логова зверей — реальные бои
     const denAt=(fx,fy)=>{const sp=weightedSpecies();
       return {x:W*fx,y:H*fy,icon:pick(['🐗','🦊','👹','🦎','🕷️','🦂']),name:'Логово: '+sp.name,sp,
-        beast:{x:W*fx+40,y:H*fy,tx:W*fx,ty:H*fy,wait:0},patrolR:150,aggro:185,speedMul:.72,defeated:false,cool:0};};
-    f.dens=[denAt(0.3,0.55+Math.random()*0.12), denAt(0.7,0.35+Math.random()*0.12)];
+        beast:{x:W*fx+40,y:H*fy,tx:W*fx,ty:H*fy,wait:0},patrolR:150,aggro:200,speedMul:.78,defeated:false,cool:0};};
+    f.dens=[];
+    for(let i=0;i<(RN.denCount||4);i++)
+      f.dens.push(denAt(0.18+Math.random()*0.64, 0.2+i*(0.6/((RN.denCount||4)))+Math.random()*0.08));
     // дикие драконы — победа в бою даёт яйцо
-    const wildAt=(fx,rare)=>{const sp=weightedSpecies();
+    const wildAt=(fx,fy,rare)=>{const sp=weightedSpecies();
       return {sp,rare:!!rare,name:rare?'✨ Мерцающий беглец':'Дикий дракон: '+sp.name,
         col:(TOPDRAGON_COLORS[sp.el]||TOPDRAGON_COLORS.fire).body,img:flySprite(sp.id),
-        x:W*fx,y:H*(0.3+Math.random()*0.35),tx:0,ty:0,wait:0,heading:0,
+        x:W*fx,y:H*fy,tx:0,ty:0,wait:0,heading:0,
         speed:rare?150:110+Math.random()*40,defeated:false,cool:0};};
-    f.wilds=[wildAt(0.3), wildAt(0.7)];
-    if(bn>=2)f.wilds.push(wildAt(0.5,true));
+    f.wilds=[];
+    for(let i=0;i<(RN.wildCount||4);i++)
+      f.wilds.push(wildAt(0.2+Math.random()*0.6, 0.25+Math.random()*0.5));
+    if(bn>=2)f.wilds.push(wildAt(0.5,0.4,true));
+    // REWORK: элитные стражи опасных карманов
+    f.pockets.forEach((pk,i)=>{ if(i>=(RN.eliteCount||2))return;
+      const sp=weightedSpecies();
+      f.elites.push({sp,elite:true,name:'👿 Элита: '+sp.name,img:flySprite(sp.id),
+        x:pk.x,y:pk.y,tx:pk.x,ty:pk.y,wait:0,heading:0,home:pk,speed:135,defeated:false,cool:0});});
     for(let i=0;i<3;i++)f.clouds.push({x:Math.random()*W,y:Math.random()*H,r:240+Math.random()*220,
       vx:6+Math.random()*10,vy:(Math.random()-.5)*5});
+
+    // REWORK: испытание региона — страж у портала, проверка механики биома
+    const trialKey=region.el==='storm'?'storm':region.scene;
+    const trialDef=(typeof REGION_TRIALS!=='undefined'&&REGION_TRIALS[trialKey])||null;
+    if(trialDef){ const sp=weightedSpecies();
+      f.trialEnt={sp,trial:true,scene:trialKey,icon:trialDef.icon,
+        name:trialDef.name,hint:trialDef.hint,x:W/2,y:H*0.08+120,defeated:false,cool:0}; }
 
     // портал: на ярусы 1-2 — переход выше, на последнем — возвращение домой
     const nextN=(bn<3 && f.worldObj && f.worldObj.biomes[bn])?bn+1:null;
@@ -198,6 +273,7 @@ function buildFlightTier(region){
       {icon:'💰',label:'Собери находок',cur:()=>f.cnt.treasure,need:8+2*bn},
     ];
     if(bn>=2)goals.push({icon:'📜',label:'Найди свиток',cur:()=>f.cnt.scroll,need:1});
+    if(f.trialEnt)goals.push({icon:trialDef.icon,label:trialDef.name,cur:()=>f.trialDone?1:0,need:1});
     f.portal={x:W/2,y:70,goals,next:nextN,
       name:nextN?('Портал: '+f.worldObj.biomes[nextN-1].name):'Портал возвращения'};
 
@@ -227,10 +303,48 @@ function renderFlight(){
       <button class="fcv-exit" id="fcvExit">🏁 Закончить</button>
     </div>
     <div class="fcv-goals" id="fcvGoals"></div>
+    <canvas class="fcv-mini" id="fcvMini"></canvas>
     <div class="fcv-stick" id="fcvStick"><div class="fcv-knob" id="fcvKnob"></div></div>
     <div class="fcv-enc" id="fcvEnc"></div>
     <div class="fcv-fade" id="fcvFade"></div>`;
   f._score=$('#fcvScore'); f._stam=$('#fcvStamFill'); f._goals=$('#fcvGoals'); // ПЕРФ: кэш ссылок HUD (не $() каждый кадр)
+  // REWORK: миникарта — игрок, туман, точки интереса; не перегружает экран
+  const mini=$('#fcvMini'), mtx=mini?mini.getContext('2d'):null;
+  if(mini){ const mw=104, mh=Math.max(84,Math.min(170,Math.round(mw*f.H/f.W)));
+    mini.width=mw*2; mini.height=mh*2; mini.style.width=mw+'px'; mini.style.height=mh+'px';
+    mtx.setTransform(2,0,0,2,0,0); }
+  function drawMini(){
+    if(!mtx)return; const mw=mini.width/2, mh=mini.height/2, kx=mw/f.W, ky=mh/f.H;
+    mtx.clearRect(0,0,mw,mh);
+    mtx.fillStyle='rgba(10,8,18,.82)'; mtx.fillRect(0,0,mw,mh);
+    // исследованные клетки
+    const n=f.mgN, cw=mw/n, ch=mh/n;
+    mtx.fillStyle='rgba(180,160,220,.16)';
+    for(let i=0;i<n*n;i++){ if(f.mgrid[i]) mtx.fillRect((i%n)*cw,((i/n)|0)*ch,cw+0.5,ch+0.5); }
+    // опасные карманы (после обнаружения клетки)
+    mtx.strokeStyle='rgba(255,90,80,.55)'; mtx.lineWidth=1;
+    for(const pk of f.pockets){ if(!miniSeen(pk))continue;
+      mtx.beginPath(); mtx.arc(pk.x*kx,pk.y*ky,Math.max(4,pk.r*kx),0,7); mtx.stroke(); }
+    // точки интереса
+    const dot=(x,y,c,r2)=>{mtx.fillStyle=c;mtx.beginPath();mtx.arc(x*kx,y*ky,r2||2,0,7);mtx.fill();};
+    for(const it of f.items){ if(it.taken)continue;
+      if(it.type==='chest'&&miniSeen(it))dot(it.x,it.y,'#ffd76a',2.4);
+      else if(it.type==='choice'&&miniSeen(it))dot(it.x,it.y,'#9fe6ff',2); }
+    for(const dd of f.dens){ if(!dd.defeated&&miniSeen(dd))dot(dd.x,dd.y,'#ff7a5c',2.6); }
+    for(const wd of f.wilds){ if(!wd.defeated&&miniSeen(wd))dot(wd.x,wd.y,'#ffb46a',2.2); }
+    for(const el2 of f.elites){ if(!el2.defeated&&miniSeen(el2))dot(el2.x,el2.y,'#d8b4ff',3); }
+    for(const s2 of f.secrets){ if(s2.found)dot(s2.x,s2.y,'#7ce8d0',2.6); }
+    if(f.trialEnt&&!f.trialEnt.defeated&&miniSeen(f.trialEnt))dot(f.trialEnt.x,f.trialEnt.y,'#ff5d52',3.4);
+    // портал
+    mtx.fillStyle=flyPortalReady()?'#ffd76a':'rgba(255,215,106,.45)';
+    mtx.beginPath(); const px2=f.portal.x*kx, py2=f.portal.y*ky;
+    mtx.moveTo(px2,py2-4); mtx.lineTo(px2+3.5,py2+2.5); mtx.lineTo(px2-3.5,py2+2.5); mtx.closePath(); mtx.fill();
+    // игрок
+    dot(f.drag.x,f.drag.y,'#ffffff',2.8);
+    mtx.strokeStyle='rgba(255,255,255,.6)'; mtx.strokeRect(0.5,0.5,mw-1,mh-1);
+  }
+  function miniSeen(o){ const n=f.mgN, gx=Math.min(n-1,Math.max(0,(o.x/f.W*n)|0)), gy=Math.min(n-1,Math.max(0,(o.y/f.H*n)|0));
+    return !!f.mgrid[gy*n+gx]; }
 
   const cv=$('#fcv'), ctx=cv.getContext('2d');
   let vw,vh,dpr;
@@ -239,6 +353,36 @@ function renderFlight(){
     ctx.setTransform(dpr,0,0,dpr,0,0);};
   addEventListener('resize',resize,sig); resize();
 
+  // REWORK: выбор усиления после победы (мини-роглайт: усиление → следующее решение)
+  function showBoonChoice(){
+    const enc=$('#fcvEnc'); if(!enc||typeof RUN_BOONS==='undefined')return;
+    f.paused=true;
+    const pool=RUN_BOONS.slice();
+    const picks=[]; for(let i=0;i<((GB.Run&&GB.Run.boonChoices)||3)&&pool.length;i++)
+      picks.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+    enc.style.display='flex';
+    enc.innerHTML=`<div class="enc-card"><div class="enc-icon">🔮</div>
+      <div class="enc-name">Выбери усиление</div>
+      <div class="enc-sub">Действует до конца этого странствия${f.run.boons.length?` · уже взято: ${f.run.boons.join('')}`:''}</div>
+      ${picks.map((b,i)=>`<button ${i?'class="ghost"':''} data-boon="${b.id}">${b.icon} ${b.name} — ${b.desc}</button>`).join('')}</div>`;
+    enc.querySelectorAll('[data-boon]').forEach(btn=>btn.onpointerdown=()=>{
+      const b=picks.find(x=>x.id===btn.dataset.boon);
+      enc.style.display='none'; f.paused=false;
+      if(b){ runAddBoon(b); f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:b.icon+' '+b.name+'!'}); }
+    });
+  }
+  // REWORK: разбор поражения — понятная причина и цель развития
+  function showDefeatCard(){
+    const enc=$('#fcvEnc'), r=f.lastDefeat; if(!enc||!r)return;
+    f.lastDefeat=null; f.paused=true;
+    enc.style.display='flex';
+    enc.innerHTML=`<div class="enc-card"><div class="enc-icon">${r.icon}</div>
+      <div class="enc-name">Поражение: ${r.title}</div>
+      <div class="enc-sub">${r.why}</div>
+      <div class="enc-sub" style="color:var(--gold,#ffd76a)">🎯 Что делать: ${r.goal}</div>
+      <button id="fcvDefOk">Продолжить путь</button>`;
+    const ok=$('#fcvDefOk'); if(ok)ok.onpointerdown=()=>{enc.style.display='none';f.paused=false;};
+  }
   // возврат из боя: применяем итог (защищено от любых сбоев)
   try{
     if(f._pend!==null && f._pend!==undefined && f.battleWin!==undefined){
@@ -252,24 +396,39 @@ function renderFlight(){
           const tier=ent.rare?3:Math.min(3,f.region.biomeN||1);
           addEgg(ent.sp.el,tier); f.stats.eggs++;
           f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:ent.rare?'✨ РЕДКОЕ ЯЙЦО!':'🥚 Яйцо!'});
+        } else if(p.kind==='elite'){
+          // REWORK: элита охраняет богатство — сундук и ключ
+          f.beasts++; addChest(Math.min(3,(f.region.biomeN||1)+1)); addKey(Math.min(3,f.region.biomeN||1));
+          f.cnt.treasure++; f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:'👿 Элита пала! 🎁+🔑'});
+        } else if(p.kind==='trial'){
+          // REWORK: испытание региона пройдено — портал открыт, редкая награда
+          f.trialDone=true; f.beasts++;
+          const tier=Math.min(3,(f.region.biomeN||1)+1);
+          addEgg(f.region.el,tier,Math.min(4,2+(f.region.biomeN||1))); f.stats.eggs++;
+          f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:'🏆 Испытание пройдено! Редкое яйцо!'});
         } else {
           f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:'⚔️ Победа!'});
         }
-        // рассыпать монеты вокруг логова
+        // рассыпать монеты вокруг логова (награда растёт с риском пути)
         const ox=ent.x, oy=ent.y;
-        const coinVal=Math.max(2,Math.round((f.region.gold[0]+f.region.gold[1])/20));
-        for(let i=0;i<5;i++){const a=Math.random()*6.28,r2=30+Math.random()*80;
+        const rm=(f.run&&f.run.rewardMul)||1;
+        const coinVal=Math.max(2,Math.round((f.region.gold[0]+f.region.gold[1])/20*rm));
+        const nCoins=Math.round(5*rm)+(p.kind==='elite'||p.kind==='trial'?3:0);
+        for(let i=0;i<nCoins;i++){const a=Math.random()*6.28,r2=30+Math.random()*80;
           f.items.push({icon:'🪙',type:'coin',val:coinVal,x:ox+Math.cos(a)*r2,y:oy+Math.sin(a)*r2,r:16,taken:false,pulse:Math.random()*6});}
         persist(); renderLedger();
+        // REWORK: после победы — выбор усиления забега
+        setTimeout(showBoonChoice,350);
       } else {
         ent.cool=4;
         // дракон обессилел — переводит дух и продолжает путь
         if((f.d.curHp||0)<=0){
           const st=statsOf(f.d);
           f.d.curHp=Math.max(1,Math.round(st.maxHp*0.25));
-          f.floats.push({x:f.drag.x,y:f.drag.y,t:0,txt:'💤 Дракон отдышался (+25% сил)'});
           persist();
         }
+        // REWORK: показать причину поражения и цель развития
+        if(f.lastDefeat) setTimeout(showDefeatCard,250);
       }
     }
   }catch(e){ console.warn('[flight] возврат из боя:',e); f._pend=null; f.battleWin=undefined; }
@@ -314,27 +473,32 @@ function renderFlight(){
   const encEl=$('#fcvEnc');
   function encounter(kind,ent){
     f.paused=true;
-    const isWild=kind==='wild';
+    const isWild=kind==='wild', isElite=kind==='elite', isTrial=kind==='trial';
+    // REWORK: игрок видит риск и награду ДО решения
+    const sub = isTrial?`${ent.hint} Победа откроет портал и принесёт редкое яйцо. <b>Риск: высокий</b>`
+      : isElite?'Страж сокровищ. Победа: сундук + ключ. <b>Риск: высокий</b>'
+      : isWild?(ent.rare?'Редчайший дракон! Победа принесёт редкое яйцо. <b>Риск: средний</b>':'Победа над диким драконом — яйцо для Гнезда. <b>Риск: средний</b>')
+      :'Из логова выходит стая. Победа: золото и прогресс. <b>Риск: обычный</b>';
     encEl.style.display='flex';
     encEl.innerHTML=`<div class="enc-card">
-      <div class="enc-icon">${isWild?'🐉':ent.icon}</div>
+      <div class="enc-icon">${isTrial?ent.icon:isElite?'👿':isWild?'🐉':ent.icon}</div>
       <div class="enc-name">${ent.sp&&ent.sp.rarity>=speciesById(f.d.id).rarity+2?'⭐ ':''}${ent.name}</div>
-      <div class="enc-sub">${isWild?(ent.rare?'Редчайший дракон! Победа принесёт редкое яйцо.':'Победа над диким драконом — яйцо для Гнезда.')
-        :'Из логова выходит зверь. Защити себя в честном бою!'}</div>
+      <div class="enc-sub">${sub}</div>
       <button id="fcvFight">⚔️ В бой</button><button class="ghost" id="fcvFlee">🛫 Улететь</button></div>`;
     $('#fcvFight').onpointerdown=()=>{
       encEl.style.display='none';
       f._pend={kind,ent}; f.battleWin=undefined;
       const sp=ent.sp;
       const legend=sp.rarity>=speciesById(f.d.id).rarity+2;
-      const lvl=Math.max(1,f.d.level+rnd(-1,1)-(legend?3:0));
+      const lvl=Math.max(1,f.d.level+rnd(-1,1)-(legend?3:0)+(isTrial||isElite?1:0));
       const reward=Math.round(lvl*(10+sp.rarity*4)*(legend?2:1));
       // спрятать полёт; вернёмся через renderFlight() (общий контракт для обоих боёв)
       if(f.raf)cancelAnimationFrame(f.raf); f.raf=0;
       fs.style.display='none';
       // АРКАДНЫЙ бой (реальное время). Fallback — старый пошаговый, если модуль недоступен/упал.
       if(typeof startArcadeFight==='function'){
-        try{ startArcadeFight(f.d, ent, {lvl, reward, kind}); return; }
+        try{ startArcadeFight(f.d, ent, {lvl, reward, kind,
+          elite:isElite, scene:ent.scene, depth:(f.run&&f.run.depth)||0, riskMul:(f.run&&f.run.riskMul)||1}); return; }
         catch(e){ console.warn('[Драконис] аркада не стартовала, пошаговый fallback:',e); }
       }
       document.body.classList.remove('flight-active');
@@ -356,8 +520,11 @@ function renderFlight(){
     if(!ev){ f.paused=false; return; }
     worldEventSeen(ev);
     encEl.style.display='flex';
+    // REWORK: у каждого исхода видно ожидаемую ценность — осознанное решение, а не лотерея
+    const riskTag=o=>{const rr=(typeof REWARD_RISK!=='undefined')&&REWARD_RISK[o.reward];
+      return rr&&o.reward!=='none'?`<span style="opacity:.65;font-size:11px"> · ${rr.v}</span>`:'';};
     encEl.innerHTML=`<div class="enc-card"><div class="enc-icon">${ev.icon}</div><div class="enc-name">${ev.name}</div><div class="enc-sub">${ev.q}</div>`
-      + ev.opts.map((o,i)=>`<button ${i?'class="ghost"':''} data-c="${i}">${o.t}</button>`).join('') + `</div>`;
+      + ev.opts.map((o,i)=>`<button ${i?'class="ghost"':''} data-c="${i}">${o.t}${riskTag(o)}</button>`).join('') + `</div>`;
     encEl.querySelectorAll('[data-c]').forEach(btn=>btn.onpointerdown=()=>{
       const opt=ev.opts[+btn.dataset.c];
       encEl.style.display='none';f.paused=false;
@@ -423,7 +590,7 @@ function renderFlight(){
 
   /* --- главный цикл --- */
   const cam={x:0,y:0};let last=performance.now();
-  const P={speed:240,inertia:.88},STAM_MAX=140;
+  const P={speed:240,inertia:.88},STAM_MAX=(GB.Run&&GB.Run.staminaMax)||140;
   const trailCol=(TOPDRAGON_COLORS[speciesById(f.d.id).el]||TOPDRAGON_COLORS.fire).edge;
   function frame(now){
     if(!flight||flight!==f)return;
@@ -469,11 +636,26 @@ function renderFlight(){
           f.floats.push({x:dg.x,y:dg.y,t:0,txt:'🪶 Мягкая посадка! +'+cv+'🪙'});
         }
         if(f.portal.next&&f.worldObj){
+          // REWORK: выбор пути — риск ↔ награда следующего яруса (решение игрока)
           f.paused=true;f.warp=true;
-          f.floats.push({x:f.portal.x,y:90,t:0,txt:'⛩️ ПЕРЕХОД!'});
-          const fd=$('#fcvFade'); if(fd)fd.style.opacity='1';
-          const nr=makeRegion(f.worldObj,f.portal.next);
-          setTimeout(()=>buildFlightTier(nr),380);
+          const gates=(typeof ROUTE_GATES!=='undefined')?ROUTE_GATES:[{id:'risky',icon:'⛩️',name:'Дальше',desc:''}];
+          encEl.style.display='flex';
+          encEl.innerHTML=`<div class="enc-card"><div class="enc-icon">⛩️</div>
+            <div class="enc-name">Три пути ведут выше</div>
+            <div class="enc-sub">Выбери дорогу к ярусу «${f.worldObj.biomes[f.portal.next-1].name}»</div>
+            ${gates.map((g,i)=>`<button ${i?'class="ghost"':''} data-gate="${g.id}">${g.icon} ${g.name}<br><span style="opacity:.7;font-size:11px">${g.desc}</span></button>`).join('')}</div>`;
+          encEl.querySelectorAll('[data-gate]').forEach(btn=>btn.onpointerdown=()=>{
+            const gid=btn.dataset.gate;
+            f.run.gate=gid;
+            f.run.riskMul=(GB.Run&&GB.Run.riskMul&&GB.Run.riskMul[gid])||1;
+            f.run.rewardMul=(GB.Run&&GB.Run.rewardMul&&GB.Run.rewardMul[gid])||1;
+            f.run.depth=(f.run.depth||0)+1;
+            encEl.style.display='none';
+            f.floats.push({x:f.portal.x,y:90,t:0,txt:'⛩️ ПЕРЕХОД!'});
+            const fd=$('#fcvFade'); if(fd)fd.style.opacity='1';
+            const nr=makeRegion(f.worldObj,f.portal.next);
+            setTimeout(()=>buildFlightTier(nr),380);
+          });
         } else {
           f.floats.push({x:f.portal.x,y:90,t:0,txt:'⛩️ ДОМОЙ!'});
           finishFlight(true);
@@ -488,6 +670,48 @@ function renderFlight(){
     const zoneMul=1+((f.region.biomeN||1)-1)*0.2,moving=spd>30;
     if(moving)f.stam=Math.max(0,f.stam-dt*zoneMul);else f.stam=Math.min(STAM_MAX,f.stam+dt*4);
     const sf=f._stam;if(sf)sf.style.width=(f.stam/STAM_MAX*100)+'%';
+
+    // REWORK: воздушные потоки — попутный ветер разгоняет вдоль русла (быстрые маршруты)
+    if(!f.paused&&!f.ended)for(const wl of f.winds){
+      const lx=wl.x2-wl.x1, ly=wl.y2-wl.y1, ll=lx*lx+ly*ly||1;
+      let tproj=((dg.x-wl.x1)*lx+(dg.y-wl.y1)*ly)/ll; tproj=Math.max(0,Math.min(1,tproj));
+      const cxp=wl.x1+lx*tproj, cyp=wl.y1+ly*tproj;
+      if(Math.hypot(dg.x-cxp,dg.y-cyp)<wl.w){
+        const il=Math.sqrt(ll), push=P.speed*(((GB.Run&&GB.Run.windBoost)||1.8)-1);
+        dg.vx+=lx/il*push*dt*3; dg.vy+=ly/il*push*dt*3;
+        f.stam=Math.min(STAM_MAX,f.stam+dt*2); // поток бережёт силы
+      }
+    }
+    // REWORK: секретные зоны — открываются при подлёте, дарят карман наград
+    if(!f.paused&&!f.ended)for(const sz of f.secrets){
+      if(sz.found)continue;
+      if(Math.hypot(dg.x-sz.x,dg.y-sz.y)<sz.r){
+        sz.found=true;
+        const cv2=Math.max(3,Math.round((f.region.gold[0]+f.region.gold[1])/14*((f.run&&f.run.rewardMul)||1)));
+        for(let i=0;i<5;i++){const a=Math.random()*6.28,r2=40+Math.random()*90;
+          f.items.push({icon:i?'💎':'🎁',type:i?'gem':'chest',val:cv2,x:sz.x+Math.cos(a)*r2,y:sz.y+Math.sin(a)*r2,r:16,taken:false,pulse:Math.random()*6});}
+        f.floats.push({x:sz.x,y:sz.y,t:0,txt:'✨ СЕКРЕТНАЯ ЗОНА!'});
+        exploreProgress(); worldSeen('events','Секретная зона');
+      }
+    }
+    // REWORK: элитные стражи — патрулируют опасный карман, бросаются при вторжении
+    f.elites.forEach(ee=>{if(ee.defeated)return;if(ee.cool>0)ee.cool-=dt;
+      const dp=Math.hypot(dg.x-ee.x,dg.y-ee.y);let mvx=0,mvy=0;
+      const inPocket=Math.hypot(dg.x-ee.home.x,dg.y-ee.home.y)<ee.home.r;
+      if(ee.cool<=0&&(inPocket||dp<260)){const a=Math.atan2(dg.y-ee.y,dg.x-ee.x);
+        mvx=Math.cos(a)*ee.speed*1.25;mvy=Math.sin(a)*ee.speed*1.25;
+        ee.x+=mvx*dt;ee.y+=mvy*dt;
+        if(dp<50&&!f.paused&&!f.ended)encounter('elite',ee);}
+      else{const dst=Math.hypot(ee.tx-ee.x,ee.ty-ee.y);
+        if(dst<12){ee.wait-=dt;if(ee.wait<=0){const a=Math.random()*6.28,r2=Math.random()*ee.home.r*0.7;
+          ee.tx=ee.home.x+Math.cos(a)*r2;ee.ty=ee.home.y+Math.sin(a)*r2;ee.wait=1+Math.random()*2;}}
+        else{const a=Math.atan2(ee.ty-ee.y,ee.tx-ee.x);mvx=Math.cos(a)*70;mvy=Math.sin(a)*70;ee.x+=mvx*dt;ee.y+=mvy*dt;}}
+      if(mvx||mvy)ee.heading=Math.atan2(mvy,mvx);});
+    // REWORK: страж испытания — ждёт у портала, бой по касанию
+    if(f.trialEnt&&!f.trialEnt.defeated&&!f.paused&&!f.ended){
+      const te=f.trialEnt; if(te.cool>0)te.cool-=dt;
+      if(te.cool<=0&&Math.hypot(dg.x-te.x,dg.y-te.y)<70)encounter('trial',te);
+    }
 
     // грозы: цикл 4с — затишье 2.6с, предупреждение 1с, разряд 0.4с
     f.storms.forEach(s=>{s.a+=s.va*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.ph=(s.ph+dt)%4;
@@ -618,6 +842,44 @@ function renderFlight(){
         ctx.font='italic 12px Georgia';ctx.fillStyle='#ffe9c0';ctx.fillText('держись рядом!',px,py+58);
         ctx.restore();}});
 
+    // REWORK: опасные карманы — красноватое кольцо угрозы
+    for(const pk of f.pockets){ const px=pk.x-sx,py=pk.y-sy;
+      if(px<-pk.r-40||py<-pk.r-40||px>vw+pk.r+40||py>vh+pk.r+40)continue;
+      ctx.save();ctx.setLineDash([10,10]);ctx.lineWidth=2.5;ctx.strokeStyle='rgba(255,90,70,.4)';
+      ctx.beginPath();ctx.arc(px,py,pk.r,0,7);ctx.stroke();ctx.setLineDash([]);
+      ctx.globalAlpha=.05;ctx.fillStyle='#ff5a46';ctx.fill();ctx.restore(); }
+    // REWORK: воздушные потоки — пунктирное русло со стрелками
+    for(const wl of f.winds){ const x1=wl.x1-sx,y1=wl.y1-sy,x2=wl.x2-sx,y2=wl.y2-sy;
+      if(Math.max(x1,x2)<-100||Math.max(y1,y2)<-100||Math.min(x1,x2)>vw+100||Math.min(y1,y2)>vh+100)continue;
+      ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle='#bfe8ff';ctx.lineWidth=wl.w*0.5;
+      ctx.lineCap='round';ctx.setLineDash([26,34]);ctx.lineDashOffset=-(now/28)%60;
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+      ctx.globalAlpha=.8;ctx.font='20px serif';
+      ctx.fillText('💨',(x1+x2)/2,(y1+y2)/2);ctx.restore(); }
+    // REWORK: найденные секретные зоны — мягкое свечение
+    for(const sz of f.secrets){ if(!sz.found)continue; const px=sz.x-sx,py=sz.y-sy;
+      if(px<-160||py<-160||px>vw+160||py>vh+160)continue;
+      ctx.save();ctx.globalAlpha=.25+Math.sin(now/400)*.08;
+      const g2=ctx.createRadialGradient(px,py,10,px,py,sz.r);
+      g2.addColorStop(0,'#7ce8d0');g2.addColorStop(1,'rgba(124,232,208,0)');
+      ctx.fillStyle=g2;ctx.beginPath();ctx.arc(px,py,sz.r,0,7);ctx.fill();ctx.restore(); }
+    // REWORK: элитные стражи
+    f.elites.forEach(ee=>{if(ee.defeated)return;const px=ee.x-sx,py=ee.y-sy;
+      if(px<-90||py<-90||px>vw+90||py>vh+90)return;
+      drawSprite(ee.img,ee.x,ee.y,ee.heading,sx,sy,62,now,null,true);
+      ctx.save();ctx.strokeStyle='rgba(216,180,255,.75)';ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.arc(px,py,40,0,7);ctx.stroke();
+      ctx.font='italic 12px Georgia';ctx.fillStyle='#e8d6ff';ctx.fillText(ee.name,px,py+56);ctx.restore();});
+    // REWORK: страж испытания у портала
+    if(f.trialEnt){ const te=f.trialEnt, px=te.x-sx, py=te.y-sy;
+      if(px>-120&&py>-120&&px<vw+120&&py<vh+120){
+        if(te.defeated){ctx.font='26px serif';ctx.fillText('🏆',px,py);}
+        else{ const pulse=1+Math.sin(now/260)*0.1;
+          ctx.save();ctx.globalAlpha=.85;ctx.font=(46*pulse)+'px serif';ctx.fillText(te.icon,px,py);
+          ctx.font='italic 13px Georgia';ctx.fillStyle='#ffd9b0';ctx.fillText(te.name+' — страж портала',px,py+42);
+          ctx.strokeStyle='rgba(255,120,80,.35)';ctx.setLineDash([6,6]);ctx.lineWidth=2;
+          ctx.beginPath();ctx.arc(px,py,60,0,7);ctx.stroke();ctx.setLineDash([]);ctx.restore(); } } }
+
     // грозы: видимые фазы
     f.storms.forEach(s=>{const px=s.x-sx,py=s.y-sy;if(px<-140||py<-140||px>vw+140||py>vh+140)return;
       const warn=s.ph>2.6&&s.ph<=3.6, strike=s.ph>3.6;
@@ -654,6 +916,13 @@ function renderFlight(){
     f.floats.forEach(fl=>{ctx.globalAlpha=1-fl.t/1.4;ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=3;ctx.fillStyle='#fff';
       ctx.strokeText(fl.txt,fl.x-sx,fl.y-sy-30-fl.t*28);ctx.fillText(fl.txt,fl.x-sx,fl.y-sy-30-fl.t*28);});
     ctx.globalAlpha=1;
+
+    // REWORK: миникарта — отметить исследованную клетку, перерисовать раз в 0.2с (перф)
+    {const n=f.mgN, gx=Math.min(n-1,Math.max(0,(dg.x/W*n)|0)), gy=Math.min(n-1,Math.max(0,(dg.y/H*n)|0));
+     f.mgrid[gy*n+gx]=1;
+     if(gx>0)f.mgrid[gy*n+gx-1]=1; if(gx<n-1)f.mgrid[gy*n+gx+1]=1;
+     if(gy>0)f.mgrid[(gy-1)*n+gx]=1; if(gy<n-1)f.mgrid[(gy+1)*n+gx]=1;
+     f._miniT-=dt; if(f._miniT<=0){f._miniT=0.2;drawMini();}}
   }
   f.raf=requestAnimationFrame(t=>{last=t;frame(t);});
 }
@@ -675,13 +944,18 @@ function finishFlight(portalDone){
   const leveled=grantXp(f.d,xp);f.stats.xp+=xp;
   questEvent('explore',3);persist();renderLedger();
   const s=f.stats;
+  // REWORK: сводка забега — время, глубина, взятые усиления (сбрасываются)
+  const runDur=f.run?Math.round((Date.now()-f.run.t0)/1000):0;
+  const durTxt=Math.floor(runDur/60)+':'+String(runDur%60).padStart(2,'0');
   const rows=[
     ['🪙','Золота добыто',s.gold+(bonus?` <span style="color:var(--gold)">(+${bonus} за портал)</span>`:'')],
     ['🥚','Яиц найдено',s.eggs],
     ['📿','Реликвий найдено',s.relics],
     ['⚔️','Побед в стычках',s.beasts],
     ['⭐','Опыта получено',s.xp+(leveled?' · <span style="color:var(--gold)">новый уровень!</span>':'')],
+    ['⏱️','Длительность забега',durTxt],
   ];
+  if(f.run&&f.run.boons.length)rows.push(['🔮','Усиления забега',f.run.boons.join(' ')+' <span style="opacity:.6">(истекли)</span>']);
   const overlay=document.createElement('div');
   overlay.className='flight-end';
   overlay.innerHTML=`

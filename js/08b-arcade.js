@@ -6,6 +6,7 @@
    Возврат: flight.battleWin=win → renderFlight() (существующий контракт).
    ============================================================ */
 'use strict';
+/* v35: rework */
 function rand(a,b){ return a+Math.random()*(b-a); }
 function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
 function clampN(v,a,b){ return Math.max(a,Math.min(b,v)); }
@@ -36,19 +37,33 @@ function ar_elMul(att,def){ if(ADVANTAGE[att]===def)return GB.Arcade.elementAdv;
 
 let arc=null;
 
-function ar_makeEnemy(sp,lvl,role,cx,cy){
+function ar_makeEnemy(sp,lvl,role,cx,cy,mods){
+  mods=mods||{};
   const fd={id:sp.id,level:Math.max(1,lvl),xp:0,curHp:0,morph:rollMorph()};
   const foe=makeCombatant(fd,true);
+  const A=GB.Arcade;
   // role: 'wild' (одиночка), 'leader' (вожак стаи), 'add' (рядовой)
-  const hpMul = role==='wild'?GB.Arcade.hpMulWild : role==='leader'?GB.Arcade.hpMulLeader : GB.Arcade.hpMulAdd;
-  const dmgMul = role==='wild'?GB.Arcade.dmgMulWild : GB.Arcade.dmgMulPack;
+  const hpMul = role==='wild'?A.hpMulWild : role==='leader'?A.hpMulLeader : A.hpMulAdd;
+  const dmgMul = role==='wild'?A.dmgMulWild : A.dmgMulPack;
   const rar=sp.rarity||1;
-  const hp=Math.round(foe.maxHp*hpMul*(1+(rar-1)*GB.Arcade.rarityHpBonus));
+  // REWORK: масштаб сложности — глубина забега (ярусы) и риск выбранного пути
+  const depth=mods.depth||0, risk=mods.riskMul||1;
+  let hp=Math.round(foe.maxHp*hpMul*(1+(rar-1)*A.rarityHpBonus)*(1+depth*A.depth.hp)*risk);
+  let atk=Math.round(foe.atk*dmgMul*(1+depth*A.depth.dmg)*Math.sqrt(risk));
+  let spd=clampN(60+foe.spd*5,70,160)+depth*A.depth.spd;
+  if(mods.elite){hp=Math.round(hp*A.elite.hp);atk=Math.round(atk*A.elite.dmg);spd+=A.elite.spd;}
+  if(mods.trial){hp=Math.round(hp*A.trial.hp);atk=Math.round(atk*A.trial.dmg);}
+  // REWORK: дальнобойные враги — «магические» стихии стреляют, зона поражения сопоставима с игроком
+  const ranged = mods.ranged!==undefined ? !!mods.ranged
+    : (role!=='leader'&&!mods.trial&&Math.random()<A.rangedShare);
   return { sp, el:foe.el, role, x:cx, y:cy, r: role==='add'?18:(rar>=4||role==='leader'?26:20),
     color:(ELEMENTS[foe.el]||{}).color||'#c25b3a', icon:sp.sigil||'👹',
-    hp, maxHp:hp, atk:Math.round(foe.atk*dmgMul), def:foe.def,
-    speed:clampN(60+foe.spd*5,70,160), aggro:520, atkRange: role==='add'?50:(role==='leader'?76:60),
-    atkCd:2.0, t:rand(0,1.6), tele: physiqueOf(sp)==='koloss'?1.0:0.72, telegraph:0,
+    hp, maxHp:hp, atk, def:foe.def,
+    speed:clampN(spd,70,215), aggro:A.enemyAggro,
+    ranged, atkRange: ranged?A.rangedRange:(role==='leader'?A.leaderRange:A.meleeRange),
+    atkCd: ranged?2.4:2.0, t:rand(0,1.6), tele: physiqueOf(sp)==='koloss'?1.0:0.72, telegraph:0,
+    lungeT:rand(1,3), lunge:0, lungeVx:0, lungeVy:0, slot:rand(0,6.283),
+    elite:!!mods.elite, trial:!!mods.trial,
     slow:0, slowMul:1, burns:[], poisons:[], root:0, flash:0, dead:false };
 }
 
@@ -72,23 +87,49 @@ function startArcadeFight(dragon, ent, opts){
     icon:me.sp.sigil||'🐲', baseSpeed:phys.spd, hp:Math.max(1,me.hp), maxHp:me.maxHp,
     atk:me.atk, def:me.def, mana:60, maxMana:100, manaRegen:11,
     target:null, globalCd:0, iframe:0, hurt:0, facing:-Math.PI/2, shield:0, haste:0, hasteAtk:1, hasteSpd:1, stealth:0,
-    autoBase:phys.atkCd, autoT:0, autoRange:150, dashCd:phys.dashCd, dashT:0, dashIf:phys.iframe, kit };
+    autoBase:phys.atkCd, autoT:0, autoRange:170, dashCd:phys.dashCd, dashT:0, dashIf:phys.iframe, kit };
 
-  // стая или одиночка
+  // REWORK: усиления текущего забега (roguelite-баффы, сбрасываются после странствия)
+  const runFx=(typeof flight!=='undefined'&&flight&&flight.run&&flight.run.fx)||{};
+  P.atk=Math.round(P.atk*(1+(runFx.atkPct||0)/100));
+  P.def=Math.round(P.def*(1+(runFx.defPct||0)/100));
+  P.maxHp=Math.round(P.maxHp*(1+(runFx.hpPct||0)/100));
+  P.hp=Math.min(P.maxHp,Math.round(P.hp*(1+(runFx.hpPct||0)/100)));
+  P.baseSpeed=Math.round(P.baseSpeed*(1+(runFx.spdPct||0)/100));
+  P.manaRegen=P.manaRegen*(1+(runFx.manaPct||0)/100);
+  P.crit=0.05+(runFx.critPct||0)/100;
+  P.elBoost=1+(runFx.elPct||0)/100;
+  P.vamp=(runFx.vampPct||0)/100;
+  P.dashCd=P.dashCd*(1-(runFx.dashPct||0)/100);
+
+  // REWORK: параметры сложности от забега: глубина + риск выбранного пути
+  const mods={depth:opts.depth||0, riskMul:opts.riskMul||1};
+
+  // стая, одиночка, элитка или испытание региона
   const enemies=[];
   const isDen = opts.kind==='den';
-  if(isDen){
-    enemies.push(ar_makeEnemy(sp, lvl, 'leader', cx, cy-140));
-    const adds = clampN(1+bn, 2, 4); // ярус биома → размер стаи (всего 3–5)
+  const isTrial = opts.kind==='trial';
+  let trialDef=null;
+  if(isTrial){
+    trialDef=(typeof REGION_TRIALS!=='undefined'&&REGION_TRIALS[opts.scene])||{icon:'☠️',name:'Испытание',mech:'swarm',adds:2,hint:''};
+    enemies.push(ar_makeEnemy(sp, lvl+1, 'leader', cx, cy-140, {...mods, trial:true, ranged:false}));
+    const adds=trialDef.adds+Math.floor((opts.depth||0)/2);
+    for(let i=0;i<adds;i++){ const asp=(typeof weightedSpecies==='function')?weightedSpecies():sp;
+      const ang=(i/Math.max(1,adds))*6.283, rad=130+rand(0,80);
+      enemies.push(ar_makeEnemy(asp, Math.max(1,lvl-1), 'add', cx+Math.cos(ang)*rad, cy-140+Math.sin(ang)*rad*0.7, mods)); }
+  } else if(isDen){
+    enemies.push(ar_makeEnemy(sp, lvl, 'leader', cx, cy-140, mods));
+    const adds = clampN(1+bn+Math.floor((opts.depth||0)*GB.Arcade.depth.extraAddPer/2), 2, 5); // глубже забег → больше стая
     for(let i=0;i<adds;i++){ const asp=(typeof weightedSpecies==='function')?weightedSpecies():sp;
       const ang=(i/adds)*6.283, rad=110+rand(0,70);
-      enemies.push(ar_makeEnemy(asp, Math.max(1,lvl-1), 'add', cx+Math.cos(ang)*rad, cy-140+Math.sin(ang)*rad*0.7)); }
+      enemies.push(ar_makeEnemy(asp, Math.max(1,lvl-1), 'add', cx+Math.cos(ang)*rad, cy-140+Math.sin(ang)*rad*0.7, mods)); }
   } else {
-    enemies.push(ar_makeEnemy(sp, lvl, 'wild', cx, cy-120));
+    enemies.push(ar_makeEnemy(sp, lvl, 'wild', cx, cy-120, {...mods, elite:!!opts.elite}));
   }
 
-  const title = isDen ? ('🏴 Логово: '+sp.name+' · стая '+enemies.length)
-                      : (AR_ROLE[me.el]||'')+' '+dragonName(dragon)+' против '+sp.name;
+  const title = isTrial ? (trialDef.icon+' '+trialDef.name+' · '+trialDef.hint)
+              : isDen ? ('🏴 Логово: '+sp.name+' · стая '+enemies.length)
+              : (opts.elite?'👿 Элита: '+sp.name : (AR_ROLE[me.el]||'')+' '+dragonName(dragon)+' против '+sp.name);
   fsA.innerHTML=`
     <canvas id="acv"></canvas>
     <div class="ac-top">
@@ -105,8 +146,10 @@ function startArcadeFight(dragon, ent, opts){
   window.addEventListener('resize',resize); resize();
 
   P.target = enemies[0];
-  arc={fsA,ctx,cv,resize,WORLD,P,enemies,dragon,ent,opts,isDen,
-    proj:[],zones:[],fx:[],floats:[],parts:[],cam:{x:0,y:0},shake:0,over:false,raf:0,last:performance.now()};
+  arc={fsA,ctx,cv,resize,WORLD,P,enemies,dragon,ent,opts,isDen,isTrial,
+    trial:isTrial?{mech:trialDef.mech,t:0,boss:enemies[0]}:null,
+    stat:{taken:0,dealt:0,dur:0,maxHit:0}, kiteT:0, chaseWarned:false,
+    proj:[],eproj:[],hazards:[],zones:[],fx:[],floats:[],parts:[],cam:{x:0,y:0},shake:0,over:false,raf:0,last:performance.now()};
 
   buildArcAbilities();
   bindArcInput();
@@ -207,9 +250,14 @@ function arcDash(){ if(!arc||arc.over)return; const P=arc.P; if(P.dashT>0)return
   P.iframe=Math.max(P.iframe,P.dashIf);P.dashT=P.dashCd;arcBurst(P.x,P.y,'#fff0b4',12); }
 function arcWarn(t,c){ arc.floats.push({x:arc.P.x,y:arc.P.y-30,txt:t,col:c,t:0,life:0.9}); }
 function arcHitE(e,mul,sk){ const P=arc.P; if(!e||e.dead)return;
-  let raw=P.atk*mul*ar_elMul(P.el,e.el); const d=ar_mitig(raw*rand(0.9,1.1),e.def);
+  let raw=P.atk*mul*ar_elMul(P.el,e.el)*(P.elBoost||1);
+  const isCrit=Math.random()<(P.crit||0);
+  let d=ar_mitig(raw*rand(0.9,1.1),e.def);
+  if(isCrit)d=Math.round(d*1.5); // REWORK: криты игрока (баф забега «Меткость»)
   e.hp-=d; e.flash=0.12; arcBurst(e.x,e.y,'#ffca7a',6); arc.shake=Math.min(arc.shake+1.5,7);
-  arc.floats.push({x:e.x,y:e.y-e.r-6,txt:''+d,col:'#fff',t:0,life:0.85});
+  arc.stat.dealt+=d;
+  arc.floats.push({x:e.x,y:e.y-e.r-6,txt:(isCrit?'💥':'')+d,col:isCrit?'#ffd36b':'#fff',t:0,life:0.85});
+  if(P.vamp){const hv=Math.round(d*P.vamp);if(hv>0){P.hp=Math.min(P.maxHp,P.hp+hv);}}
   if(sk&&sk.life){const heal=Math.round(d*sk.life);P.hp=Math.min(P.maxHp,P.hp+heal);arc.floats.push({x:P.x,y:P.y-30,txt:'+'+heal,col:'#7CFF9E',t:0,life:0.9});}
   if(sk&&sk.burn)e.burns.push({dps:P.atk*sk.burn.mul,t:sk.burn.dur});
   if(sk&&sk.poison)e.poisons.push({dps:P.atk*sk.poison.mul,t:sk.poison.dur});
@@ -231,6 +279,7 @@ function arcKillE(e){ if(e.dead)return; e.dead=true;e.hp=0; arcBurst(e.x,e.y,e.c
 function arcHitP(rawDmg,el){ const P=arc.P; if(P.iframe>0)return;
   let dmg=ar_mitig(rawDmg*ar_elMul(el,P.el), P.def);
   if(P.shield>0){const ab=Math.min(P.shield,dmg);P.shield-=ab;dmg-=ab;arc.floats.push({x:P.x,y:P.y-P.r-6,txt:'🛡'+ab,col:'#bcdcff',t:0,life:0.9});if(dmg<=0){P.iframe=0.28;return;}}
+  arc.stat.taken+=dmg; if(dmg>arc.stat.maxHit)arc.stat.maxHit=dmg; // REWORK: статистика для разбора поражения
   P.hp-=dmg;P.iframe=0.5;P.hurt=0.35;arc.shake=Math.min(arc.shake+5,11);arcBurst(P.x,P.y,'#ff5d52',12);
   arc.floats.push({x:P.x,y:P.y-P.r-6,txt:'-'+dmg,col:'#ff8a8a',t:0,life:0.9});
   if(typeof S!=='undefined' && S.tutorialGuard && P.hp<1)P.hp=1; // обучение без поражения
@@ -246,7 +295,7 @@ function arcFrame(now){ if(!arc)return; const dt=Math.min(0.05,(now-arc.last)/10
   if(arc&&!arc.over) arc.raf=requestAnimationFrame(arcFrame);
 }
 function arcUpdate(dt){ const P=arc.P,WORLD=arc.WORLD;
-  const {mx,my}=arcMoveVec(); const spd=P.baseSpeed*(P.haste>0?P.hasteSpd:1);
+  const {mx,my}=arcMoveVec(); const spd=P.baseSpeed*(P.haste>0?P.hasteSpd:1)*(P.chill||1);
   P.x=clampN(P.x+mx*spd*dt,20,WORLD.w-20);P.y=clampN(P.y+my*spd*dt,20,WORLD.h-20);
   if(mx||my)P.facing=Math.atan2(my,mx);
   P.mana=Math.min(P.maxMana,P.mana+P.manaRegen*dt);
@@ -254,29 +303,107 @@ function arcUpdate(dt){ const P=arc.P,WORLD=arc.WORLD;
   P.haste=Math.max(0,P.haste-dt);P.dashT=Math.max(0,P.dashT-dt);if(P.stealth)P.stealth=Math.max(0,P.stealth-dt);
   const atkCd=P.autoBase*(P.haste>0?P.hasteAtk:1);P.autoT=Math.max(0,P.autoT-dt);
   for(const sk of P.kit)sk._t=Math.max(0,sk._t-dt);
+  arc.stat.dur+=dt;
   let t=P.target; if(t&&t.dead)t=P.target=ar_nearest(600);
-  if(t&&dist(P,t)<=P.autoRange&&P.autoT<=0){ arcHitE(t,1.0,null); P.autoT=atkCd; P.facing=Math.atan2(t.y-P.y,t.x-P.x); }
-  // снаряды игрока — по любому врагу
+  // REWORK: автоатака — полноценный летящий снаряд (траектория, скорость, попадание/промах)
+  if(t&&dist(P,t)<=P.autoRange&&P.autoT<=0){
+    const a=Math.atan2(t.y-P.y,t.x-P.x), ps=GB.Arcade.autoProjSpd;
+    arc.proj.push({x:P.x+Math.cos(a)*(P.r+6),y:P.y+Math.sin(a)*(P.r+6),
+      vx:Math.cos(a)*ps,vy:Math.sin(a)*ps,r:GB.Arcade.autoProjR,sk:{mul:1.0},life:0.6,auto:true});
+    P.autoT=atkCd; P.facing=a;
+  }
+  // снаряды игрока — по любому врагу; промах — снаряд гаснет с эффектом
   for(const pr of arc.proj){ pr.x+=pr.vx*dt;pr.y+=pr.vy*dt;pr.life-=dt;
-    for(const e of arc.enemies){ if(e.dead)continue; if(Math.hypot(e.x-pr.x,e.y-pr.y)<e.r+pr.r){ arcHitE(e,pr.sk.mul,pr.sk); pr.life=0; break; } } }
+    for(const e of arc.enemies){ if(e.dead)continue; if(Math.hypot(e.x-pr.x,e.y-pr.y)<e.r+pr.r){ arcHitE(e,pr.sk.mul,pr.sk.mul===1?null:pr.sk); pr.life=0; pr.hit=true; break; } }
+    if(pr.life<=0&&!pr.hit)arcBurst(pr.x,pr.y,'#9a90b8',4); } // эффект промаха
   arc.proj=arc.proj.filter(pr=>pr.life>0&&pr.x>-60&&pr.x<WORLD.w+60&&pr.y>-60&&pr.y<WORLD.h+60);
+  // REWORK: снаряды врагов — можно увернуться рывком или манёвром
+  for(const pr of arc.eproj){ pr.x+=pr.vx*dt;pr.y+=pr.vy*dt;pr.life-=dt;
+    if(Math.hypot(P.x-pr.x,P.y-pr.y)<P.r+pr.r&&P.stealth<=0){ arcHitP(pr.atk,pr.el); pr.life=0; pr.hit=true; }
+    if(pr.life<=0&&!pr.hit)arcBurst(pr.x,pr.y,'#8890a8',4); }
+  arc.eproj=arc.eproj.filter(pr=>pr.life>0);
+  // REWORK: опасные зоны (испытания регионов): предупреждение → удар
+  for(const hz of arc.hazards){
+    if(hz.warn>0){ hz.warn-=dt; }
+    else { hz.dur-=dt;
+      if(hz.dps){ if(dist(hz,P)<=hz.r&&P.iframe<=0&&P.stealth<=0){ hz.tick=(hz.tick||0)+dt;
+        if(hz.tick>=0.45){hz.tick=0;arcHitP(hz.dps,hz.el||'fire');} } }
+      else if(hz.dmg&&!hz.hitDone){ hz.hitDone=true;
+        if(dist(hz,P)<=hz.r&&P.stealth<=0)arcHitP(hz.dmg,hz.el||'storm');
+        arcBurst(hz.x,hz.y,hz.col||'#ffe08a',14); arc.shake=Math.min(arc.shake+4,10); } } }
+  arc.hazards=arc.hazards.filter(hz=>hz.warn>0||hz.dur>0);
+  // REWORK: механики испытаний региона
+  if(arc.trial&&!arc.trial.boss.dead){ const T=arc.trial; T.t+=dt; const B=T.boss;
+    if(T.mech==='burn'&&T.t>2.4){ T.t=0; arc.hazards.push({x:P.x,y:P.y,r:110,warn:0.8,dur:2.6,dps:B.atk*0.55,el:'fire',col:'#ff8a3d'}); }
+    if(T.mech==='bolts'&&T.t>2.8){ T.t=0; for(let i=0;i<2;i++)arc.hazards.push({x:P.x+rand(-90,90),y:P.y+rand(-90,90),r:80,warn:0.9,dur:0.25,dmg:B.atk*1.1,el:'storm',col:'#ffe08a'}); }
+    if(T.mech==='chill'){ P.chill=dist(P,B)<300?0.72:1; } else P.chill=1;
+    if(T.mech==='veil'&&T.t>5){ T.t=0; B.veil=1.4; const a=rand(0,6.283);
+      B.x=clampN(P.x+Math.cos(a)*240,40,WORLD.w-40); B.y=clampN(P.y+Math.sin(a)*240,40,WORLD.h-40);
+      arcBurst(B.x,B.y,'#9a7bd0',16); }
+    if(B.veil)B.veil=Math.max(0,B.veil-dt);
+  } else if(P.chill!==1) P.chill=1;
   // зоны — по всем в радиусе
   for(const z of arc.zones){ z.dur-=dt;
     for(const e of arc.enemies){ if(e.dead)continue; if(dist(z,e)<=z.r){ e.slow=Math.max(e.slow,0.3); e.slowMul=z.sk.root?0.1:0.4; } }
     if(z.sk.dotMul){ z.tick+=dt; if(z.tick>=0.5){ z.tick=0; for(const e of arc.enemies){ if(!e.dead&&dist(z,e)<=z.r){ e.hp-=Math.round(P.atk*z.sk.dotMul*0.5); if(e.hp<=0)arcKillE(e); } } } } }
   arc.zones=arc.zones.filter(z=>z.dur>0);
-  // AI стаи
+  // REWORK: детекция кайтинга — игрок бьёт и постоянно отступает → стая переходит в погоню
+  const K=GB.Arcade.kite;
+  {const ne=ar_nearest(900);
+   if(ne){ const ax=ne.x-P.x, ay=ne.y-P.y, al=Math.hypot(ax,ay)||1;
+     const away=-((mx*ax+my*ay)/al); // >0 — движение прочь от врага
+     if((mx||my)&&away>0.35&&dist(P,ne)>110) arc.kiteT=Math.min(4,arc.kiteT+dt);
+     else arc.kiteT=Math.max(0,arc.kiteT-dt*1.8); }
+   else arc.kiteT=0;}
+  const chase=arc.kiteT>K.detectT;
+  if(chase&&!arc.chaseWarned){arc.chaseWarned=true;arcWarn('⚡ ПОГОНЯ!','#ff9a6b');}
+  if(!chase&&arc.chaseWarned&&arc.kiteT<=0)arc.chaseWarned=false;
+
+  // AI стаи: окружение, рывки, перекрытие пути, дальние атаки
   for(const e of arc.enemies){ if(e.dead)continue; e.flash=Math.max(0,e.flash-dt);
     for(const b of e.burns){b.t-=dt;e.hp-=b.dps*dt;} e.burns=e.burns.filter(b=>b.t>0);
     for(const q of e.poisons){q.t-=dt;e.hp-=q.dps*dt;} e.poisons=e.poisons.filter(q=>q.t>0);
     if(e.hp<=0){arcKillE(e);continue;}
     const em=e.slow>0?(e.slowMul||0.5):1; e.slow=Math.max(0,e.slow-dt); e.root=Math.max(0,e.root-dt);
     const d=dist(e,P), hidden=P.stealth>0;
-    if(e.telegraph>0){ e.telegraph-=dt; if(e.telegraph<=0&&dist(e,P)<=e.atkRange+10&&!hidden)arcHitP(e.atk,e.el); continue; }
+    // рывок-перехват в процессе
+    if(e.lunge>0){ e.lunge-=dt;
+      e.x=clampN(e.x+e.lungeVx*dt,20,WORLD.w-20); e.y=clampN(e.y+e.lungeVy*dt,20,WORLD.h-20);
+      if(dist(e,P)<=e.atkRange*0.8&&!hidden){e.lunge=0;e.telegraph=e.tele*0.6;e.t=e.atkCd;}
+      continue; }
+    if(e.telegraph>0){ e.telegraph-=dt;
+      if(e.telegraph<=0&&!hidden){
+        if(e.ranged){ // выстрел в игрока с упреждением
+          const lead=0.25, tx=P.x+(mx*spd)*lead, ty=P.y+(my*spd)*lead;
+          const a=Math.atan2(ty-e.y,tx-e.x), ps=GB.Arcade.rangedProjSpd;
+          arc.eproj.push({x:e.x,y:e.y,vx:Math.cos(a)*ps,vy:Math.sin(a)*ps,r:8,atk:e.atk,el:e.el,col:e.color,life:1.8});
+        } else if(dist(e,P)<=e.atkRange+30) arcHitP(e.atk,e.el);
+      } continue; }
     if(e.root>0)continue;
-    e.t=Math.max(0,e.t-dt);
-    if(!hidden){ if(d>e.atkRange){const a=Math.atan2(P.y-e.y,P.x-e.x);e.x+=Math.cos(a)*e.speed*em*dt;e.y+=Math.sin(a)*e.speed*em*dt;}
-      else if(e.t<=0){e.telegraph=e.tele;e.t=e.atkCd;} }
+    e.t=Math.max(0,e.t-dt); e.lungeT=Math.max(0,e.lungeT-dt);
+    if(hidden)continue;
+    const chaseMul=chase?K.speedMul:1;
+    if(e.ranged){
+      // дальнобойный: держит дистанцию, стреляет; при погоне — чаще
+      if(d>e.atkRange*0.92){const a=Math.atan2(P.y-e.y,P.x-e.x);e.x+=Math.cos(a)*e.speed*em*chaseMul*dt;e.y+=Math.sin(a)*e.speed*em*chaseMul*dt;}
+      else if(d<e.atkRange*0.5){const a=Math.atan2(e.y-P.y,e.x-P.x);e.x+=Math.cos(a)*e.speed*em*0.7*dt;e.y+=Math.sin(a)*e.speed*em*0.7*dt;}
+      if(d<=e.atkRange&&e.t<=0){e.telegraph=e.tele;e.t=e.atkCd*(chase?0.75:1);}
+    } else {
+      // ближний: при погоне — рывок-перехват наперерез
+      if(chase&&e.lungeT<=0&&d>e.atkRange&&d<K.lungeDist+e.atkRange+120){
+        const lead=Math.min(0.5,d/K.lungeSpd), tx=P.x+mx*spd*lead*1.4, ty=P.y+my*spd*lead*1.4;
+        const a=Math.atan2(ty-e.y,tx-e.x);
+        e.lunge=Math.min(0.45,d/K.lungeSpd+0.12); e.lungeVx=Math.cos(a)*K.lungeSpd; e.lungeVy=Math.sin(a)*K.lungeSpd;
+        e.lungeT=K.lungeCd; arcZoneFx(e.x,e.y,e.r+10,'#ff9a6b',true);
+        continue; }
+      if(d>e.atkRange){
+        // окружение: каждый заходит со своей стороны, а не толпой по прямой
+        const sx2=P.x+Math.cos(e.slot)*Math.min(K.surroundR,d*0.5), sy2=P.y+Math.sin(e.slot)*Math.min(K.surroundR,d*0.5);
+        const goStraight=d<e.atkRange*1.6;
+        const a=goStraight?Math.atan2(P.y-e.y,P.x-e.x):Math.atan2(sy2-e.y,sx2-e.x);
+        e.x+=Math.cos(a)*e.speed*em*chaseMul*dt; e.y+=Math.sin(a)*e.speed*em*chaseMul*dt;
+      } else if(e.t<=0){e.telegraph=e.tele;e.t=e.atkCd;}
+    }
   }
   for(const f of arc.floats){f.t+=dt;f.y-=26*dt;} arc.floats=arc.floats.filter(f=>f.t<f.life);
   for(const p of arc.parts){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=0.92;p.vy*=0.92;} arc.parts=arc.parts.filter(p=>p.t<p.life);
@@ -313,12 +440,25 @@ function arcRender(){ const ctx=arc.ctx,P=arc.P,cam=arc.cam;
     ctx.beginPath();ctx.arc(e.x,e.y,e.atkRange,0,6.283);
     ctx.fillStyle='rgba(255,70,60,'+(0.12+prog*0.28)+')';ctx.fill();
     ctx.lineWidth=3;ctx.strokeStyle='rgba(255,90,80,'+(0.4+prog*0.5)+')';ctx.stroke(); }
+  // REWORK: опасные зоны испытаний — предупреждение (кольцо) → зона удара
+  for(const hz of arc.hazards){ ctx.beginPath();ctx.arc(hz.x,hz.y,hz.r,0,6.283);
+    if(hz.warn>0){ ctx.globalAlpha=0.55;ctx.setLineDash([7,7]);ctx.lineWidth=3;ctx.strokeStyle=hz.col||'#ffe08a';ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1; }
+    else { ctx.globalAlpha=0.24;ctx.fillStyle=hz.col||'#ff8a3d';ctx.fill();ctx.globalAlpha=0.8;ctx.lineWidth=2;ctx.strokeStyle=hz.col||'#ff8a3d';ctx.stroke();ctx.globalAlpha=1; } }
   for(const pr of arc.proj){ ctx.beginPath();ctx.arc(pr.x,pr.y,pr.r,0,6.283);
     ctx.fillStyle='#ff9a3d';ctx.shadowColor='#ff5d52';ctx.shadowBlur=12;ctx.fill();ctx.shadowBlur=0; }
+  // REWORK: снаряды врагов — читаемые, со свечением цвета стихии
+  for(const pr of arc.eproj){ ctx.beginPath();ctx.arc(pr.x,pr.y,pr.r,0,6.283);
+    ctx.fillStyle=pr.col||'#c25b3a';ctx.shadowColor=pr.col||'#c25b3a';ctx.shadowBlur=10;ctx.fill();ctx.shadowBlur=0;
+    ctx.beginPath();ctx.arc(pr.x,pr.y,pr.r+3,0,6.283);ctx.lineWidth=1.5;ctx.strokeStyle='rgba(255,255,255,.5)';ctx.stroke(); }
   for(const e of arc.enemies){ if(e.dead)continue;
     if(P.target===e){ ctx.beginPath();ctx.arc(e.x,e.y,e.r+9,0,6.283);ctx.lineWidth=3;ctx.strokeStyle='#ffd36b';ctx.setLineDash([6,6]);ctx.stroke();ctx.setLineDash([]); }
+    if(e.veil)ctx.globalAlpha=0.16; // испытание Тьмы: страж уходит в вуаль
     arcUnit(e.x,e.y,e.r,e.color,e.icon,e.flash>0);
-    if(e.role==='leader'){ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffd36b';ctx.fillText('👑',e.x,e.y-e.r-16);}
+    ctx.globalAlpha=1;
+    if(e.elite){ctx.beginPath();ctx.arc(e.x,e.y,e.r+6,0,6.283);ctx.lineWidth=2.5;ctx.strokeStyle='#d8b4ff';ctx.stroke();
+      ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText('👿',e.x,e.y-e.r-16);}
+    if(e.trial){ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffd36b';ctx.fillText('☠️',e.x,e.y-e.r-18);}
+    if(e.role==='leader'&&!e.trial){ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffd36b';ctx.fillText('👑',e.x,e.y-e.r-16);}
     const bw=e.r*2.2;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(e.x-bw/2,e.y-e.r-13,bw,4);ctx.fillStyle='#ff5d52';ctx.fillRect(e.x-bw/2,e.y-e.r-13,bw*Math.max(0,e.hp/e.maxHp),4);
     if(e.burns.length){ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('🔥',e.x-10,e.y-e.r-18);}
     if(e.poisons.length){ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('🟢',e.x,e.y-e.r-18);}
@@ -371,8 +511,42 @@ function arcHUD(){ const P=arc.P;
   P.kit.forEach((sk,i)=>{const el=btns[i];if(!el)return;el.querySelector('.ac-cd').style.transform='scaleY('+(sk._t/sk.cd)+')';el.classList.toggle('nomana',P.mana<sk.mana);});
   const dEl=btns[P.kit.length]; if(dEl)dEl.querySelector('.ac-cd').style.transform='scaleY('+(P.dashT/P.dashCd)+')';
 }
+/* REWORK: РАЗБОР ПОРАЖЕНИЯ — понятная причина и цель развития (стена прогресса) */
+function arcDefeatReason(){
+  const P=arc.P, st=arc.stat;
+  let top=null; for(const e of arc.enemies){ if(!top||e.atk>top.atk)top=e; }
+  const foeLvl=arc.opts.lvl||arc.dragon.level;
+  const elName=el=>((typeof ELEMENTS!=='undefined'&&ELEMENTS[el])||{}).name||el;
+  const counter=el=>{ for(const k in ADVANTAGE){ if(ADVANTAGE[k]===el) return k; } return null; };
+  // 1) стихийное невыгодное противостояние
+  if(top&&ADVANTAGE[top.el]===P.el){ const c=counter(top.el);
+    return {icon:'🌀',title:'Неудачная стихия',why:`${elName(top.el)} сильна против твоей (${elName(P.el)})`,
+      goal:c?`Возьми дракона стихии «${elName(c)}» — он бьёт ${elName(top.el)} на +28%`:'Смени стихию дракона'}; }
+  // 2) слишком большие входящие удары — мало защиты/HP
+  if(st.maxHit>=P.maxHp*0.3)
+    return {icon:'🛡️',title:'Мало защиты',why:`Один удар снимал до ${Math.round(st.maxHit/P.maxHp*100)}% здоровья`,
+      goal:'Прокуй броню в Кузнице или выбирай усиления «Чешуя»/«Крепость» в забеге'};
+  // 3) не хватает урона — бой затянулся
+  const dps=st.dur>3?st.dealt/st.dur:999;
+  if(top&&dps>0&&(top.maxHp/Math.max(1,dps))>30)
+    return {icon:'⚔️',title:'Не хватает урона',why:'Бой затянулся — враг успел измотать тебя',
+      goal:`Подними уровень (враг ур.${foeLvl}) или прокуй оружие; в забеге бери «Ярость»/«Меткость»`};
+  // 4) уровень
+  if(foeLvl>arc.dragon.level+1)
+    return {icon:'⭐',title:'Недостаточно уровня',why:`Враг ур.${foeLvl}, твой дракон ур.${arc.dragon.level}`,
+      goal:'Набери опыт в верхних ярусах или на арене, затем возвращайся'};
+  // 5) по умолчанию — тактика
+  return {icon:'💨',title:'Зажали в бою',why:'Слишком долго стоял под ударами стаи',
+    goal:'Уворачивайся рывком от красных зон и снарядов, не дай себя окружить'};
+}
+
 // —— завершение: возврат в полёт ——
 function arcFinish(win){ if(!arc||arc.over)return; arc.over=true;
+  // REWORK: передаём итог боя забегу — причина поражения / данные для наград и бустов
+  try{ if(typeof flight!=='undefined'&&flight){
+    flight.lastDefeat = win?null:arcDefeatReason();
+    flight.lastFightKind = arc.opts.kind||'wild';
+  } }catch(e){}
   if(win && typeof incubateEggs==='function') incubateEggs(GB.Eggs.incBattle); // инкубация за победу в полёте
   if(win && typeof S!=='undefined') S.tutorialGuard=false;
   cancelAnimationFrame(arc.raf);

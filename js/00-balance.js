@@ -77,6 +77,32 @@ const GAME_BALANCE = {
     mitigConst: 80, elementAdv: 1.28, elementWeak: 0.85,
     hpMulWild: 2.6, hpMulLeader: 1.9, hpMulAdd: 1.25,
     dmgMulWild: 1.9, dmgMulPack: 1.55, rarityHpBonus: 0.12,
+    // REWORK: снаряды и зоны поражения
+    autoProjSpd: 660, autoProjR: 7,          // автоатака игрока — летящий снаряд
+    meleeRange: 100, leaderRange: 120,       // ближний бой врагов (было 50/76)
+    rangedRange: 320, rangedProjSpd: 340,    // дальнобойные враги
+    rangedShare: 0.4,                        // доля дальнобойных в стае
+    enemyAggro: 640,
+    // REWORK: анти-кайтинг
+    kite: { detectT: 1.2,                    // сек. отступления до «погони»
+            speedMul: 1.5,                   // ускорение преследователей
+            lungeCd: 3.2, lungeDist: 200, lungeSpd: 640, // рывок к игроку
+            surroundR: 150 },                // окружение: точки вокруг игрока
+    // REWORK: рост сложности с глубиной забега (за каждый пройденный ярус)
+    depth: { hp: 0.12, dmg: 0.10, spd: 8, extraAddPer: 1 },
+    elite: { hp: 1.7, dmg: 1.35, spd: 20 }, // элитные враги
+    trial: { hp: 2.4, dmg: 1.2 },           // испытание региона (страж портала)
+  },
+  // ——— ЗАБЕГ-РОГЛАЙТ (07-flight.js) ———
+  Run: {
+    boonChoices: 3,                          // вариантов усиления после победы
+    riskMul: { safe: 0.8, risky: 1.25, deadly: 1.7 },   // сложность пути
+    rewardMul: { safe: 0.8, risky: 1.3, deadly: 2.0 },  // награда пути
+    mapScale: 3.1,                           // множитель стороны карты (~9.6× площади)
+    denCount: 4, wildCount: 4, eliteCount: 2,// плотность угроз на ярусе
+    secretCount: 2, dangerPockets: 2,        // секретные зоны и опасные карманы
+    windLanes: 3, windBoost: 1.8,            // воздушные потоки — быстрое перемещение
+    staminaMax: 200,
   },
 };
 const GB = GAME_BALANCE; // короткий алиас
