@@ -64,8 +64,13 @@ function _toastFlush(){
   if(!_toastQ.length){_toastBusy=false; return;}
   _toastBusy=true; const it=_toastQ.shift();
   t.className=''; t.classList.add('show'); if(it.p===0)t.classList.add('prio-critical'); else if(it.p===1)t.classList.add('prio-important');
-  t.innerHTML=it.html; clearTimeout(t._t);
-  t._t=setTimeout(()=>{ t.classList.remove('show'); setTimeout(_toastFlush,180); }, it.p<=1?2800:1900);
+  // UI-РЕВИЗИЯ v38: крестик закрытия + закрытие тапом по подсказке
+  t.innerHTML='<span class="toast-body">'+it.html+'</span><button class="toast-x" aria-label="Закрыть">✕</button>';
+  const _close=()=>{ clearTimeout(t._t); t.classList.remove('show'); setTimeout(_toastFlush,160); };
+  const _x=t.querySelector('.toast-x'); if(_x)_x.onpointerdown=e=>{e.stopPropagation();_close();};
+  t.onpointerdown=_close;
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>{ t.classList.remove('show'); setTimeout(_toastFlush,180); }, it.p<=1?3200:2200);
 }
 // ДОСТУПНОСТЬ: режимы через классы body (высокий контраст, крупный текст, левша, цветовая слепота)
 function applyA11y(){ const a=S.a11y||{}, b=document.body; if(!b)return;

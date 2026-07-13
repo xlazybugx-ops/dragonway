@@ -106,3 +106,4 @@ const GAME_BALANCE = {
   },
 };
 const GB = GAME_BALANCE; // короткий алиас
+
