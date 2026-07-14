@@ -355,8 +355,8 @@ function breedDragons(a,b){
 }
 // стоимость следующей мутации растёт с числом уже сделанных этому дракону
 function mutateCost(d){
-  const n=d.mutations||0;
-  return MUTATE_DUST + n*6; // 8,14,20,26,...
+  const growth=d.geneGrowth||0;
+  return Math.min(40, MUTATE_DUST + growth*4); // цена растёт только после реального усиления и имеет потолок
 }
 // точечная мутация: усиливает выбранный стат за счёт другого (перераспределение),
 // с редким шансом вырастить общий бюджет генома (без потери другого стата).
@@ -368,16 +368,20 @@ function mutateGene(d,key){
   d.mutations=(d.mutations||0)+1;
 
   const sum=geneSum(d.genes);
-  const growChance=0.15; // редкий рост бюджета
+  d.mutationPity=d.mutationPity||0;
+  const growChance=0.22; // рост достижим в рамках обычной игры
   const canGrow = sum<GENE_BUDGET_MAX;
-  const doGrow = canGrow && Math.random()<growChance;
+  const doGrow = canGrow && (d.mutationPity>=3 || Math.random()<growChance);
 
   if(doGrow){
     // редкая удача: бюджет растёт, выбранный стат +1 без штрафа
     d.genes[key]=Math.min(GENE_MAX,(d.genes[key]||0)+1);
+    d.mutationPity=0;
+    d.geneGrowth=(d.geneGrowth||0)+1;
     floatText(`✦ Бюджет генома вырос!`, '#ffd24a');
     toast(`<b>Редкая мутация!</b> Геном окреп — <b>${GENE_LABEL[key]}</b> вырос до ${d.genes[key]}/${GENE_MAX}, а общая мощь дракона поднялась.`);
   } else {
+    if(canGrow) d.mutationPity++;
     // обычная: +1 выбранному, −1 самому «богатому» из остальных (перераспределение)
     const donors=GENE_KEYS.filter(k=>k!==key && (d.genes[k]||0)>0);
     if(!donors.length){
@@ -402,15 +406,17 @@ function igniteSpark(d){
   if(d.genes.spark){toast('Искра уже горит в этом драконе.');return;}
   if(S.dust<SPARK_DUST){toast(`Нужно ${SPARK_DUST} ✦ пыли, чтобы зажечь искру.`);return;}
   S.dust-=SPARK_DUST;
-  if(Math.random()<0.55){
+  d.sparkPity=d.sparkPity||0;
+  if(d.sparkPity>=1 || Math.random()<0.55){
     d.genes.spark=true;
+    d.sparkPity=0;
     d.curHp=Math.min(d.curHp,statsOf(d).maxHp);
     floatText('✦ ИСКРА ✦','#ffd27a');
     toast(`В <b>${speciesById(d.id).name}</b> вспыхнула <span style="color:var(--gold)">искра рода</span>! +8% ко всем статам.`);
   } else {
+    d.sparkPity++;
     floatText('искра угасла','#a8987a');
-    toast('Искра не прижилась. Пыль развеяна. Попробуй снова.');
+    toast('Искра не прижилась, но ритуал запомнил дракона. Следующая попытка гарантирована.');
   }
   renderLedger();renderLair();persist();
 }
-

@@ -4,7 +4,40 @@
    ============================================================ */
 /* ===== АРЕНА ===== */
 let battle=null;
-function arcadeEnabled(){ return S.arcadeOn!==false; } // по умолчанию включено
+function arcadeEnabled(){ return S.arcadeOn===true; } // добровольный продвинутый режим
+
+function arenaOfferDragon(spec){
+  return {id:spec.id,level:spec.level,xp:0,curHp:0,morph:spec.morph||'common',genes:{atk:3,def:3,hp:3,spd:3,spark:false},nature:'balanced'};
+}
+function buildArenaOffers(me){
+  const bands=GB.Battle.matchmaking.cpBands;
+  const myCp=combatPower(me);
+  return bands.map((targetRatio,index)=>{
+    const sp=weightedSpecies(), morph=rollMorph();
+    let best={level:1,diff:Infinity};
+    for(let level=1;level<=100;level++){
+      const cp=combatPower(arenaOfferDragon({id:sp.id,level,morph}));
+      const diff=Math.abs(cp/myCp-targetRatio);
+      if(diff<best.diff) best={level,diff};
+    }
+    return {id:sp.id,level:best.level,morph,band:index};
+  });
+}
+function arenaOffersFor(me){
+  const cached=S.arenaOffers;
+  if(!cached || cached.uid!==me.uid || !Array.isArray(cached.items)){
+    S.arenaOffers={uid:me.uid,createdAt:Date.now(),items:buildArenaOffers(me)};
+    persist();
+  }
+  return S.arenaOffers.items;
+}
+function battleRewardFor(me,foeSpec){
+  const foe=arenaOfferDragon(foeSpec);
+  const risk=combatRisk(me,foe);
+  const band=risk.key==='easy'?0:(risk.key==='hard'?2:1);
+  const morphMul=morphById(foeSpec.morph).id==='common'?1:1.08;
+  return Math.round(foeSpec.level*GB.Economy.battleGoldPerLevel*GB.Battle.matchmaking.rewardBands[band]*morphMul);
+}
 
 function renderArenaPicker(){
   const chk=$('#arcadeChk');
@@ -23,42 +56,38 @@ function renderArenaPicker(){
     const me=S.dragons.find(d=>d.uid===S.arenaPick);
     wrap.innerHTML+=`<div class="rule"></div><p class="hint">Выбери противника:</p>`;
     const foes=document.createElement('div');foes.className='roster';
-    [-1,0,1].forEach(delta=>{
-      let sp=weightedSpecies();
-      // «Слабее» — тренировочный бой: стихия врага не контрит чемпиона
-      if(delta<0){let g=0;while(ADVANTAGE[sp.el]===speciesById(me.id).el&&g++<8)sp=weightedSpecies();}
-      // очень редкий вид заметно сильнее — приходит «Легендой»: ниже уровнем, но награда ×2
-      const legend = sp.rarity >= speciesById(me.id).rarity + 2;
-      const lvl=Math.max(1, me.level + delta - (legend?3:0));
-      const foeMorph=rollMorph();
-      // множитель за риск: враг выше твоего уровня — щедрее, слабее — скромнее
-      const riskMult = delta>0 ? 1.5 : (delta<0 ? 0.7 : 1.0);
-      const reward=Math.round(lvl* (8+sp.rarity*4) * (morphById(foeMorph).id==='common'?1:1.2) * riskMult * (legend?2:1));
+    arenaOffersFor(me).forEach(offer=>{
+      const sp=speciesById(offer.id), lvl=offer.level, foeMorph=offer.morph;
+      const foeDragon=arenaOfferDragon(offer);
+      const risk=combatRisk(me,foeDragon);
+      const reward=battleRewardFor(me,offer);
       const card=document.createElement('div');
       card.className='dcard';
-      const riskTag = delta>0?'<span class="risk-tag hard">⚔️ Сильнее</span>':(delta<0?'<span class="risk-tag easy">Слабее</span>':'<span class="risk-tag even">Равный</span>');
+      const riskTag = `<span class="risk-tag ${risk.key}">${risk.key==='hard'?'⚔️ ':''}${risk.label}</span>`;
       card.innerHTML=`
         <span class="lvlpill">ур.${lvl}</span>
         <span class="star">${'★'.repeat(sp.rarity)}</span>
         ${sigilHTML(sp,foeMorph,'sigil',lvl)}
         <div class="dname">Дикий ${sp.name}</div>
         ${elTag(sp.el)} ${morphBadge(foeMorph)}
-        <div style="margin-top:6px">${legend?'<span class="risk-tag hard">⭐ Легенда</span> ':''}${riskTag}</div>
+        <div style="margin-top:6px">${riskTag} · сила ${Math.round(risk.ratio*100)}%</div>
         <div class="dmeta" style="margin-top:6px;color:var(--gold)">Награда 🪙${reward}</div>`;
       card.onclick=()=>startBattle(me,{id:sp.id,level:lvl,morph:foeMorph},reward);
       foes.appendChild(card);
     });
     wrap.appendChild(foes);
     // испытание волн
-    const waveCard=document.createElement('div');
-    waveCard.className='wave-entry';
-    waveCard.innerHTML=`
+    if(me.level>=GB.Release.advancedWaveLevel){
+      const waveCard=document.createElement('div');
+      waveCard.className='wave-entry';
+      waveCard.innerHTML=`
       <div class="wave-title">🌊 Испытание волн</div>
       <div class="dmeta">Волны врагов всё сильнее — на одном запасе сил и маны. Между волнами лишь короткая передышка. Уйди вовремя, чтобы забрать всю добычу; падёшь — спасёшь половину.</div>
       <div class="wave-record">Рекорд: <b>${S.waveBest||0}</b> волн</div>
       <button class="btn" id="waveStartBtn">Начать испытание</button>`;
-    wrap.appendChild(waveCard);
-    $('#waveStartBtn').onclick=()=>startWaveRun(me);
+      wrap.appendChild(waveCard);
+      $('#waveStartBtn').onclick=()=>startWaveRun(me);
+    }
   } else {
     wrap.innerHTML+='<p class="hint">Выбери чемпиона, чтобы вызвать противников.</p>';
   }
@@ -680,6 +709,11 @@ function endBattle(win){
   if(win) S.tutorialGuard=false;
   const b=battle;b.over=true;
   const me=b.me.ref; // настоящий дракон
+  if(!b.fromFlight && !b.waveCtx){
+    const foeCp=Math.round(b.foe.atk*4.2+b.foe.def*3.4+b.foe.spd*2.2+Math.sqrt(b.foe.maxHp)*11);
+    trackEvent('arena_result',{win,playerCp:combatPower(me),foeCp,turns:b.log.length});
+    S.arenaOffers=null;
+  }
   me.curHp=Math.max(0,Math.round(b.me.hp));
   $$('#moveBox .move').forEach(x=>x.disabled=true);
   if(win){

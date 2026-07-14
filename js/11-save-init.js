@@ -56,6 +56,9 @@ function migrateDragons(){
   if(!S.hintsSeen||typeof S.hintsSeen!=='object') S.hintsSeen={};
   if(!S.milestonesClaimed||typeof S.milestonesClaimed!=='object') S.milestonesClaimed={};
   if(typeof S.waveBest!=='number') S.waveBest=0;
+  if(typeof S.saveVersion!=='number') S.saveVersion=1;
+  if(!Array.isArray(S.telemetry)) S.telemetry=[];
+  if(S.saveVersion<3){ S.arenaOffers=null; S.saveVersion=3; }
   let migrated=0;
   for(const d of S.dragons){
     // характер: назначить, если нет
@@ -88,9 +91,12 @@ function migrateDragons(){
 /* ======================= IDLE-ДОХОД ======================= */
 // доход в минуту: сумма уровней всех драконов × ставка
 function idleRate(){
-  // полностью счастливый дракон приносит на 20% больше
-  const sumLvl=S.dragons.reduce((a,d)=>a+d.level*(((d.happy||0)>=HAPPY_MAX)?1.2:1),0);
-  return sumLvl*IDLE_RATE_PER_DRAGON;
+  // Работают только три наиболее развитых дракона; корневая кривая не вытесняет активную игру.
+  const active=S.dragons.filter(d=>!d.reserve).sort((a,b)=>b.level-a.level).slice(0,GB.Economy.idleActiveDragons);
+  return active.reduce((sum,d)=>{
+    const happy=((d.happy||0)>=HAPPY_MAX)?1.15:1;
+    return sum+GB.Economy.idleBasePerMinute*Math.sqrt(Math.max(1,d.level))*GB.Economy.idleLevelScale*happy;
+  },0);
 }
 // начислить накопленное за время отсутствия (с потолком)
 function collectIdle(){
@@ -389,6 +395,8 @@ function newGameFromOnboard(){
   S.sel=d.uid;
   S.settlement=onboard.settlement||'Драконьи Земли';
   S.tutorialGuard=true; // первый бой — гарантированная победа
+  S.arcadeOn=false;
+  trackEvent('onboarding_complete',{starter:onboard.dragon});
 }
 
 function newGame(){
@@ -398,6 +406,7 @@ function newGame(){
   S.sel=S.dragons[0].uid;
   S.settlement='Драконьи Земли';
   S.tutorialGuard=true;
+  S.arcadeOn=false;
 }
 
 const loaded=loadGame();

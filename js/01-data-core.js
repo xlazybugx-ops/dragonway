@@ -300,7 +300,7 @@ function rollMorph(){
    5 миров (по стихиям), у каждого 3 биома-подуровня:
    I поверхность (ур.1+), II глубина (ур.60+), III ядро (ур.100).
    Доступ гейтится уровнем портала (S.portalLevel) и уровнем дракона. */
-const BIOME_MIN_LEVEL=[0,1,60,100]; // индекс = номер биома (1..3)
+const BIOME_MIN_LEVEL=[0,1,22,55]; // тест-релиз: содержательные открытия без провала между 8 и 60
 const BIOME_TIERLABEL=['','I · Поверхность','II · Глубина','III · Ядро'];
 
 const WORLDS = [
@@ -375,4 +375,3 @@ function makeRegion(world, biomeN){
     tier:biomeN + (world.worldIdx-1), // растущая опасность для наград/POI
     biomeN, gold:b.gold, xp:b.xp, eggChance:b.eggChance};
 }
-

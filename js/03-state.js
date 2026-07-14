@@ -24,6 +24,9 @@ let S = {
   marketDust:null,   // дневной лимит обмена пыли на Рынке
   milestonesClaimed:{}, // забранные коллекционные вехи
   waveBest:0,        // рекорд арены волн
+  saveVersion:3,     // схема тест-релиза 2.1
+  arenaOffers:null,  // фиксированный набор соперников; не позволяет бесплатно искать выгодный ролл
+  telemetry:[],      // локальный обезличенный журнал для закрытой беты
   lairLevel:1,       // уровень логова → вместимость активных драконов (ЧАСТЬ 3)
   dragons:[],      // {uid,id,level,xp,curHp,morph,equip,genes,gen,nature}
   discovered:{},   // species id -> true
@@ -60,7 +63,7 @@ const QUEST_POOL = [
   {id:'feed',      icon:'🍖', text:'Покорми дракона', goalBase:2, unit:'раз', reward:{gold:90}},
   {id:'pet',       icon:'💖', text:'Погладь дракона', goalBase:2, unit:'раз', reward:{gold:90}},
 ];
-const IDLE_RATE_PER_DRAGON = 0.32; // золота в минуту с каждого уровня суммарно — приятный бонус, но не замена активной игре
+const IDLE_RATE_PER_DRAGON = 0.32; // legacy-константа; новая кривая задаётся GB.Economy
 const IDLE_CAP_HOURS = 5;         // максимум накопления offline
 
 /* ===== ГЕНЕТИКА =====
@@ -72,8 +75,8 @@ const GENE_KEYS=['atk','def','hp','spd'];
 const GENE_LABEL={atk:'Сила',def:'Стойкость',hp:'Живучесть',spd:'Резвость'};
 const GENE_ICON={atk:'⚔️',def:'🛡️',hp:'❤️',spd:'💨'};
 const GENE_MAX=6;
-// множитель стата от аллели: 0 -> 0.85, 3 -> 1.0, 6 -> 1.30
-const geneMult=allele=>0.85 + allele*0.075;
+// множитель стата от аллели: 0 -> 0.85, 3 -> 1.0, 6 -> 1.15
+const geneMult=allele=>0.85 + allele*0.05;
 const SPARK_BONUS=0.08;
 
 /* ===== ХАРАКТЕРЫ (natures): врождённая черта, задаёт роль ===== */
@@ -218,6 +221,24 @@ function statsOf(d){
   };
 }
 
+// Единая оценка силы учитывает всё, что реально входит в бой, а не только уровень.
+// HP имеет меньший вес, чтобы защитные сборки не получали завышенный рейтинг.
+function combatPower(d){
+  const s=statsOf(d);
+  return Math.max(1,Math.round(s.atk*4.2+s.def*3.4+s.spd*2.2+Math.sqrt(s.maxHp)*11));
+}
+function combatRisk(myDragon, foeDragon){
+  const ratio=combatPower(foeDragon)/Math.max(1,combatPower(myDragon));
+  if(ratio<0.91) return {key:'easy',label:'Тренировка',ratio};
+  if(ratio>1.09) return {key:'hard',label:'Опасный',ratio};
+  return {key:'even',label:'Равный',ratio};
+}
+function trackEvent(type,data){
+  if(!Array.isArray(S.telemetry)) S.telemetry=[];
+  S.telemetry.push({type,at:Date.now(),data:data||{}});
+  if(S.telemetry.length>300) S.telemetry.splice(0,S.telemetry.length-300);
+}
+
 function addDragon(speciesId, level=1, morph=null, genes=null, gen=1, nature=null){
   const sp=speciesById(speciesId);
   const d={uid:S.nextUid++, id:speciesId, level, xp:0, curHp:0,
@@ -340,4 +361,3 @@ function grantXp(d, amount){
   }
   return leveled;
 }
-

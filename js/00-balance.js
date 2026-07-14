@@ -14,17 +14,22 @@ const GAME_BALANCE = {
     critMult: 1.5,              // множитель крита
     critBasePlayer: 0.08,       // базовый шанс крита игрока
     critBaseFoe: 0.05,          // базовый шанс крита врага
-    spdCritScale: 0.006,        // вклад разницы скорости в шанс крита
-    spdCritMin: -0.04, spdCritMax: 0.14,
+    spdCritScale: 0.003,        // скорость задаёт темп, но не должна давать двойное преимущество
+    spdCritMin: -0.02, spdCritMax: 0.07,
     timing: { perfect: 1.25, good: 1.10, miss: 0.85, none: 1.0 }, // мини-игра тайминга
     ult: { perfect: 1.30, one: 1.15, good: 1.0, fail: 0.65 },     // двойная мини-игра ульты
     combo: { threshold: 1.25, perStack: 0.05, max: 3 },
     guardReduce: 0.55,          // множитель урона по защищающемуся
-    strongMoveHit: 0.7,         // шанс попадания сильного приёма (pow>=1.5)
+    strongMoveHit: 0.62,        // сильный приём — риск, базовый удар — стабильный темп и мана
     happyBonus: 1.05,           // бонус счастливого дракона
     bossWeakMult: 1.28,         // урон по слабости босса
     bossStallMult: 1.6,         // урон по застывшему боссу
     foeSpellPow: 1.6,           // сила «усиленного» удара врага
+    matchmaking: {
+      cpBands: [0.82, 1.0, 1.18],
+      rewardBands: [0.90, 1.0, 1.12],
+      refreshCooldownMs: 60000,
+    },
   },
   // ——— ОПЫТ (03-state.js) ———
   Experience: { xpBase: 45, xpExp: 1.15 }, // xpToNext = xpBase * lvl^xpExp
@@ -34,6 +39,8 @@ const GAME_BALANCE = {
     forgeDustFrom: 5, forgeDustStep: 10,
     smithyBase: 600, smithyGrowth: 1.85, smithyDustStep: 30, // уровень кузни
     solaceGoldPct: 0.15, solaceXpPer: 3,   // утешительная награда за поражение
+    battleGoldPerLevel: 14,                // редкость больше не умножает награду
+    idleBasePerMinute: 0.55, idleLevelScale: 0.42, idleActiveDragons: 3,
   },
   // ——— ЯЙЦА (03/04/05) ———
   Eggs: {
@@ -104,6 +111,11 @@ const GAME_BALANCE = {
     windLanes: 3, windBoost: 1.8,            // воздушные потоки — быстрое перемещение
     staminaMax: 200,
   },
+  Release: {
+    version: '2.1.0-test',
+    advancedWaveLevel: 25,
+    marketLevel: 20,
+    decorLevel: 12,
+  },
 };
 const GB = GAME_BALANCE; // короткий алиас
-
