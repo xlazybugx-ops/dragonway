@@ -1521,3 +1521,35 @@ body.flight-active #tabbar{transform:translateY(120%)} /* прячем в пол
 @media(prefers-reduced-motion:reduce){
   .w2-plat,.w2-menu,.w2-dim,.w2-scene{transition:none!important;animation:none!important}
 }
+
+/* ============ v2.0.3: художественная навигация и спокойное «живое» UI ============ */
+.panel,.nextstep,.w2-menu,.well-ov-in,.prof-row,.prof-tile,.stat-card{
+  background-image:linear-gradient(rgba(30,22,16,.78),rgba(20,15,12,.86)),url('../images/ui_panel_texture.webp');
+  background-size:auto,256px 256px;background-blend-mode:normal,soft-light}
+.tabbtn .tb-ic{width:32px;height:30px;display:grid;place-items:center;overflow:visible}
+.tabbtn .tb-ic img{display:block;width:34px;height:34px;object-fit:contain;
+  filter:grayscale(.38) saturate(.72) brightness(.82);opacity:.82;
+  transition:transform .24s cubic-bezier(.2,.8,.2,1),filter .24s ease,opacity .24s ease}
+.tabbtn.on .tb-ic{filter:none;transform:none}
+.tabbtn.on .tb-ic img{filter:saturate(1.12) brightness(1.12) drop-shadow(0 2px 5px rgba(217,164,65,.48));
+  opacity:1;transform:translateY(-3px) scale(1.16);animation:navIconWake .34s cubic-bezier(.2,.9,.25,1.25)}
+@keyframes navIconWake{0%{transform:translateY(2px) scale(.76);opacity:.45}70%{transform:translateY(-4px) scale(1.22)}100%{transform:translateY(-3px) scale(1.16);opacity:1}}
+.tabbtn::before{content:"";position:absolute;left:50%;top:1px;width:34px;height:3px;border-radius:0 0 5px 5px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transform:translateX(-50%) scaleX(.25);transition:.24s}
+.tabbtn.on::before{opacity:.9;transform:translateX(-50%) scaleX(1)}
+.hub-next-chip::after,.nextstep .ns-cta::after{content:"";position:absolute;inset:-45% auto -45% -35%;width:24%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:skewX(-18deg);animation:questGlint 4.8s ease-in-out infinite}
+.hub-next-chip,.nextstep .ns-cta{position:relative;isolation:isolate;overflow:hidden}
+@keyframes questGlint{0%,68%{left:-35%;opacity:0}72%{opacity:1}88%,100%{left:118%;opacity:0}}
+.view.on .panel>.dcard,.view.on .roster>.dcard,.view.on .codex-card{animation:cardArrive .28s both}
+.view.on .dcard:nth-child(2),.view.on .codex-card:nth-child(2){animation-delay:.035s}
+.view.on .dcard:nth-child(3),.view.on .codex-card:nth-child(3){animation-delay:.07s}
+.view.on .dcard:nth-child(4),.view.on .codex-card:nth-child(4){animation-delay:.105s}
+@keyframes cardArrive{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.topbar-res .tb-item{transition:transform .18s ease,color .18s ease}
+.topbar-res .tb-item:hover{transform:translateY(-1px);color:#fff4d0}
+@media(prefers-reduced-motion:reduce){
+  .tabbtn.on .tb-ic img,.hub-next-chip::after,.nextstep .ns-cta::after,
+  .view.on .panel>.dcard,.view.on .roster>.dcard,.view.on .codex-card{animation:none!important}
+  .tabbtn .tb-ic img,.tabbtn::before{transition:none!important}
+}
