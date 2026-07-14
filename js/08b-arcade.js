@@ -32,6 +32,12 @@ const AR_KITS={
           {id:'drain',name:'Поглощ.',icon:'🕳️',kind:'proj',cd:6,mana:20,range:350,mul:2.0,pspd:540,life:0.6} ],
 };
 const AR_ROLE={fire:'🔥',frost:'🧊',venom:'🟢',storm:'⚡',shade:'🌑'};
+const ARCADE_SPRITE_SRC={fire:'images/arcade_fire.webp',frost:'images/arcade_frost.webp',venom:'images/arcade_venom.webp',storm:'images/arcade_storm.webp',shade:'images/arcade_shade.webp'};
+const ARCADE_SPRITES={};
+function arcadeClassSprite(el){
+  if(ARCADE_SPRITES[el])return ARCADE_SPRITES[el];
+  const img=new Image(); img.src=ARCADE_SPRITE_SRC[el]||ARCADE_SPRITE_SRC.fire; ARCADE_SPRITES[el]=img; return img;
+}
 function ar_mitig(raw,def){ return Math.max(1, Math.round(raw*(GB.Arcade.mitigConst/(GB.Arcade.mitigConst+(def||0))))); }
 function ar_elMul(att,def){ if(ADVANTAGE[att]===def)return GB.Arcade.elementAdv; if(ADVANTAGE[def]===att)return GB.Arcade.elementWeak; return 1; }
 
@@ -84,7 +90,7 @@ function startArcadeFight(dragon, ent, opts){
   const WORLD={w:Math.max(1300,Wv*1.7), h:Math.max(1300,Hv*1.7)};
   const cx=WORLD.w/2, cy=WORLD.h/2;
   const P={ el:me.el, x:cx, y:WORLD.h-320, r:20, color:(ELEMENTS[me.el]||{}).color||'#f4b942',
-    icon:me.sp.sigil||'🐲', baseSpeed:phys.spd, hp:Math.max(1,me.hp), maxHp:me.maxHp,
+    icon:me.sp.sigil||'🐲', sprite:arcadeClassSprite(me.el), baseSpeed:phys.spd, hp:Math.max(1,me.hp), maxHp:me.maxHp,
     atk:me.atk, def:me.def, mana:60, maxMana:100, manaRegen:11,
     target:null, globalCd:0, iframe:0, hurt:0, facing:-Math.PI/2, shield:0, haste:0, hasteAtk:1, hasteSpd:1, stealth:0,
     autoBase:phys.atkCd, autoT:0, autoRange:170, dashCd:phys.dashCd, dashT:0, dashIf:phys.iframe, kit };
@@ -487,7 +493,7 @@ function arcRender(){ const ctx=arc.ctx,P=arc.P,cam=arc.cam;
     }
   }
   const blink=P.iframe>0&&Math.floor(P.iframe*20)%2===0;
-  if(!blink){ ctx.globalAlpha=P.stealth>0?0.5:1; arcUnit(P.x,P.y,P.r,P.hurt>0?'#ff8a8a':P.color,P.icon,P.hurt>0); ctx.globalAlpha=1;
+  if(!blink){ ctx.globalAlpha=P.stealth>0?0.5:1; arcPlayerSprite(P); ctx.globalAlpha=1;
     if(P.shield>0){ctx.beginPath();ctx.arc(P.x,P.y,P.r+7,0,6.283);ctx.lineWidth=3;ctx.strokeStyle='rgba(180,220,255,.8)';ctx.stroke();}
     if(P.haste>0){ctx.beginPath();ctx.arc(P.x,P.y,P.r+11,0,6.283);ctx.lineWidth=2;ctx.strokeStyle='rgba(216,180,255,.7)';ctx.stroke();}
     ctx.save();ctx.translate(P.x,P.y);ctx.rotate(P.facing);ctx.beginPath();ctx.moveTo(P.r-2,0);ctx.lineTo(P.r+12,-5);ctx.lineTo(P.r+12,5);ctx.closePath();ctx.fillStyle='#ffe08a';ctx.fill();ctx.restore(); }
@@ -500,6 +506,13 @@ function arcUnit(x,y,r,col,icon,flash){ const ctx=arc.ctx;
   ctx.beginPath();ctx.ellipse(x,y+r*0.8,r*0.9,r*0.35,0,0,6.283);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fill();
   ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.fillStyle=flash?'#fff':col;ctx.shadowColor=col;ctx.shadowBlur=flash?20:8;ctx.fill();ctx.shadowBlur=0;
   ctx.font=(r*1.3)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(icon,x,y+1);ctx.textBaseline='alphabetic'; }
+function arcPlayerSprite(P){ const ctx=arc.ctx,img=P.sprite;
+  if(!img||!img.complete||!img.naturalWidth){arcUnit(P.x,P.y,P.r,P.hurt>0?'#ff8a8a':P.color,P.icon,P.hurt>0);return;}
+  const size=P.r*4.2;
+  ctx.save();ctx.translate(P.x,P.y);ctx.rotate(P.facing+Math.PI/2);
+  ctx.shadowColor=P.hurt>0?'#ff6a6a':P.color;ctx.shadowBlur=P.hurt>0?18:8;
+  ctx.drawImage(img,-size/2,-size/2,size,size);ctx.restore();
+}
 function arcHUD(){ const P=arc.P;
   if(!arc._hud) arc._hud={hp:document.getElementById('acHp'),sh:document.getElementById('acSh'),mana:document.getElementById('acMana'),foe:document.getElementById('acFoe')}; // ПЕРФ: кэш ссылок HUD
   const h=arc._hud, prevAl=arc._prevAl;

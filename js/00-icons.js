@@ -22,6 +22,7 @@ const GAME_ICON_PATHS={
   rune:'<path d="M12 2l8 10-8 10-8-10zM12 7l4 5-4 5-4-5z"/>'
 };
 function gameIcon(name,label){
+  if(name==='coin') return `<span class="game-icon gi-coin game-icon-raster"${label?` aria-label="${label}"`:''}><img src="images/gold_dragon_coins.png" alt=""></span>`;
   const n=GAME_ICON_PATHS[name]?name:'rune';
   return `<span class="game-icon gi-${n}"${label?` aria-label="${label}"`:''}><svg viewBox="0 0 24 24" aria-hidden="true">${GAME_ICON_PATHS[n]}</svg></span>`;
 }

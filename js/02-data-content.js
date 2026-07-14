@@ -6,11 +6,11 @@
    3 уровня сундуков по глубине биома. Открываются ключом (мини-игра подбора)
    или в кузне за ресурсы. Лут: золото, пыль, артефакты, украшения хаба, яйца. */
 const CHEST_TYPES=[
-  {tier:1, name:'Простой сундук', icon:'📦', zones:1, keyName:'Простой ключ',  keyIcon:'🔑',
+  {tier:1, name:'Простой сундук', icon:'<img class="loot-icon chest-tier-icon" src="images/chest_tier1.png" alt="Простой сундук">', zones:1, keyName:'Простой ключ',  keyIcon:'🔑',
    forgeCost:{gold:120, dust:15}},
-  {tier:2, name:'Крепкий сундук', icon:'🧰', zones:2, keyName:'Резной ключ',   keyIcon:'🗝️',
+  {tier:2, name:'Крепкий сундук', icon:'<img class="loot-icon chest-tier-icon" src="images/chest_tier2.png" alt="Крепкий сундук">', zones:2, keyName:'Резной ключ',   keyIcon:'🗝️',
    forgeCost:{gold:480, dust:30}},
-  {tier:3, name:'Древний сундук', icon:'⚱️', zones:3, keyName:'Древний ключ',  keyIcon:'🔐',
+  {tier:3, name:'Древний сундук', icon:'<img class="loot-icon chest-tier-icon" src="images/chest_tier3.png" alt="Древний сундук">', zones:3, keyName:'Древний ключ',  keyIcon:'🔐',
    forgeCost:{gold:1080, dust:45}},
 ];
 const chestType=tier=>CHEST_TYPES.find(c=>c.tier===tier)||CHEST_TYPES[0];
@@ -650,25 +650,25 @@ const REWARD_RISK={
    - world: к какому миру привязан (добывается в биоме III этого мира) */
 const ARTIFACTS = [
   // — базовые (обычные, чистые бонусы) —
-  {id:'emberfang',  name:'Клык Жароеда',     icon:'🦷', slot:'weapon', rarity:1, el:'fire',
+  {id:'emberfang',  name:'Клык Жароеда',     icon:'<img class="artifact-game-icon" src="images/artifact_emberfang.webp" alt="Клык Жароеда">', slot:'weapon', rarity:1, el:'fire',
    base:{atk:3}, per:{atk:2}, lore:'Клык древнего дракона, что вечно тлеет изнутри.'},
-  {id:'frostshard', name:'Осколок Вечнольда', icon:'🔹', slot:'armor', rarity:2, el:'frost',
+  {id:'frostshard', name:'Осколок Вечнольда', icon:'<img class="artifact-game-icon" src="images/artifact_frostshard.webp" alt="Осколок Вечнольда">', slot:'armor', rarity:2, el:'frost',
    base:{def:3,hp:6}, per:{def:2,hp:4}, lore:'Льдина, не тающая даже в пламени горна.'},
-  {id:'venomidol',  name:'Идол Гнили',        icon:'🗿', slot:'charm', rarity:2, el:'venom',
+  {id:'venomidol',  name:'Идол Гнили',        icon:'<img class="artifact-game-icon" src="images/artifact_venomidol.webp" alt="Идол Гнили">', slot:'charm', rarity:2, el:'venom',
    base:{atk:2,spd:2}, per:{atk:1,spd:2}, lore:'Каменный истукан, источающий ядовитую дымку.'},
-  {id:'stormcrest', name:'Гребень Грозы',     icon:'⚜️', slot:'charm', rarity:3, el:'storm',
+  {id:'stormcrest', name:'Гребень Грозы',     icon:'<img class="artifact-game-icon" src="images/artifact_stormcrest.webp" alt="Гребень Грозы">', slot:'charm', rarity:3, el:'storm',
    base:{spd:4,atk:2}, per:{spd:3,atk:1}, lore:'Венец, в котором заперта пойманная молния.'},
-  {id:'shadeplate', name:'Латы Безмолвия',    icon:'🛡️', slot:'armor', rarity:3, el:'shade',
+  {id:'shadeplate', name:'Латы Безмолвия',    icon:'<img class="artifact-game-icon" src="images/artifact_shadeplate.webp" alt="Латы Безмолвия">', slot:'armor', rarity:3, el:'shade',
    base:{def:5,hp:8}, per:{def:3,hp:6}, lore:'Доспех, сотканный из самой ночной тьмы.'},
-  {id:'pyreblade',  name:'Клинок Пламевластца',icon:'🗡️', slot:'weapon', rarity:4, el:'fire',
+  {id:'pyreblade',  name:'Клинок Пламевластца',icon:'<img class="artifact-game-icon" src="images/artifact_pyreblade.webp" alt="Клинок Пламевластца">', slot:'weapon', rarity:4, el:'fire',
    base:{atk:6,spd:1}, per:{atk:3,spd:1}, lore:'Меч, выкованный в жерле спящего вулкана.'},
-  {id:'worldheart', name:'Сердце Мироздания', icon:'💠', slot:'charm', rarity:5, el:'venom',
+  {id:'worldheart', name:'Сердце Мироздания', icon:'<img class="artifact-game-icon" src="images/artifact_worldheart.webp" alt="Сердце Мироздания">', slot:'charm', rarity:5, el:'venom',
    base:{hp:14,atk:3,def:3,spd:2}, per:{hp:8,atk:2,def:2,spd:1}, lore:'Осколок первотворения. Дарует силу всем чешуйкам разом.'},
-  {id:'galewing',   name:'Перо Вихрекрыла',  icon:'🪶', slot:'charm', rarity:2, el:'storm',
+  {id:'galewing',   name:'Перо Вихрекрыла',  icon:'<img class="artifact-game-icon" src="images/artifact_galewing.webp" alt="Перо Вихрекрыла">', slot:'charm', rarity:2, el:'storm',
    base:{spd:5}, per:{spd:3}, lore:'Перо птицы, обгонявшей собственный крик.'},
-  {id:'ironhide',   name:'Шкура Железноспина',icon:'🪨', slot:'armor', rarity:2, el:'fire',
+  {id:'ironhide',   name:'Шкура Железноспина',icon:'<img class="artifact-game-icon" src="images/artifact_ironhide.webp" alt="Шкура Железноспина">', slot:'armor', rarity:2, el:'fire',
    base:{def:4,hp:4}, per:{def:2,hp:3}, lore:'Обрезок шкуры дракона, что спал в кузнечном горне.'},
-  {id:'fangblade',  name:'Зуб-Кинжал',        icon:'🔪', slot:'weapon', rarity:2, el:'shade',
+  {id:'fangblade',  name:'Зуб-Кинжал',        icon:'<img class="artifact-game-icon" src="images/artifact_fangblade.webp" alt="Зуб-Кинжал">', slot:'weapon', rarity:2, el:'shade',
    base:{atk:4,spd:1}, per:{atk:2,spd:1}, lore:'Молочный зуб теневого дракона. Малыш вырос — зуб остался.'},
   {id:'tidecharm',  name:'Оберег Приливов',   icon:'🌊', slot:'charm', rarity:3, el:'frost',
    base:{hp:10,def:2}, per:{hp:6,def:2}, lore:'Ракушка, в которой шумит море всех пяти миров.'},

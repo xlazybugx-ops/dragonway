@@ -11,7 +11,7 @@ vm.runInContext(source,sandbox,{filename:'draconis-test-bundle.js'});
 const T=sandbox.__test;
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-assert(T.GB.Release.version==='2.1.2-test','release version');
+assert(T.GB.Release.version==='2.1.7-test','release version');
 assert(JSON.stringify(Array.from(T.BIOME_MIN_LEVEL))===JSON.stringify([0,1,22,55]),'biome progression');
 assert(Math.abs(T.geneMult(3)-1)<1e-9,'neutral gene must be 1.0');
 assert(Math.abs(T.geneMult(6)-1.15)<1e-9,'max gene must be bounded');
