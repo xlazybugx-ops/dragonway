@@ -134,6 +134,7 @@ function startBattle(myDragon,foeSpec,reward,bossDef){
     me:makeCombatant(myDragon,false),
     foe,
     reward, log:[], turn:0, over:false,
+    fromFlight:!!(typeof flight!=='undefined'&&flight&&flight._pend),
     guardStreak:0, combo:0,
     boss:bossDef||null, bossHits:0, bossStalled:false
   };
@@ -157,6 +158,14 @@ const MOVES = {
 };
 const GUARD={n:'Защита',pow:0,t:'Готовится: следующий удар по тебе слабее, лечит немного'};
 
+function battleBiomeKey(b){
+  if(b&&b.fromFlight&&typeof flight!=='undefined'&&flight&&flight.region){
+    if(typeof flyArtKey==='function')return flyArtKey(flight.region);
+    return flightElementKey(flight.region.el);
+  }
+  return flightElementKey((b&&b.foe&&b.foe.el)||'shade');
+}
+
 function renderBattle(){
   const b=battle;
   const stage=$('#battleStage');
@@ -168,6 +177,7 @@ function renderBattle(){
   const elScene={fire:'fire',venom:'jungle',frost:'ice',storm:'ice',shade:'shade'}[b.foe.el]||'shade';
   const canSpell = b.me.spell && b.me.mana>=b.me.spell.manaCost;
   const canUlt = b.me.ult && b.me.mana>=b.me.ult.manaCost;
+  const biomeKey=battleBiomeKey(b);
   // оценка урона приёма по текущим статам (диапазон с учётом стихии)
   const estDmg=(pow)=>{
     const base=GB.Battle.damageK*(b.me.atk*b.me.atk/(b.me.atk+b.foe.def))*pow;
@@ -184,11 +194,11 @@ function renderBattle(){
   };
   stage.innerHTML=`
   <div class="arena">
-    <div class="arena-bg">${sceneSVG(elScene,'battle')}</div>
+    <div class="arena-bg battle-biome"><img src="images/biome_${biomeKey}.webp" alt="" decoding="async" onerror="this.style.display='none'">${sceneSVG(elScene,'battle')}</div>
     <div class="turn-strip" id="turnStrip"></div>
     <div class="fighters">
       <div class="fighter" id="fMe">
-        ${sigilHTML(b.me.sp,b.me.morph,'fs',b.me.level)}
+        <div class="fs battle-fly-wrap">${battleFlyingHTML(b.me.sp,b.me.level,flightThreatTier(b.me.level),'battle-fly-dragon')}</div>
         <div class="fname">${b.me.sp.name} <span style="color:var(--ink-dim)">ур.${b.me.level}</span></div>
         ${elTag(b.me.el)} ${morphBadge(b.me.morph)}
         ${hpBar(b.me)}
@@ -197,7 +207,7 @@ function renderBattle(){
       </div>
       <div class="versus">⚔</div>
       <div class="fighter" id="fFoe">
-        ${sigilHTML(b.foe.sp,b.foe.morph,'fs',b.foe.level)}
+        <div class="fs battle-fly-wrap threat-${b.boss?3:Math.max(1,Math.min(3,Math.ceil(b.foe.level/Math.max(1,b.me.level))))}">${battleFlyingHTML(b.foe.sp,b.foe.level,b.boss?3:Math.max(1,Math.min(3,Math.ceil(b.foe.level/Math.max(1,b.me.level)))),'battle-fly-dragon')}</div>
         <div class="fname"><span class="tgt-badge" title="Твоя цель">⌖</span> ${b.boss?b.boss.name:('Дикий '+b.foe.sp.name)} <span style="color:var(--ink-dim)">ур.${b.foe.level}</span></div>
         ${elTag(b.foe.el)} ${morphBadge(b.foe.morph)}
         ${hpBar(b.foe)}

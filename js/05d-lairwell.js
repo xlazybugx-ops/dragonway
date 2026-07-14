@@ -135,7 +135,7 @@ function renderLair(){
       <img class="w2-plat-img" src="images/lair_platform_v2.png" decoding="async" alt=""
         onerror="if(!this._p){this._p=1;this.src='images/lair_platform.webp';}else{this.style.display='none';this.closest('.w2-plat').classList.add('noimg');}">
       <div class="w2-hero" id="w2Hero">
-        <div class="wh-vis dragon-wrap" style="filter:${morphById(hero.morph).filter||'none'}">${dragonArt(sp.id)}</div>
+        <div class="wh-vis dragon-wrap" style="filter:${morphById(hero.morph).filter||'none'}">${dragonVisual(sp.id,hero.level)}</div>
         <div class="wh-plate">${dragonName(hero)} · ур.${hero.level}</div>
       </div>
     </div>
@@ -152,9 +152,9 @@ function renderLair(){
   /* ---------- проводка ---------- */
   const well=$('#well2');
   const setOpen=v=>{ _wellOpen=v; well.classList.toggle('open',v); $('#w2Plat').setAttribute('aria-expanded',String(v)); };
-  // тап по активному дракону/платформе — развернуть; по затемнению/свернуть — закрыть
-  $('#w2Plat').onclick=()=>{ if(!_wellOpen) setOpen(true); };
-  $('#w2Plat').onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&!_wellOpen){ e.preventDefault(); setOpen(true); } };
+  // повторный тап по активному дракону возвращает общий план
+  $('#w2Plat').onclick=()=>setOpen(!_wellOpen);
+  $('#w2Plat').onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); setOpen(!_wellOpen); } };
   $('#w2Close').onclick=e=>{ e.stopPropagation(); setOpen(false); };
   well.querySelector('.w2-dim').onclick=()=>setOpen(false);
   // стая: эмоция + облачко с фразой + чип «выбрать»

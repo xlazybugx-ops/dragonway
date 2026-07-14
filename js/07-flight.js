@@ -120,17 +120,21 @@ function flySprite(speciesId){
   img.src='data:image/svg+xml;utf8,'+encodeURIComponent(topDragonSVG(speciesId).replace(/class="[^"]*"/g,''));
   return img;
 }
-/* нарисованный PNG-спрайт полёта с учётом возраста: images/{вид}_fly_{стадия}.png
-   (стадии 1/25/60/100, как у портретов). Нет нужной стадии — берём ближайшую
-   имеющуюся; нет ни одной — останется векторный дракон. */
-function flySpritePng(speciesId, level){
+function flightElementKey(el){ return el==='venom'?'jungle':(el==='frost'?'ice':el); }
+function flightThreatTier(level){ return level>=60?3:(level>=25?2:1); }
+function flightSpriteSrc(speciesId,tier){
+  const sp=speciesById(speciesId), key=flightElementKey(sp.el);
+  return `images/fly_${key}_${Math.max(1,Math.min(3,tier||1))}.webp`;
+}
+/* Единые парящие драконы с видом сверху: класс/возраст задаёт вариант 1–3. */
+function flySpritePng(speciesId, level, threatTier){
   const img=new Image();
-  const want=stageForLevel(level||1);
-  const order=[want,...[100,60,25,1].filter(st=>st!==want)];
-  let i=0;
-  img.onerror=()=>{ if(i<order.length) img.src=`images/${speciesId}_fly_${order[i++]}.png`; };
-  img.src=`images/${speciesId}_fly_${order[i++]}.png`;
+  img.onerror=()=>{ img.onerror=null; img.src='data:image/svg+xml;utf8,'+encodeURIComponent(topDragonSVG(speciesId).replace(/class="[^"]*"/g,'')); };
+  img.src=flightSpriteSrc(speciesId,threatTier||flightThreatTier(level||1));
   return img;
+}
+function battleFlyingHTML(sp,level,threatTier,cls){
+  return `<img class="${cls||'battle-fly-dragon'}" src="${flightSpriteSrc(sp.id,threatTier||flightThreatTier(level||1))}" alt="${sp.name}">`;
 }
 
 /* ===== СТАРТ ПОЛЁТА ===== */
@@ -256,7 +260,7 @@ function buildFlightTier(region){
       ph:Math.random()*4}); // фаза цикла: затишье → предупреждение → разряд
     // логова зверей — реальные бои
     const denAt=(fx,fy)=>{const sp=weightedSpecies();
-      return {x:W*fx,y:H*fy,icon:pick(['🐗','🦊','👹','🦎','🕷️','🦂']),name:'Логово: '+sp.name,sp,
+      return {x:W*fx,y:H*fy,name:'Логово: '+sp.name,sp,enemyImg:flySpritePng(sp.id,1,1),threat:1,
         beast:{x:W*fx+40,y:H*fy,tx:W*fx,ty:H*fy,wait:0},patrolR:150,aggro:200,speedMul:.78,defeated:false,cool:0};};
     f.dens=[];
     for(let i=0;i<(RN.denCount||4);i++)
@@ -264,7 +268,7 @@ function buildFlightTier(region){
     // дикие драконы — победа в бою даёт яйцо
     const wildAt=(fx,fy,rare)=>{const sp=weightedSpecies();
       return {sp,rare:!!rare,name:rare?'✨ Мерцающий беглец':'Дикий дракон: '+sp.name,
-        col:(TOPDRAGON_COLORS[sp.el]||TOPDRAGON_COLORS.fire).body,img:flySprite(sp.id),
+        col:(TOPDRAGON_COLORS[sp.el]||TOPDRAGON_COLORS.fire).body,img:flySpritePng(sp.id,rare?70:30,rare?3:2),threat:rare?3:2,
         x:W*fx,y:H*fy,tx:0,ty:0,wait:0,heading:0,
         speed:rare?150:110+Math.random()*40,defeated:false,cool:0};};
     f.wilds=[];
@@ -274,7 +278,7 @@ function buildFlightTier(region){
     // REWORK: элитные стражи опасных карманов
     f.pockets.forEach((pk,i)=>{ if(i>=(RN.eliteCount||2))return;
       const sp=weightedSpecies();
-      f.elites.push({sp,elite:true,name:'👿 Элита: '+sp.name,img:flySprite(sp.id),
+      f.elites.push({sp,elite:true,name:'👿 Элита: '+sp.name,img:flySpritePng(sp.id,80,3),threat:3,
         x:pk.x,y:pk.y,tx:pk.x,ty:pk.y,wait:0,heading:0,home:pk,speed:135,defeated:false,cool:0});});
     for(let i=0;i<3;i++)f.clouds.push({x:Math.random()*W,y:Math.random()*H,r:240+Math.random()*220,
       vx:6+Math.random()*10,vy:(Math.random()-.5)*5});
@@ -283,7 +287,7 @@ function buildFlightTier(region){
     const trialKey=region.el==='storm'?'storm':region.scene;
     const trialDef=(typeof REGION_TRIALS!=='undefined'&&REGION_TRIALS[trialKey])||null;
     if(trialDef){ const sp=weightedSpecies();
-      f.trialEnt={sp,trial:true,scene:trialKey,icon:trialDef.icon,
+      f.trialEnt={sp,trial:true,scene:trialKey,icon:trialDef.icon,img:flySpritePng(sp.id,90,3),threat:3,
         name:trialDef.name,hint:trialDef.hint,x:W/2,y:H*0.08+120,defeated:false,cool:0}; }
 
     // портал: на ярусы 1-2 — переход выше, на последнем — возвращение домой
@@ -320,9 +324,9 @@ function renderFlight(){
       <div class="fcv-title">Ярус ${tierRoman} · ${f.region.biome}${f.weather?' · '+f.weather.emoji+' '+f.weather.name:''} · ${dragonName(f.d)}</div>
       <span id="fcvScore"></span>
       <div class="fcv-stam"><div id="fcvStamFill"></div></div>
+      <div class="fcv-goals" id="fcvGoals"></div>
       <button class="fcv-exit" id="fcvExit">🏁 Закончить</button>
     </div>
-    <div class="fcv-goals" id="fcvGoals"></div>
     <canvas class="fcv-mini" id="fcvMini"></canvas>
     <div class="fcv-stick" id="fcvStick"><div class="fcv-knob" id="fcvKnob"></div></div>
     <div class="fcv-enc" id="fcvEnc"></div>
@@ -330,7 +334,7 @@ function renderFlight(){
   f._score=$('#fcvScore'); f._stam=$('#fcvStamFill'); f._goals=$('#fcvGoals'); // ПЕРФ: кэш ссылок HUD (не $() каждый кадр)
   // REWORK: миникарта — игрок, туман, точки интереса; не перегружает экран
   const mini=$('#fcvMini'), mtx=mini?mini.getContext('2d'):null;
-  if(mini){ const mw=104, mh=Math.max(84,Math.min(170,Math.round(mw*f.H/f.W)));
+  if(mini){ const mw=104, mh=104;
     mini.width=mw*2; mini.height=mh*2; mini.style.width=mw+'px'; mini.style.height=mh+'px';
     mtx.setTransform(2,0,0,2,0,0); }
   function drawMini(){
@@ -579,16 +583,16 @@ function renderFlight(){
   function renderGoals(){
     const g=f._goals; if(!g)return;
     const rdy=flyPortalReady();
-    g.innerHTML=`<span class="g-title">⛩️ ${f.portal.name}</span><br>`+f.portal.goals.map(go=>{
+    g.innerHTML=`<span class="g-title">⛩️ ${f.portal.name}</span>`+f.portal.goals.map(go=>{
       const c=Math.min(go.need,go.cur());
-      return `<span class="${c>=go.need?'done':''}">${c>=go.need?'✔':go.icon} ${go.label}: <b>${c}/${go.need}</b></span>`;}).join('<br>')
-      +(rdy?'<br><span class="done">▲ Портал открыт! Лети вверх ⬆</span>':'');
+      return `<span class="${c>=go.need?'done':''}">${c>=go.need?'✔':go.icon} ${go.label} <b>${c}/${go.need}</b></span>`;}).join('')
+      +(rdy?'<span class="done">▲ Портал открыт</span>':'');
   }
 
   /* --- отрисовка дракона-спрайта (учитывает пропорции PNG) --- */
   function drawSprite(img,wx,wy,heading,sx,sy,size,now,dref,glow){
     const px=wx-sx,py=wy-sy,t=now/1000;
-    const flap=Math.sin(t*8+px*0.01),lift=flap*0.5+0.5;
+    const flap=Math.sin(t*9.5+px*0.01),lift=flap*0.5+0.5;
     if(glow){ctx.save();ctx.globalAlpha=.45+Math.sin(now/200)*.25;ctx.fillStyle='#ffd76a';
       ctx.beginPath();ctx.arc(px,py,size*0.6,0,7);ctx.fill();ctx.restore();}
     let dw=size,dh=size;
@@ -599,9 +603,9 @@ function renderFlight(){
     ctx.save();ctx.translate(px+7,py+11);ctx.rotate(heading+Math.PI/2);
     ctx.globalAlpha=.24;ctx.fillStyle='#000';
     ctx.beginPath();ctx.ellipse(0,0,dw*0.36*(1-lift*0.15),dh*0.34,0,0,7);ctx.fill();ctx.restore();
-    ctx.save();ctx.translate(px,py-lift*4);
-    ctx.rotate(heading+Math.PI/2+(dref?dref.bank*0.5:0));
-    ctx.scale(1+flap*0.09,1-flap*0.05);
+    ctx.save();ctx.translate(px,py-lift*7+Math.sin(t*2.4+wx*.005)*2);
+    ctx.rotate(heading+Math.PI/2+(dref?dref.bank*0.5:Math.sin(t*1.8+wy*.004)*.035));
+    ctx.scale(1+flap*0.14,1-flap*0.055);
     if(dref&&dref.hurt>0&&Math.floor(now/90)%2===0)ctx.globalAlpha=.45;
     if(img&&img.complete&&img.naturalWidth)ctx.drawImage(img,-dw/2,-dh/2,dw,dh);
     else{ctx.font=(size*0.7)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🐉',0,0);}
@@ -847,7 +851,7 @@ function renderFlight(){
           ctx.drawImage(f.denImg,px-dw2/2,py-dh2/2-bob,dw2,dh2);
         } else {ctx.font='34px serif';ctx.fillText('🕳️',px,py);}
         ctx.font='italic 12px Georgia';ctx.fillStyle='rgba(255,230,200,.92)';ctx.fillText(dd.name,px,py+58);
-        if(!dd.defeated){ctx.font='30px serif';ctx.fillText(dd.icon,dd.beast.x-sx,dd.beast.y-sy);
+        if(!dd.defeated){drawSprite(dd.enemyImg,dd.beast.x,dd.beast.y,Math.atan2(dd.beast.ty-dd.beast.y,dd.beast.tx-dd.beast.x),sx,sy,44,now,null,false);
           ctx.strokeStyle='rgba(255,120,80,.22)';ctx.setLineDash([6,6]);ctx.beginPath();
           ctx.arc(dd.beast.x-sx,dd.beast.y-sy,dd.aggro,0,7);ctx.stroke();ctx.setLineDash([]);}
         else{ctx.font='20px serif';ctx.fillText('✔️',px,py-30);}}});
@@ -855,7 +859,7 @@ function renderFlight(){
     // дикие
     f.wilds.forEach(wd=>{if(wd.defeated)return;const px=wd.x-sx,py=wd.y-sy;
       if(px<-90||py<-90||px>vw+90||py>vh+90)return;
-      drawSprite(wd.img,wd.x,wd.y,wd.heading,sx,sy,wd.rare?64:54,now,null,wd.rare);
+      drawSprite(wd.img,wd.x,wd.y,wd.heading,sx,sy,wd.threat===3?76:60,now,null,wd.rare);
       if(wd.rare&&(wd.slip||0)>0){ // прогресс слипстрима
         ctx.save();ctx.strokeStyle='#ffd76a';ctx.lineWidth=5;
         ctx.beginPath();ctx.arc(px,py,44,-Math.PI/2,-Math.PI/2+6.283*Math.min(1,wd.slip/3));ctx.stroke();
@@ -886,7 +890,7 @@ function renderFlight(){
     // REWORK: элитные стражи
     f.elites.forEach(ee=>{if(ee.defeated)return;const px=ee.x-sx,py=ee.y-sy;
       if(px<-90||py<-90||px>vw+90||py>vh+90)return;
-      drawSprite(ee.img,ee.x,ee.y,ee.heading,sx,sy,62,now,null,true);
+      drawSprite(ee.img,ee.x,ee.y,ee.heading,sx,sy,84,now,null,true);
       ctx.save();ctx.strokeStyle='rgba(216,180,255,.75)';ctx.lineWidth=2.5;
       ctx.beginPath();ctx.arc(px,py,40,0,7);ctx.stroke();
       ctx.font='italic 12px Georgia';ctx.fillStyle='#e8d6ff';ctx.fillText(ee.name,px,py+56);ctx.restore();});
@@ -895,7 +899,7 @@ function renderFlight(){
       if(px>-120&&py>-120&&px<vw+120&&py<vh+120){
         if(te.defeated){ctx.font='26px serif';ctx.fillText('🏆',px,py);}
         else{ const pulse=1+Math.sin(now/260)*0.1;
-          ctx.save();ctx.globalAlpha=.85;ctx.font=(46*pulse)+'px serif';ctx.fillText(te.icon,px,py);
+          drawSprite(te.img,te.x,te.y,-Math.PI/2,sx,sy,92*pulse,now,null,true);ctx.save();ctx.globalAlpha=.85;
           ctx.font='italic 13px Georgia';ctx.fillStyle='#ffd9b0';ctx.fillText(te.name+' — страж портала',px,py+42);
           ctx.strokeStyle='rgba(255,120,80,.35)';ctx.setLineDash([6,6]);ctx.lineWidth=2;
           ctx.beginPath();ctx.arc(px,py,60,0,7);ctx.stroke();ctx.setLineDash([]);ctx.restore(); } } }

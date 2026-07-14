@@ -63,7 +63,7 @@ function ar_makeEnemy(sp,lvl,role,cx,cy,mods){
   const ranged = mods.ranged!==undefined ? !!mods.ranged
     : (role!=='leader'&&!mods.trial&&Math.random()<A.rangedShare);
   return { sp, el:foe.el, role, x:cx, y:cy, r: role==='add'?18:(rar>=4||role==='leader'?26:20),
-    color:(ELEMENTS[foe.el]||{}).color||'#c25b3a', icon:sp.sigil||'👹',
+    color:(ELEMENTS[foe.el]||{}).color||'#c25b3a', icon:sp.sigil||'👹', sprite:arcadeClassSprite(foe.el),
     hp, maxHp:hp, atk, def:foe.def,
     speed:clampN(spd,70,215), aggro:A.enemyAggro,
     ranged, atkRange: ranged?A.rangedRange:(role==='leader'?A.leaderRange:A.meleeRange),
@@ -148,11 +148,14 @@ function startArcadeFight(dragon, ent, opts){
     <div class="ac-ab" id="acAb"></div>`;
 
   const cv=document.getElementById('acv'), ctx=cv.getContext('2d');
+  const bgKey=(typeof flight!=='undefined'&&flight&&flight.region&&typeof flyArtKey==='function')
+    ?flyArtKey(flight.region):flightElementKey(sp.el);
+  const bgImg=new Image(); bgImg.src=`images/flightmap_${bgKey}.webp`;
   const resize=()=>{const dpr=Math.min(2,devicePixelRatio||1);cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px';ctx.setTransform(dpr,0,0,dpr,0,0);};
   window.addEventListener('resize',resize); resize();
 
   P.target = enemies[0];
-  arc={fsA,ctx,cv,resize,WORLD,P,enemies,dragon,ent,opts,isDen,isTrial,
+  arc={fsA,ctx,cv,resize,WORLD,P,enemies,dragon,ent,opts,isDen,isTrial,bgImg,
     trial:isTrial?{mech:trialDef.mech,t:0,boss:enemies[0]}:null,
     stat:{taken:0,dealt:0,dur:0,maxHit:0}, kiteT:0, chaseWarned:false,
     proj:[],eproj:[],hazards:[],zones:[],fx:[],floats:[],parts:[],cam:{x:0,y:0},shake:0,over:false,raf:0,last:performance.now()};
@@ -426,6 +429,9 @@ function arcRender(){ const ctx=arc.ctx,P=arc.P,cam=arc.cam;
   const sx=arc.shake?rand(-arc.shake,arc.shake):0, sy=arc.shake?rand(-arc.shake,arc.shake):0;
   ctx.save(); ctx.translate(-cam.x+sx,-cam.y+sy);
   ctx.fillStyle='#141029';ctx.fillRect(0,0,arc.WORLD.w,arc.WORLD.h);
+  if(arc.bgImg&&arc.bgImg.complete&&arc.bgImg.naturalWidth){
+    ctx.save();ctx.globalAlpha=.82;ctx.drawImage(arc.bgImg,0,0,arc.WORLD.w,arc.WORLD.h);ctx.restore();
+  }
   ctx.strokeStyle='rgba(255,255,255,.04)';ctx.lineWidth=1;
   for(let x=0;x<=arc.WORLD.w;x+=70){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,arc.WORLD.h);ctx.stroke();}
   for(let y=0;y<=arc.WORLD.h;y+=70){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(arc.WORLD.w,y);ctx.stroke();}
@@ -459,7 +465,7 @@ function arcRender(){ const ctx=arc.ctx,P=arc.P,cam=arc.cam;
   for(const e of arc.enemies){ if(e.dead)continue;
     if(P.target===e){ ctx.beginPath();ctx.arc(e.x,e.y,e.r+9,0,6.283);ctx.lineWidth=3;ctx.strokeStyle='#ffd36b';ctx.setLineDash([6,6]);ctx.stroke();ctx.setLineDash([]); }
     if(e.veil)ctx.globalAlpha=0.16; // испытание Тьмы: страж уходит в вуаль
-    arcUnit(e.x,e.y,e.r,e.color,e.icon,e.flash>0);
+    arcEnemySprite(e);
     ctx.globalAlpha=1;
     if(e.elite){ctx.beginPath();ctx.arc(e.x,e.y,e.r+6,0,6.283);ctx.lineWidth=2.5;ctx.strokeStyle='#d8b4ff';ctx.stroke();
       ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText('👿',e.x,e.y-e.r-16);}
@@ -506,10 +512,20 @@ function arcUnit(x,y,r,col,icon,flash){ const ctx=arc.ctx;
   ctx.beginPath();ctx.ellipse(x,y+r*0.8,r*0.9,r*0.35,0,0,6.283);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fill();
   ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.fillStyle=flash?'#fff':col;ctx.shadowColor=col;ctx.shadowBlur=flash?20:8;ctx.fill();ctx.shadowBlur=0;
   ctx.font=(r*1.3)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(icon,x,y+1);ctx.textBaseline='alphabetic'; }
+function arcEnemySprite(e){ const ctx=arc.ctx,img=e.sprite;
+  if(!img||!img.complete||!img.naturalWidth){arcUnit(e.x,e.y,e.r,e.color,e.icon,e.flash>0);return;}
+  const now=performance.now()/1000, flap=Math.sin(now*9+(e.slot||0)), lift=(flap+1)*2.2;
+  const size=e.r*(e.elite||e.trial?5.1:(e.role==='leader'?4.8:4.25));
+  const face=Math.atan2(arc.P.y-e.y,arc.P.x-e.x);
+  ctx.save();ctx.translate(e.x,e.y-lift);ctx.rotate(face+Math.PI/2);ctx.scale(1+flap*.12,1-flap*.045);
+  ctx.shadowColor=e.flash>0?'#fff':e.color;ctx.shadowBlur=e.flash>0?20:9;
+  ctx.drawImage(img,-size/2,-size/2,size,size);ctx.restore();
+}
 function arcPlayerSprite(P){ const ctx=arc.ctx,img=P.sprite;
   if(!img||!img.complete||!img.naturalWidth){arcUnit(P.x,P.y,P.r,P.hurt>0?'#ff8a8a':P.color,P.icon,P.hurt>0);return;}
-  const size=P.r*4.2;
-  ctx.save();ctx.translate(P.x,P.y);ctx.rotate(P.facing+Math.PI/2);
+  const size=P.r*4.2, now=performance.now()/1000, flap=Math.sin(now*10), lift=(flap+1)*2.8;
+  ctx.save();ctx.translate(P.x,P.y-lift);ctx.rotate(P.facing+Math.PI/2);
+  ctx.scale(1+flap*.13,1-flap*.05);
   ctx.shadowColor=P.hurt>0?'#ff6a6a':P.color;ctx.shadowBlur=P.hurt>0?18:8;
   ctx.drawImage(img,-size/2,-size/2,size,size);ctx.restore();
 }
