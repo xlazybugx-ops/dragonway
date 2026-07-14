@@ -38,10 +38,30 @@ function grantWorldReward(reward){ const f=flight; if(!f)return '…'; const R=f
    игра сама нарисует процедурный фон, ничего не сломается. */
 const FLY_ART_KEY={emberreach:'fire',mirelot:'jungle',glacior:'ice',stormpeak:'storm',voidedge:'shade'};
 const _denImgCache={}; // ПЕРФ: кэш картинок логова (не грузить одно и то же повторно)
+const _flyMapCache={};
 function flyArtKey(region){ return FLY_ART_KEY[region.worldId]||region.scene; }
 function loadFlyMap(region,tier,cb){
-  const src=`images/fly_${flyArtKey(region)}_${tier}.webp`;
-  const i=new Image(); i.onload=()=>cb(i); i.onerror=()=>cb(null); i.src=src;
+  // Полёт использует отдельную ортографическую карту сверху; панорамный biome_* остаётся обложкой мира.
+  const src=`images/flightmap_${flyArtKey(region)}.webp`;
+  const cached=_flyMapCache[src];
+  if(cached){
+    if(cached.complete&&cached.naturalWidth) cb(cached);
+    else { cached.addEventListener('load',()=>cb(cached),{once:true}); cached.addEventListener('error',()=>cb(null),{once:true}); }
+    return;
+  }
+  const i=new Image(); _flyMapCache[src]=i;
+  i.onload=()=>{ cb(i); preloadNextFlyMap(region); };
+  i.onerror=()=>{ delete _flyMapCache[src]; cb(null); };
+  i.src=src;
+}
+function preloadNextFlyMap(region){
+  if(typeof WORLDS==='undefined'||!Array.isArray(WORLDS))return;
+  const at=WORLDS.findIndex(w=>w.id===region.worldId), next=WORLDS[at+1];
+  if(!next)return;
+  const src=`images/flightmap_${flyArtKey(next)}.webp`;
+  if(_flyMapCache[src])return;
+  const warm=()=>{ if(_flyMapCache[src])return; const i=new Image(); _flyMapCache[src]=i; i.onerror=()=>delete _flyMapCache[src]; i.src=src; };
+  if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:1800}); else setTimeout(warm,350);
 }
 
 /* ===== ПАЛИТРЫ ПРОЦЕДУРНЫХ ФОНОВ ПО СЦЕНАМ (запасной вариант) ===== */

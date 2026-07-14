@@ -112,7 +112,7 @@ const GAME_BALANCE = {
     staminaMax: 200,
   },
   Release: {
-    version: '2.1.0-test',
+    version: '2.1.3-test',
     advancedWaveLevel: 25,
     marketLevel: 20,
     decorLevel: 12,

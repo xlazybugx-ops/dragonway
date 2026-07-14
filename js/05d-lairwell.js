@@ -135,7 +135,7 @@ function renderLair(){
       <img class="w2-plat-img" src="images/lair_platform_v2.png" decoding="async" alt=""
         onerror="if(!this._p){this._p=1;this.src='images/lair_platform.webp';}else{this.style.display='none';this.closest('.w2-plat').classList.add('noimg');}">
       <div class="w2-hero" id="w2Hero">
-        ${sigilHTML(sp,hero.morph,'wh-vis',hero.level)}
+        <div class="wh-vis dragon-wrap" style="filter:${morphById(hero.morph).filter||'none'}">${dragonArt(sp.id)}</div>
         <div class="wh-plate">${dragonName(hero)} · ур.${hero.level}</div>
       </div>
     </div>

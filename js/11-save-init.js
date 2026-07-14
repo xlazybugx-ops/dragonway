@@ -410,6 +410,7 @@ function newGame(){
 }
 
 const loaded=loadGame();
+if(typeof initGameIconObserver==='function') initGameIconObserver();
 // idle-доход за время отсутствия (только при загрузке сохранения)
 let idleGold=0;
 if(loaded){ idleGold=collectIdle(); }

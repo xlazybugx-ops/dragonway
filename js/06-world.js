@@ -608,7 +608,7 @@ function renderMap(){
       </div>`;
     }
     div.innerHTML=`
-      <div class="region-art">${sceneSVG(w.scene, w.id)}
+      <div class="region-art biome-art" style="background-image:url('images/biome_${w.scene}.webp')">
         ${wUnlocked?'':'<div class="region-lock">🔒</div>'}
         <div class="region-biome">${w.name}</div>
       </div>
@@ -716,7 +716,7 @@ function openExpedition(region){
   switchView('explore');
   const m=$('#map');
   m.innerHTML=`<div class="panel exp-panel" style="grid-column:1/-1;padding:0;overflow:hidden">
-    <div class="exp-banner">${sceneSVG(region.scene, region.id+'-exp')}
+    <div class="exp-banner biome-art" style="background-image:url('images/biome_${region.scene}.webp')">
       <div class="exp-banner-text">
         <div class="exp-biome">${region.biome}</div>
         <h2>${region.name}</h2>
