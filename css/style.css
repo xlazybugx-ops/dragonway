@@ -59,7 +59,7 @@
   .tb-item{display:flex;align-items:center;gap:3px;font-family:'Cinzel';font-size:clamp(12px,2vw,15px);color:#ffe9c0;white-space:nowrap}
   .tb-item b{color:var(--gold);font-weight:600}
   .tb-dim{color:var(--ink-dim);font-size:.85em}
-  @media(max-width:480px){ .topbar-res{gap:8px} .tb-item{font-size:12px} .topbar{padding:7px 12px;margin:-18px -16px 10px} }
+  @media(max-width:480px){ .topbar-res{gap:8px} .tb-item{font-size:12px} .topbar{padding:calc(7px + env(safe-area-inset-top,0)) 12px 7px;margin:-18px -16px 10px} }
 
   /* Nav tabs */
   nav.tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:16px 0 8px}
@@ -1521,6 +1521,57 @@ body.flight-active #tabbar{transform:translateY(120%)} /* прячем в пол
 @media(prefers-reduced-motion:reduce){
   .w2-plat,.w2-menu,.w2-dim,.w2-scene{transition:none!important;animation:none!important}
 }
+
+/* ============ v2.1.1: readable Cyrillic + unified iconography ============ */
+button,.filter-chip,.well-chip,.ws-act,.ws-big{touch-action:manipulation}
+@media(max-width:375px), (max-height:667px){
+  #tabbar{padding-bottom:max(2px,env(safe-area-inset-bottom,0))}
+  .tabbtn{min-height:52px}.tabbtn .tb-ic{width:29px;height:27px}.tabbtn .tb-ic img{width:31px;height:31px}
+  .tabbtn .tb-lb{font-size:9.5px}.topbar-place{max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar-res{gap:5px}.tb-item{font-size:11.5px}
+}
+:root{--ui-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Arial,sans-serif}
+.topbar,.topbar-place,.topbar-place b,.topbar-res,.tb-item,.tb-item b,
+#tabbar,.tabbtn,.tabbtn .tb-lb,.well-chip,.wh-plate,.w2-menu button,
+.battle-head,.move,.battle-end,.region-body,.biome-list{
+  font-family:var(--ui-font)!important;font-variant-numeric:tabular-nums;letter-spacing:0!important}
+.topbar-place{font-size:14px;font-weight:650}.tb-item{font-size:13px;font-weight:700}
+.tabbtn .tb-lb{font-size:10.5px;line-height:1.1;font-weight:650}
+.game-icon{display:inline-flex;width:1.08em;height:1.08em;vertical-align:-.16em;align-items:center;justify-content:center;
+  color:var(--gold);filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));margin:0 .08em}
+.game-icon svg{display:block;width:100%;height:100%;fill:rgba(217,164,65,.16);stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.gi-heart{color:#dc7185}.gi-fire{color:#f07842}.gi-frost{color:#79c7e7}.gi-venom{color:#8fc65d}.gi-storm{color:#bd8bef}.gi-shade{color:#a98acb}
+.gi-coin{color:#e7b94b}.gi-dust{color:#f2d889}.gi-battle{color:#e17455}.gi-shield{color:#8bb8c9}
+.topbar .game-icon{width:17px;height:17px}.well-chip .game-icon,.ws-act .game-icon,.ws-big .game-icon{width:18px;height:18px}
+
+.region-art.biome-art{background-position:center;background-size:cover;background-repeat:no-repeat}
+.exp-banner.biome-art{background-position:center;background-size:cover;background-repeat:no-repeat}
+.region-art.biome-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,6,10,.04),rgba(8,6,10,.72));pointer-events:none}
+.region-art.biome-art .region-biome,.region-art.biome-art .region-lock{z-index:3}
+
+/* Active dragon uses the clean transparent vector silhouette; the generated portrait background can no longer leak onto the island. */
+.w2-hero{top:-2%;width:62%;pointer-events:none}
+.w2-hero .wh-vis{height:15vh;filter:drop-shadow(0 9px 12px rgba(0,0,0,.7))}
+.w2-hero .wh-vis svg{width:100%;height:100%;object-fit:contain;overflow:visible}
+.well2.open .w2-hero{width:52%;top:1%}
+.well2.open .w2-hero .wh-vis{height:13vh}
+
+/* Battle menu motion: staged entrance, living fighters and tactile move feedback. */
+#battleStage[style*="block"]{animation:battleStageIn .42s cubic-bezier(.2,.8,.2,1)}
+#battleStage .fighter:first-child{animation:fighterEnterLeft .48s cubic-bezier(.2,.85,.25,1)}
+#battleStage .fighter:last-child{animation:fighterEnterRight .48s cubic-bezier(.2,.85,.25,1)}
+#battleStage .fighter:not(.hit):not(.attack){animation:fighterBreathe 3.2s ease-in-out infinite}
+#moveBox .move{transform-origin:50% 100%;animation:moveRise .34s both;transition:transform .15s ease,filter .15s ease,background .15s ease}
+#moveBox .move:nth-child(2){animation-delay:.05s}#moveBox .move:nth-child(3){animation-delay:.1s}#moveBox .move:nth-child(4){animation-delay:.15s}
+#moveBox .move:active{transform:scale(.94) translateY(2px);filter:brightness(1.25)}
+#battleLatest{animation:logReveal .28s ease}
+@keyframes battleStageIn{from{opacity:0;transform:scale(.97) translateY(12px)}to{opacity:1;transform:none}}
+@keyframes fighterEnterLeft{from{opacity:0;transform:translateX(-44px) scale(.85)}to{opacity:1;transform:none}}
+@keyframes fighterEnterRight{from{opacity:0;transform:translateX(44px) scale(.85)}to{opacity:1;transform:none}}
+@keyframes fighterBreathe{0%,100%{translate:0 0}50%{translate:0 -3px}}
+@keyframes moveRise{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:none}}
+@keyframes logReveal{from{opacity:.2;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#battleStage,#battleStage .fighter,#moveBox .move,#battleLatest{animation:none!important;transition:none!important}}
 
 /* ============ v2.0.3: художественная навигация и спокойное «живое» UI ============ */
 .panel,.nextstep,.w2-menu,.well-ov-in,.prof-row,.prof-tile,.stat-card{
