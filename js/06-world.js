@@ -746,6 +746,7 @@ function renderTabbar(active){
   const cur=TAB_OF[active]||TAB_PARENT[active]||'hub';
   bar.querySelectorAll('.tabbtn').forEach(b=>{
     const on=b.dataset.tab===cur; b.classList.toggle('on',on);
+    if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
     // бейдж на «Команде» — готовый подарок/яйца, на «Кодексе» — новые виды
     let badge='';
     if(b.dataset.tab==='lair' && (S.chestReady||eggCount()>0)) badge=S.chestReady?'🎁':String(eggCount());

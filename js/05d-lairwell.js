@@ -46,7 +46,7 @@ function renderLair(){
   /* стая на балконах: статично, тап = эмоция + облачко */
   const side=others.slice(0,W2_SPOTS.length).map((d,i)=>{
     const p=W2_SPOTS[i], s2=speciesById(d.id);
-    return `<button class="w2-d" data-uid="${d.uid}" style="left:${p.x}%;top:${p.y}%">
+    return `<button class="w2-d" data-uid="${d.uid}" aria-label="${dragonName(d)}, уровень ${d.level}. Коснуться, чтобы поговорить" style="left:${p.x}%;top:${p.y}%">
       ${sigilHTML(s2,d.morph,'w2d-vis',d.level)}
       <span class="w2d-lvl">${d.level}</span>
       <span class="w2d-bubble" style="display:none"></span>
@@ -131,9 +131,9 @@ function renderLair(){
     <div class="w2-dim"></div>
     ${top}
     <div class="w2-scene">${side}</div>
-    <div class="w2-plat" id="w2Plat">
-      <img class="w2-plat-img" src="images/lair_platform.webp" decoding="async" alt=""
-        onerror="if(!this._p){this._p=1;this.src='images/lair_platform.png';}else{this.style.display='none';this.closest('.w2-plat').classList.add('noimg');}">
+    <div class="w2-plat" id="w2Plat" role="button" tabindex="0" aria-label="Открыть меню дракона ${dragonName(hero)}" aria-expanded="${_wellOpen?'true':'false'}">
+      <img class="w2-plat-img" src="images/lair_platform_v2.png" decoding="async" alt=""
+        onerror="if(!this._p){this._p=1;this.src='images/lair_platform.webp';}else{this.style.display='none';this.closest('.w2-plat').classList.add('noimg');}">
       <div class="w2-hero" id="w2Hero">
         ${sigilHTML(sp,hero.morph,'wh-vis',hero.level)}
         <div class="wh-plate">${dragonName(hero)} · ур.${hero.level}</div>
@@ -151,9 +151,10 @@ function renderLair(){
 
   /* ---------- проводка ---------- */
   const well=$('#well2');
-  const setOpen=v=>{ _wellOpen=v; well.classList.toggle('open',v); };
+  const setOpen=v=>{ _wellOpen=v; well.classList.toggle('open',v); $('#w2Plat').setAttribute('aria-expanded',String(v)); };
   // тап по активному дракону/платформе — развернуть; по затемнению/свернуть — закрыть
   $('#w2Plat').onclick=()=>{ if(!_wellOpen) setOpen(true); };
+  $('#w2Plat').onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&!_wellOpen){ e.preventDefault(); setOpen(true); } };
   $('#w2Close').onclick=e=>{ e.stopPropagation(); setOpen(false); };
   well.querySelector('.w2-dim').onclick=()=>setOpen(false);
   // стая: эмоция + облачко с фразой + чип «выбрать»
@@ -161,6 +162,7 @@ function renderLair(){
     b.onclick=()=>{
       const bub=b.querySelector('.w2d-bubble'), pick=b.querySelector('.w2d-pick');
       bub.textContent=['💗 ','✨ ','🎵 '][Math.floor(Math.random()*3)]+W2_PHRASES[Math.floor(Math.random()*W2_PHRASES.length)];
+      b.setAttribute('aria-label',bub.textContent);
       bub.style.display='block'; pick.style.display='block';
       b.classList.remove('hop'); void b.offsetWidth; b.classList.add('hop');
       clearTimeout(b._t); b._t=setTimeout(()=>{bub.style.display='none';pick.style.display='none';},2200);

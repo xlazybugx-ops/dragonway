@@ -48,7 +48,9 @@ function renderHub(){
   }).join('');
   // одна тонкая плашка-подсказка вместо карточки «Следующий шаг»
   const ns=(typeof nextStep==='function')?nextStep():null;
-  const chip=ns?`<button class="hub-next-chip tap" id="nextStepBtn">${ns.icon} <b>${ns.title}</b> ›</button>`:'';
+  const chip=ns?`<button class="hub-next-chip tap" id="nextStepBtn" aria-label="Следующий шаг: ${ns.title}">
+    <span class="hn-icon">${ns.icon}</span><span class="hn-copy"><small>Следующий шаг</small><b>${ns.title}</b>${ns.why?`<em>${ns.why}</em>`:''}</span><span class="hn-arrow">›</span>
+  </button>`:'';
 
   wrap.innerHTML=`
     <div class="hub-stage hub-stage-photo hub-full">
