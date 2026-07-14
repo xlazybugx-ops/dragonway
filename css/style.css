@@ -50,7 +50,7 @@
   /* Компактная полоса ресурсов (одна строка, вверху, липкая) */
   .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
     gap:10px;flex-wrap:nowrap;background:linear-gradient(180deg,rgba(30,22,14,.98),rgba(24,17,11,.98));
-    border-bottom:1px solid var(--gold-soft);padding:8px 16px;margin:-18px -16px 12px;
+    border-bottom:1px solid var(--gold-soft);padding:calc(8px + env(safe-area-inset-top,0)) 16px 8px;margin:-18px -16px 12px;
     box-shadow:0 3px 12px rgba(0,0,0,.4);backdrop-filter:blur(4px)}
   .topbar-place{font-family:'Cinzel';font-size:clamp(12px,2.3vw,16px);color:var(--gold);letter-spacing:.03em;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0}
@@ -1324,12 +1324,19 @@ body.flight-active #tabbar{transform:translateY(120%)} /* прячем в пол
   max-width:none;margin:0;border:none;border-radius:0}
 /* тонкая плашка «следующий шаг» поверх карты */
 .hub-next-chip{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;z-index:6;
-  max-width:92%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;min-height:38px;
-  border-radius:19px;border:1px solid var(--gold-soft);cursor:pointer;
+  width:min(92%,430px);overflow:hidden;text-align:left;
+  display:flex;align-items:center;gap:10px;padding:9px 12px;min-height:58px;
+  border-radius:16px;border:1px solid var(--gold-soft);cursor:pointer;
   background:rgba(24,18,14,.88);color:#ffe9c0;font-size:13px;font-family:inherit;
   box-shadow:0 4px 14px rgba(0,0,0,.45)}
-.hub-next-chip b{color:var(--gold)}
+.hub-next-chip .hn-icon{font-size:24px;flex:0 0 auto}
+.hub-next-chip .hn-copy{display:flex;flex:1;min-width:0;flex-direction:column;line-height:1.15}
+.hub-next-chip small{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
+.hub-next-chip b{color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hub-next-chip em{font-size:10.5px;color:var(--ink-dim);font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.hub-next-chip .hn-arrow{font-size:24px;color:var(--gold);flex:0 0 auto}
+.hub-next-chip:focus-visible,.tabbtn:focus-visible,.hub-zone:focus-visible{outline:3px solid #fff;outline-offset:-3px}
+@media(max-height:620px){.hub-next-chip em{display:none}.hub-next-chip{min-height:48px;padding-top:6px;padding-bottom:6px}}
 .hub-zone-svc .hub-zone-label{opacity:1;transform:none;background:rgba(24,18,14,.72);
   border:1px solid var(--gold-soft);border-radius:10px;padding:3px 8px}
 
@@ -1438,3 +1445,79 @@ body.flight-active #tabbar{transform:translateY(120%)} /* прячем в пол
   background:rgba(0,0,0,.3);color:#ffe9c0;font-size:14px;cursor:pointer;z-index:2}
 .well-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;color:var(--ink-dim);z-index:5;font-size:15px}
+
+/* ============ v40: ЛОГОВО — арт-фон + парящая платформа ============ */
+.well2{position:relative;height:100%;overflow:hidden;background:#170f1e}
+.w2-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.well2.noimg{background:linear-gradient(180deg,#241a30 0%,#1a1322 40%,#120d1a 75%,#0b0810 100%)}
+/* затемнение фона в развернутом виде — фон неактивен */
+.w2-dim{position:absolute;inset:0;z-index:4;background:rgba(6,4,12,.68);opacity:0;pointer-events:none;transition:opacity .4s ease}
+.well2.open .w2-dim{opacity:1;pointer-events:auto}
+/* стая на балконах: статично */
+.w2-scene{position:absolute;inset:0;z-index:2;transition:opacity .35s ease}
+.well2.open .w2-scene{opacity:.25;pointer-events:none}
+.w2-d{position:absolute;transform:translate(-50%,-58%);background:none;border:none;cursor:pointer;
+  width:13vw;max-width:64px;padding:0}
+.w2-d .w2d-vis{width:100%;height:8.5vh}
+.w2-d .w2d-vis svg,.w2-d .w2d-vis img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.55))}
+.w2-d .w2d-lvl{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);
+  font-size:9.5px;color:#ffe9c0;background:rgba(0,0,0,.55);border-radius:8px;padding:0 5px}
+.w2-d.hop .w2d-vis{animation:w2hop .5s ease}
+@keyframes w2hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-9px)}}
+.w2d-bubble{position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);
+  white-space:nowrap;font-size:11px;color:#2a1c10;background:rgba(255,244,220,.95);border-radius:10px;
+  padding:4px 9px;box-shadow:0 3px 8px rgba(0,0,0,.4);z-index:6;animation:w2pop .25s ease}
+.w2d-bubble::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:rgba(255,244,220,.95)}
+@keyframes w2pop{from{opacity:0;transform:translateX(-50%) scale(.7)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+.w2d-pick{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;
+  font-size:10.5px;color:#241a10;background:var(--gold);border-radius:9px;padding:3px 8px;font-weight:700;z-index:6}
+/* парящая платформа с активным драконом */
+.w2-plat{position:absolute;left:50%;top:57%;width:46%;transform:translateX(-50%);z-index:5;cursor:pointer;
+  padding:0;border:0;background:transparent;color:inherit;font:inherit;
+  transition:top .52s cubic-bezier(.2,.75,.2,1),width .52s cubic-bezier(.2,.75,.2,1),filter .35s ease;
+  animation:w2float 4.5s ease-in-out infinite;text-align:center;transform-origin:50% 40%}
+.well2.open .w2-plat{top:42px;width:min(96vw,460px);animation:none;cursor:default;filter:drop-shadow(0 18px 30px rgba(0,0,0,.55))}
+.w2-plat:focus-visible{outline:3px solid #fff;outline-offset:4px;border-radius:24px}
+@keyframes w2float{0%,100%{margin-top:0}50%{margin-top:-8px}}
+.w2-plat-img{width:100%;height:auto;display:block;filter:drop-shadow(0 14px 22px rgba(0,0,0,.6))}
+.w2-plat.noimg{min-height:12vh}
+.w2-plat.noimg::before{content:"";position:absolute;left:8%;right:8%;top:34%;height:24%;border-radius:50%;
+  background:radial-gradient(ellipse at center,#4a3a5e,#241a30 75%);box-shadow:0 10px 20px rgba(0,0,0,.6)}
+.w2-hero{position:absolute;left:50%;top:0;transform:translate(-50%,-62%);width:78%;z-index:2}
+.w2-hero .wh-vis{height:17vh;transition:height .45s ease}
+.well2.open .w2-hero .wh-vis{height:15vh}
+.w2-hero .wh-vis svg,.w2-hero .wh-vis img{width:100%;height:100%;object-fit:contain;
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.65))}
+.w2-hero .wh-plate{font-family:'Cinzel';font-size:12.5px;color:var(--gold);text-shadow:0 2px 6px rgba(0,0,0,.9);white-space:nowrap}
+/* меню дракона под платформой (в развернутом виде) */
+.w2-menu{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;gap:1.35vh;
+  padding:34px 14px calc(10px + env(safe-area-inset-bottom,0));max-height:60%;
+  background:linear-gradient(180deg,rgba(30,22,40,.97),rgba(18,13,26,.99));
+  border-top:1px solid var(--gold-soft);border-radius:16px 16px 0 0;
+  transform:translateY(110%);transition:transform .52s cubic-bezier(.2,.75,.2,1);overflow:hidden;box-shadow:0 -14px 30px rgba(0,0,0,.35)}
+.well2.open .w2-menu{transform:translateY(0)}
+.w2-close{position:absolute;top:4px;left:50%;transform:translateX(-50%);background:none;border:none;
+  color:var(--gold);font-size:12.5px;font-family:inherit;cursor:pointer;padding:6px 16px}
+.ws-eq-inline{display:inline-flex;gap:6px;margin-left:4px}
+.ws-eq-inline .ws-slot{width:44px;height:44px;font-size:17px}
+/* гены/мутации — раскрывающийся блок */
+.w2-genes{border:1px solid rgba(255,215,106,.22);border-radius:12px;background:rgba(0,0,0,.22);overflow:hidden}
+.w2-genes summary{list-style:none;cursor:pointer;padding:10px 12px;font-size:13.5px;color:#ffe9c0;display:flex;
+  align-items:center;gap:8px;justify-content:space-between}
+.w2-genes summary::-webkit-details-marker{display:none}
+.w2-genes .w2g-sum{font-size:11px;color:var(--ink-dim)}
+.w2-genes[open]{max-height:34vh}
+.w2-genes .gene-rows{padding:0 12px;max-height:24vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.w2-genes .w2g-foot{padding:8px 12px}
+.w2-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;color:var(--ink-dim);z-index:5;font-size:15px}
+@media(max-width:390px){
+  .w2-d{width:15vw}.w2-d .w2d-vis{height:7.8vh}
+  .well2.open .w2-plat{top:36px;width:94vw}
+  .w2-menu{gap:1vh;padding-left:10px;padding-right:10px;max-height:61%}
+  .ws-grid{gap:6px}.ws-big{min-height:44px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .w2-plat,.w2-menu,.w2-dim,.w2-scene{transition:none!important;animation:none!important}
+}
