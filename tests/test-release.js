@@ -10,8 +10,12 @@ vm.createContext(sandbox);
 vm.runInContext(source,sandbox,{filename:'draconis-test-bundle.js'});
 const T=sandbox.__test;
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
+const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const css=fs.readFileSync(path.join(root,'css/style.css'),'utf8');
+const flight=fs.readFileSync(path.join(root,'js/07-flight.js'),'utf8');
+const hub=fs.readFileSync(path.join(root,'js/06c-hubmap.js'),'utf8');
 
-assert(T.GB.Release.version==='2.2.1-test','release version');
+assert(T.GB.Release.version==='2.3.0-test','release version');
 assert(JSON.stringify(Array.from(T.BIOME_MIN_LEVEL))===JSON.stringify([0,1,22,55]),'biome progression');
 assert(Math.abs(T.geneMult(3)-1)<1e-9,'neutral gene must be 1.0');
 assert(Math.abs(T.geneMult(6)-1.15)<1e-9,'max gene must be bounded');
@@ -35,4 +39,11 @@ const oldIdle=.32*100*300;
 const newIdle=T.GB.Economy.idleBasePerMinute*Math.sqrt(100)*T.GB.Economy.idleLevelScale*300;
 assert(newIdle<oldIdle*.15,'late idle income must be bounded');
 
-console.log('Draconis 2.1 balance tests: OK');
+assert(!/[РС][РСЃРµР°Р»]/.test(index),'index must not contain common mojibake');
+assert((index.match(/class="tabbtn/g)||[]).length===5,'five navigation buttons must render');
+assert(css.includes('repeat(5,minmax(0,1fr))'),'navigation must use five equal columns');
+assert(flight.includes('images/arcade_${sp.el}.webp'),'flight and battle must use transparent dragon assets');
+assert(!flight.includes('images/fly_${sp.el}_'),'opaque flight backgrounds must not be used as sprites');
+assert(hub.includes('hub-task-drawer')&&hub.includes('hub-service-bar'),'hub task drawer and service bar must render');
+
+console.log('Draconis 2.3.0 release tests: OK');

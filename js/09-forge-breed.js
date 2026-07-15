@@ -256,6 +256,7 @@ function openSmithyUpgrade(){
   $('#smithyBack').onclick=renderForge;
   if(canPay) $('#doSmithyUp').onclick=()=>{
     S.gold-=cost.gold; S.dust-=cost.dust;
+    trackEconomy('sink','smithy_upgrade',{gold:-cost.gold,dust:-cost.dust});
     S.forgeLevel=lvl+1;
     persist(); renderLedger();
     toast(`<b>Кузня улучшена до ур.${S.forgeLevel}!</b> Теперь куёт ${SMITHY_RARITY_NAME[S.forgeLevel]} артефакты ${'★'.repeat(S.forgeLevel)}.`);
@@ -277,6 +278,7 @@ function doForge(inst){
   const apply=(quality)=>{
     S.gold-=cost;
     if(dustCost>0) S.dust-=dustCost;
+    trackEconomy('sink','artifact_forge',{gold:-cost,dust:-dustCost});
     let bonusTxt='';
     if(quality==='perfect'){ // мастерская ковка: возврат четверти золота
       const back=Math.round(cost*0.25);
@@ -343,4 +345,3 @@ function unequipArtifact(d, slot){
   if(d.equip){ delete d.equip[slot]; d.curHp=Math.min(d.curHp,statsOf(d).maxHp); }
   renderLair();persist();
 }
-

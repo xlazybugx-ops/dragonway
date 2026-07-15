@@ -10,7 +10,8 @@ function arenaOfferDragon(spec){
   return {id:spec.id,level:spec.level,xp:0,curHp:0,morph:spec.morph||'common',genes:{atk:3,def:3,hp:3,spd:3,spark:false},nature:'balanced'};
 }
 function buildArenaOffers(me){
-  const bands=GB.Battle.matchmaking.cpBands;
+  const bands=[...GB.Battle.matchmaking.cpBands];
+  if((S.arenaLossStreak||0)>=GB.Battle.matchmaking.lossAssistAfter) bands[0]=GB.Battle.matchmaking.lossAssistRatio;
   const myCp=combatPower(me);
   return bands.map((targetRatio,index)=>{
     const sp=weightedSpecies(), morph=rollMorph();
@@ -54,7 +55,7 @@ function renderArenaPicker(){
   });
   if(S.arenaPick && ready.some(d=>d.uid===S.arenaPick)){
     const me=S.dragons.find(d=>d.uid===S.arenaPick);
-    wrap.innerHTML+=`<div class="rule"></div><p class="hint">Выбери противника:</p>`;
+    wrap.innerHTML+=`<div class="rule"></div><p class="hint">Выбери противника:${(S.arenaLossStreak||0)>=GB.Battle.matchmaking.lossAssistAfter?' после серии поражений доступен более мягкий тренировочный соперник':''}</p>`;
     const foes=document.createElement('div');foes.className='roster';
     arenaOffersFor(me).forEach(offer=>{
       const sp=speciesById(offer.id), lvl=offer.level, foeMorph=offer.morph;
@@ -723,6 +724,7 @@ function endBattle(win){
     const foeCp=Math.round(b.foe.atk*4.2+b.foe.def*3.4+b.foe.spd*2.2+Math.sqrt(b.foe.maxHp)*11);
     trackEvent('arena_result',{win,playerCp:combatPower(me),foeCp,turns:b.log.length});
     S.arenaOffers=null;
+    S.arenaLossStreak=win?0:(S.arenaLossStreak||0)+1;
   }
   me.curHp=Math.max(0,Math.round(b.me.hp));
   $$('#moveBox .move').forEach(x=>x.disabled=true);

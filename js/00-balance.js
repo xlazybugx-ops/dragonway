@@ -9,8 +9,8 @@ const GAME_BALANCE = {
   // ——— БОЙ (пошаговый, 08-battle.js) ———
   Battle: {
     damageK: 0.58,              // множитель нелинейной формулы урона atk²/(atk+def)
-    elementAdv: 1.28,           // преимущество стихии
-    elementWeak: 0.85,          // недостаток стихии
+    elementAdv: 1.22,           // преимущество заметно, но не решает бой автоматически
+    elementWeak: 0.88,          // мягкий штраф для небольшой стартовой коллекции
     critMult: 1.5,              // множитель крита
     critBasePlayer: 0.08,       // базовый шанс крита игрока
     critBaseFoe: 0.05,          // базовый шанс крита врага
@@ -28,6 +28,7 @@ const GAME_BALANCE = {
     matchmaking: {
       cpBands: [0.82, 1.0, 1.18],
       rewardBands: [0.90, 1.0, 1.12],
+      lossAssistAfter: 2, lossAssistRatio: 0.72,
       refreshCooldownMs: 60000,
     },
   },
@@ -35,6 +36,7 @@ const GAME_BALANCE = {
   Experience: { xpBase: 45, xpExp: 1.15 }, // xpToNext = xpBase * lvl^xpExp
   // ——— ЭКОНОМИКА (02-data-content.js, 08-battle.js) ———
   Economy: {
+    startingGold: 300, startingDust: 60, startingEggs: 1,
     forgeBase: 15, forgeRarityMul: 8, forgeGrowth: 1.5, // ковка артефакта
     forgeDustFrom: 5, forgeDustStep: 10,
     smithyBase: 600, smithyGrowth: 1.85, smithyDustStep: 30, // уровень кузни
@@ -81,7 +83,7 @@ const GAME_BALANCE = {
   },
   // ——— АРКАДНЫЙ БОЙ (08b-arcade.js) ———
   Arcade: {
-    mitigConst: 80, elementAdv: 1.28, elementWeak: 0.85,
+    mitigConst: 80, elementAdv: 1.22, elementWeak: 0.88,
     hpMulWild: 2.6, hpMulLeader: 1.9, hpMulAdd: 1.25,
     dmgMulWild: 1.9, dmgMulPack: 1.55, rarityHpBonus: 0.12,
     // REWORK: снаряды и зоны поражения
@@ -105,14 +107,14 @@ const GAME_BALANCE = {
     boonChoices: 3,                          // вариантов усиления после победы
     riskMul: { safe: 0.8, risky: 1.25, deadly: 1.7 },   // сложность пути
     rewardMul: { safe: 0.8, risky: 1.3, deadly: 2.0 },  // награда пути
-    mapScale: 3.1,                           // множитель стороны карты (~9.6× площади)
+    mapScale: 2.4,                           // плотный маршрут: площадь 5.76× вместо 9.61×
     denCount: 4, wildCount: 4, eliteCount: 2,// плотность угроз на ярусе
     secretCount: 2, dangerPockets: 2,        // секретные зоны и опасные карманы
     windLanes: 3, windBoost: 1.8,            // воздушные потоки — быстрое перемещение
     staminaMax: 200,
   },
   Release: {
-    version: '2.2.1-test',
+    version: '2.3.0-test',
     advancedWaveLevel: 25,
     marketLevel: 20,
     decorLevel: 12,

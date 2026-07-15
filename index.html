@@ -9,23 +9,23 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Р”СЂР°РєРѕРЅРёСЃ 2.0 В· РљРѕРґРµРєСЃ Р§РµС€СѓРё</title>
-<link rel="stylesheet" href="css/style.css?v=221">
+<title>Драконис 2.0 · Кодекс Чешуи</title>
+<link rel="stylesheet" href="css/style.css?v=230">
 </head>
 <body>
 <div id="startScreen" class="start-screen" style="display:none"></div>
 <div id="app">
   <div class="topbar" id="topbar">
-    <span class="topbar-place">рџЏ° <b id="tbPlace">Р”СЂР°РєРѕРЅСЊРё Р—РµРјР»Рё</b></span>
+    <span class="topbar-place">🏰 <b id="tbPlace">Драконьи Земли</b></span>
     <span class="topbar-res">
-      <span class="tb-item" aria-label="Р—РѕР»РѕС‚Рѕ">рџЄ™<b id="gold">0</b></span>
-      <span class="tb-item" aria-label="Р—РІС‘Р·РґРЅР°СЏ РїС‹Р»СЊ">вњ¦<b id="dust">0</b></span>
-      <span class="tb-item" aria-label="РЇР№С†Р°">рџҐљ<b id="eggs">0</b></span>
-      <span class="tb-item" aria-label="Р”СЂР°РєРѕРЅС‹">рџђ‰<b id="count">0</b></span>
+      <span class="tb-item" aria-label="Золото">🪙<b id="gold">0</b></span>
+      <span class="tb-item" aria-label="Звёздная пыль">✦<b id="dust">0</b></span>
+      <span class="tb-item" aria-label="Яйца">🥚<b id="eggs">0</b></span>
+      <span class="tb-item" aria-label="Драконы">🐉<b id="count">0</b></span>
     </span>
   </div>
 
-  <!-- HUB (РіР»Р°РІРЅС‹Р№ СЌРєСЂР°РЅ) -->
+  <!-- HUB (главный экран) -->
   <section class="view on" id="hub">
     <div class="hub-wrap" id="hubWrap"></div>
   </section>
@@ -33,13 +33,13 @@
   <!-- LAIR -->
   <section class="view" id="lair">
     <div class="panel panel--daily">
-      <h2>РџРѕРґР°СЂРѕРє Рё РІРµСЃС‘Р»С‹Рµ РґРµР»Р°</h2>
-      <p class="lede">РљР°Р¶РґС‹Р№ РґРµРЅСЊ С‚РµР±СЏ Р¶РґС‘С‚ РїРѕРґР°СЂРѕРє Рё РЅРµСЃРєРѕР»СЊРєРѕ Р·Р°Р±Р°РІРЅС‹С… РґРµР». РќРµ СѓСЃРїРµР» СЃРµРіРѕРґРЅСЏ вЂ” РЅРёС‡РµРіРѕ СЃС‚СЂР°С€РЅРѕРіРѕ, РѕРЅРё РїРѕРґРѕР¶РґСѓС‚!</p>
+      <h2>Подарок и весёлые дела</h2>
+      <p class="lede">Каждый день тебя ждёт подарок и несколько забавных дел. Не успел сегодня — ничего страшного, они подождут!</p>
       <div id="dailyPanel"></div>
     </div>
     <div class="panel">
-      <h2>Р›РѕРіРѕРІРѕ</h2>
-      <p class="lede">РўРІРѕРё РєСЂС‹Р»Р°С‚С‹Рµ РїРѕРґРѕРїРµС‡РЅС‹Рµ. РќР°Р¶РјРё, С‡С‚РѕР±С‹ РѕС‚РєСЂС‹С‚СЊ СЃРІРёС‚РѕРє РґСЂР°РєРѕРЅР°.</p>
+      <h2>Логово</h2>
+      <p class="lede">Твои крылатые подопечные. Нажми, чтобы открыть свиток дракона.</p>
       <div class="lair-roster" id="lairRoster"></div>
     </div>
     <div class="panel" id="detailPanel" style="display:none"></div>
@@ -48,8 +48,8 @@
   <!-- HATCH -->
   <section class="view" id="hatch">
     <div class="panel">
-      <h2>Р“РЅРµР·РґРѕ</h2>
-      <p class="lede">РЇР№С†Р°, РґРѕР±С‹С‚С‹Рµ РІ СЃС‚СЂР°РЅСЃС‚РІРёСЏС…, Р¶РґСѓС‚ СЃРІРѕРµРіРѕ С‡Р°СЃР°. РЎС‚РёС…РёСЏ СЏР№С†Р° РѕРїСЂРµРґРµР»СЏРµС‚, РєС‚Рѕ РІС‹Р»СѓРїРёС‚СЃСЏ вЂ” Р° РіР»СѓР±РёРЅР° Р±РёРѕРјР° РґР°СЂРёС‚ СЂРµРґРєРёРµ РІРёРґС‹.</p>
+      <h2>Гнездо</h2>
+      <p class="lede">Яйца, добытые в странствиях, ждут своего часа. Стихия яйца определяет, кто вылупится — а глубина биома дарит редкие виды.</p>
       <div id="hatchWrap"></div>
     </div>
   </section>
@@ -57,24 +57,24 @@
   <!-- EXPLORE -->
   <section class="view" id="explore">
     <div class="panel">
-      <h2>РЎС‚СЂР°РЅСЃС‚РІРёРµ</h2>
-      <p class="lede">Р’С‹Р±РµСЂРё Р·РµРјР»СЋ Рё РґСЂР°РєРѕРЅР° вЂ” Рё РѕС‚РїСЂР°РІР»СЏР№СЃСЏ РІ РїРѕР»С‘С‚! Р”СЂР°РєРѕРЅ Р±СѓРґРµС‚ РїР°СЂРёС‚СЊ РЅР°Рґ Р±РёРѕРјРѕРј, Р° С‚С‹ РЅР°С…РѕРґРё Рё РёСЃСЃР»РµРґСѓР№ СЃРІРµС‚СЏС‰РёРµСЃСЏ С‚РѕС‡РєРё: СЃРѕРєСЂРѕРІРёС‰Р°, СЏР№С†Р°, СЂРµР»РёРєРІРёРё Рё Р·Р°Р±Р°РІРЅС‹Рµ РІСЃС‚СЂРµС‡Рё.</p>
+      <h2>Странствие</h2>
+      <p class="lede">Выбери землю и дракона — и отправляйся в полёт! Дракон будет парить над биомом, а ты находи и исследуй светящиеся точки: сокровища, яйца, реликвии и забавные встречи.</p>
       <div class="map" id="map"></div>
     </div>
   </section>
 
-  <!-- РџРѕР»РЅРѕСЌРєСЂР°РЅРЅС‹Р№ СЂРµР¶РёРј РїРѕР»С‘С‚Р° -->
+  <!-- Полноэкранный режим полёта -->
   <div id="flightFs" class="flight-fs" style="display:none"></div>
 
-  <!-- РџРѕР»РЅРѕСЌРєСЂР°РЅРЅС‹Р№ Р°СЂРєР°РґРЅС‹Р№ Р±РѕР№ -->
+  <!-- Полноэкранный аркадный бой -->
   <div id="arcadeFs" class="arcade-fs" style="display:none"></div>
 
   <!-- ARENA -->
   <section class="view" id="arena">
     <div class="panel" id="arenaSetup">
-      <h2>Р”СЂСѓР¶РµСЃРєРёР№ С‚СѓСЂРЅРёСЂ</h2>
-      <p class="lede">Р’С‹Р±РµСЂРё СЃРІРѕРµРіРѕ РґСЂР°РєРѕРЅР° Рё СЃРѕРїРµСЂРЅРёРєР° РїРѕ СЃРёР»Р°Рј. РџРѕРґСЃРєР°Р·РєР°: РѕРіРѕРЅСЊ СЃРёР»СЊРЅРµРµ Р»СЊРґР°, Р»С‘Рґ СЃРёР»СЊРЅРµРµ Р±СѓСЂРё, Р±СѓСЂСЏ СЃРёР»СЊРЅРµРµ СЏРґР°, СЏРґ СЃРёР»СЊРЅРµРµ С‚РµРЅРё, Р° С‚РµРЅСЊ СЃРёР»СЊРЅРµРµ РѕРіРЅСЏ! РќРёРєС‚Рѕ РїРѕ-РЅР°СЃС‚РѕСЏС‰РµРјСѓ РЅРµ РїРѕСЃС‚СЂР°РґР°РµС‚ вЂ” СЌС‚Рѕ РІРµСЃС‘Р»РѕРµ СЃРѕСЃС‚СЏР·Р°РЅРёРµ.</p>
-      <label class="arcade-toggle"><input type="checkbox" id="arcadeChk" checked> вљЎ РњРёРЅРё-РёРіСЂР° В«РЈРґР°СЂ РїРѕ С‚Р°Р№РјРёРЅРіСѓВ» (РјРѕР¶РЅРѕ РІС‹РєР»СЋС‡РёС‚СЊ)</label>
+      <h2>Дружеский турнир</h2>
+      <p class="lede">Выбери своего дракона и соперника по силам. Подсказка: огонь сильнее льда, лёд сильнее бури, буря сильнее яда, яд сильнее тени, а тень сильнее огня! Никто по-настоящему не пострадает — это весёлое состязание.</p>
+      <label class="arcade-toggle"><input type="checkbox" id="arcadeChk" checked> ⚡ Мини-игра «Удар по таймингу» (можно выключить)</label>
       <div id="arenaPicker"></div>
     </div>
     <div id="battleStage" style="display:none"></div>
@@ -83,8 +83,8 @@
   <!-- ROOST / BREEDING -->
   <section class="view" id="roost">
     <div class="panel">
-      <h2>Р“РЅРµР·РґРёР»РёС‰Рµ Р РѕРґР°</h2>
-      <p class="lede">РЎРєСЂРµС‰РёРІР°Р№ РґСЂР°РєРѕРЅРѕРІ РѕРґРЅРѕРіРѕ РІРёРґР°, С‡С‚РѕР±С‹ РїРѕС‚РѕРјРѕРє СѓРЅР°СЃР»РµРґРѕРІР°Р» Р»СѓС‡С€РёРµ РіРµРЅС‹ СЂРѕРґРёС‚РµР»РµР№. РџРѕРєРѕР»РµРЅРёРµ Р·Р° РїРѕРєРѕР»РµРЅРёРµРј РІС‹РІРѕРґРё РёРґРµР°Р»СЊРЅРѕРіРѕ РґСЂР°РєРѕРЅР° вЂ” РІСЃРµ РіРµРЅС‹ 6/6 Рё РїС‹Р»Р°СЋС‰Р°СЏ РёСЃРєСЂР° СЂРѕРґР°.</p>
+      <h2>Гнездилище Рода</h2>
+      <p class="lede">Скрещивай драконов одного вида, чтобы потомок унаследовал лучшие гены родителей. Поколение за поколением выводи идеального дракона — все гены 6/6 и пылающая искра рода.</p>
       <div id="roostBody"></div>
     </div>
   </section>
@@ -92,8 +92,8 @@
   <!-- FORGE -->
   <section class="view" id="forge">
     <div class="panel">
-      <h2>РљСѓР·РЅРёС†Р° Р”СЂР°РєРѕРЅСЊРµРіРѕ РћРіРЅСЏ</h2>
-      <p class="lede">Р—РґРµСЃСЊ РґСЂРµРІРЅРёРµ СЂРµР»РёРєРІРёРё СЂР°СЃРєСЂС‹РІР°СЋС‚ СЃРІРѕСЋ РјРѕС‰СЊ. РљСѓР№ РёС… РІ РїР»Р°РјРµРЅРё Р·Р° Р·РѕР»РѕС‚Рѕ вЂ” Рё РєР°Р¶РґС‹Р№ СѓРґР°СЂ РјРѕР»РѕС‚Р° РїСЂРёР±Р°РІР»СЏРµС‚ СЃРёР»С‹.</p>
+      <h2>Кузница Драконьего Огня</h2>
+      <p class="lede">Здесь древние реликвии раскрывают свою мощь. Куй их в пламени за золото — и каждый удар молота прибавляет силы.</p>
       <div id="forgeBody"></div>
     </div>
   </section>
@@ -101,8 +101,8 @@
   <!-- SPIRE -->
   <section class="view" id="spire">
     <div class="panel">
-      <h2>РЁРїРёР»СЊ РњРёСЂРѕР·РґР°РЅРёСЏ рџ—ј</h2>
-      <p class="lede">Р”СЂРµРІРЅСЏСЏ Р±Р°С€РЅСЏ РјР°РіРёРё, РіРґРµ РґСЂР°РєРѕРЅС‹ СЂР°СЃС‚СѓС‚ РІ СЃРёР»Рµ. РџРѕРґРЅРёРјР°СЏСЃСЊ РїРѕ СѓСЂРѕРІРЅСЏРј, С‚РІРѕР№ РґСЂР°РєРѕРЅ РѕС‚РєСЂС‹РІР°РµС‚ Р·Р°РєР»РёРЅР°РЅРёСЏ, РїРµСЂРєРё Рё РіСЂРѕР·РЅС‹Рµ СѓР»СЊС‚РёРјР°С‚РёРІРЅС‹Рµ СЃРїРѕСЃРѕР±РЅРѕСЃС‚Рё. РЈ РєР°Р¶РґРѕРіРѕ РІРёРґР° вЂ” СЃРІРѕР№ РЅРµРїРѕРІС‚РѕСЂРёРјС‹Р№ РїСѓС‚СЊ!</p>
+      <h2>Шпиль Мироздания 🗼</h2>
+      <p class="lede">Древняя башня магии, где драконы растут в силе. Поднимаясь по уровням, твой дракон открывает заклинания, перки и грозные ультимативные способности. У каждого вида — свой неповторимый путь!</p>
       <div id="spireBody"></div>
     </div>
   </section>
@@ -110,14 +110,14 @@
   <!-- CODEX -->
   <section class="view" id="codex">
     <div class="panel">
-      <h2>РљРѕРґРµРєСЃ</h2>
+      <h2>Кодекс</h2>
       <div class="codex-tabs">
-        <button class="codex-tab on" data-ctab="species">рџђ‰ Р’РёРґС‹</button>
-        <button class="codex-tab" data-ctab="lore">рџ“њ Р›РµРіРµРЅРґС‹</button>
-        <button class="codex-tab" data-ctab="miles">рџЏ… Р’РµС…Рё</button>
+        <button class="codex-tab on" data-ctab="species">🐉 Виды</button>
+        <button class="codex-tab" data-ctab="lore">📜 Легенды</button>
+        <button class="codex-tab" data-ctab="miles">🏅 Вехи</button>
       </div>
       <div id="codexSpecies">
-        <p class="lede">Р’СЃРµ РґСЂР°РєРѕРЅС‹ РјРёСЂР°. РћС‚РєСЂРѕР№ РєР°Р¶РґРѕРіРѕ, РїРѕР№РјР°РІ С…РѕС‚СЏ Р±С‹ РѕРґРЅРѕРіРѕ.</p>
+        <p class="lede">Все драконы мира. Открой каждого, поймав хотя бы одного.</p>
         <div class="roster" id="codexGrid"></div>
       </div>
       <div id="codexLore" style="display:none"></div>
@@ -125,45 +125,45 @@
     </div>
   </section>
 
-  <!-- PROFILE (РїСЂРѕС„РёР»СЊ РёРіСЂРѕРєР°: РїСЂРѕРіСЂРµСЃСЃ, СЃР»СѓР¶РµР±РЅРѕРµ, РЅР°СЃС‚СЂРѕР№РєРё) -->
+  <!-- PROFILE (профиль игрока: прогресс, служебное, настройки) -->
   <section class="view" id="profile">
     <div class="panel">
-      <h2>РџСЂРѕС„РёР»СЊ</h2>
+      <h2>Профиль</h2>
       <div id="profileBody"></div>
     </div>
   </section>
 
-  <div class="codex-foot">В«РљС‚Рѕ РїСЂРёСЂСѓС‡РёС‚ С‡РµС€СѓСЋ вЂ” РїСЂРёСЂСѓС‡РёС‚ Рё РїР»Р°РјСЏ.В» вЂ” РЎС‚Р°СЂС€РёР№ РґСЂР°РєРѕРЅРѕРІРѕРґ Р’РµР»Р»Р°</div>
+  <div class="codex-foot">«Кто приручит чешую — приручит и пламя.» — Старший драконовод Велла</div>
 </div>
 
-<!-- Р•Р”РРќРђРЇ РќРР–РќРЇРЇ РќРђР’РР“РђР¦РРЇ: 5 СЂР°Р·РґРµР»РѕРІ -->
-<nav id="tabbar" aria-label="РћСЃРЅРѕРІРЅР°СЏ РЅР°РІРёРіР°С†РёСЏ">
-  <button class="tabbtn" data-tab="hub"     title="Р›РѕРіРѕРІРѕ"><span class="tb-ic"><img src="images/nav_lair.webp" alt=""></span><span class="tb-lb">Р›РѕРіРѕРІРѕ</span></button>
-  <button class="tabbtn" data-tab="explore" title="РСЃСЃР»РµРґРѕРІР°РЅРёРµ"><span class="tb-ic"><img src="images/nav_explore.webp" alt=""></span><span class="tb-lb">РЎС‚СЂР°РЅСЃС‚РІРёРµ</span></button>
-  <button class="tabbtn" data-tab="lair"    title="РљРѕРјР°РЅРґР°"><span class="tb-ic"><img src="images/nav_team.webp" alt=""></span><span class="tb-lb">РљРѕРјР°РЅРґР°</span></button>
-  <button class="tabbtn" data-tab="codex"   title="РљРѕРґРµРєСЃ"><span class="tb-ic"><img src="images/nav_codex.webp" alt=""></span><span class="tb-lb">РљРѕРґРµРєСЃ</span></button>
-  <button class="tabbtn" data-tab="profile" title="РџСЂРѕС„РёР»СЊ"><span class="tb-ic"><img src="images/nav_profile.webp" alt=""></span><span class="tb-lb">РџСЂРѕС„РёР»СЊ</span></button>
+<!-- ЕДИНАЯ НИЖНЯЯ НАВИГАЦИЯ: 5 разделов -->
+<nav id="tabbar" aria-label="Основная навигация">
+  <button class="tabbtn" data-tab="hub"     title="Логово"><span class="tb-ic"><img src="images/nav_lair.webp" alt=""></span><span class="tb-lb">Логово</span></button>
+  <button class="tabbtn" data-tab="explore" title="Исследование"><span class="tb-ic"><img src="images/nav_explore.webp" alt=""></span><span class="tb-lb">Странствие</span></button>
+  <button class="tabbtn" data-tab="lair"    title="Команда"><span class="tb-ic"><img src="images/nav_team.webp" alt=""></span><span class="tb-lb">Команда</span></button>
+  <button class="tabbtn" data-tab="codex"   title="Кодекс"><span class="tb-ic"><img src="images/nav_codex.webp" alt=""></span><span class="tb-lb">Кодекс</span></button>
+  <button class="tabbtn" data-tab="profile" title="Профиль"><span class="tb-ic"><img src="images/nav_profile.webp" alt=""></span><span class="tb-lb">Профиль</span></button>
 </nav>
 
 <div class="float" id="float"></div>
 <div id="toast"></div>
 
-<script src="js/00-balance.js?v=221"></script>
-<script src="js/00-icons.js?v=221"></script>
-<script src="js/01-data-core.js?v=221"></script>
-<script src="js/02-data-content.js?v=221"></script>
-<script src="js/03-state.js?v=221"></script>
-<script src="js/04-systems.js?v=221"></script>
-<script src="js/05-ui-base.js?v=221"></script>
-<script src="js/05b-island.js?v=221"></script>
-<script src="js/05d-lairwell.js?v=221"></script>
-<script src="js/06-world.js?v=221"></script>
-<script src="js/06c-hubmap.js?v=221"></script>
-<script src="js/07-flight.js?v=221"></script>
-<script src="js/08-battle.js?v=221"></script>
-<script src="js/08b-arcade.js?v=221"></script>
-<script src="js/09-forge-breed.js?v=221"></script>
-<script src="js/10-spire-codex.js?v=221"></script>
-<script src="js/11-save-init.js?v=221"></script>
+<script src="js/00-balance.js?v=230"></script>
+<script src="js/00-icons.js?v=230"></script>
+<script src="js/01-data-core.js?v=230"></script>
+<script src="js/02-data-content.js?v=230"></script>
+<script src="js/03-state.js?v=230"></script>
+<script src="js/04-systems.js?v=230"></script>
+<script src="js/05-ui-base.js?v=230"></script>
+<script src="js/05b-island.js?v=230"></script>
+<script src="js/05d-lairwell.js?v=230"></script>
+<script src="js/06-world.js?v=230"></script>
+<script src="js/06c-hubmap.js?v=230"></script>
+<script src="js/07-flight.js?v=230"></script>
+<script src="js/08-battle.js?v=230"></script>
+<script src="js/08b-arcade.js?v=230"></script>
+<script src="js/09-forge-breed.js?v=230"></script>
+<script src="js/10-spire-codex.js?v=230"></script>
+<script src="js/11-save-init.js?v=230"></script>
 </body>
 </html>

@@ -1,0 +1,629 @@
+﻿{
+  "seed": 22022230,
+  "runs_per_profile": 1000,
+  "assumptions": {
+    "session_minutes": {
+      "cautious": 15,
+      "active": 30,
+      "efficient": 45
+    },
+    "fight_or_action_every_minutes": 3.2,
+    "one_exploration_run_per_session": true,
+    "login_reward_claimed_daily": true,
+    "quest_completion_is_profile_probability": true
+  },
+  "groups": {
+    "before_cautious": {
+      "first_victory_min": {
+        "p10": 2.2,
+        "median": 2.2,
+        "p90": 5.4
+      },
+      "first_hatch_min": {
+        "p10": 6.4,
+        "median": 6.4,
+        "p90": 6.4
+      },
+      "second_biome_min": {
+        "p10": 12,
+        "median": 12,
+        "p90": 12
+      },
+      "level_d1": {
+        "p10": 2,
+        "median": 2,
+        "p90": 3
+      },
+      "level_d3": {
+        "p10": 3,
+        "median": 4,
+        "p90": 5
+      },
+      "level_d7": {
+        "p10": 6,
+        "median": 7,
+        "p90": 8
+      },
+      "level_d14": {
+        "p10": 11,
+        "median": 12,
+        "p90": 13
+      },
+      "gold": {
+        "p10": 10665,
+        "median": 11609,
+        "p90": 12603
+      },
+      "dust": {
+        "p10": 935,
+        "median": 965,
+        "p90": 1010
+      },
+      "eggs": {
+        "p10": 11,
+        "median": 17,
+        "p90": 23
+      },
+      "dragons": {
+        "p10": 22,
+        "median": 24,
+        "p90": 26
+      },
+      "upgrades": {
+        "p10": 5,
+        "median": 7,
+        "p90": 10
+      },
+      "win_rate": {
+        "p10": 0.5192307692307693,
+        "median": 0.6037735849056604,
+        "p90": 0.6923076923076923
+      },
+      "first5_win_rate": {
+        "p10": 0.4,
+        "median": 0.6,
+        "p90": 1
+      },
+      "avg_battle_turns": {
+        "p10": 6.846153846153846,
+        "median": 7.08,
+        "p90": 7.339622641509434
+      },
+      "empty_flight": {
+        "p10": 0.34,
+        "median": 0.34,
+        "p90": 0.34
+      },
+      "stranded_runs": {
+        "p10": 0,
+        "median": 2,
+        "p90": 3
+      },
+      "blocked": {
+        "p10": 0,
+        "median": 0,
+        "p90": 0
+      },
+      "both_zero_days": {
+        "p10": 0,
+        "median": 0,
+        "p90": 0
+      },
+      "tutorial_complete": {
+        "p10": 0,
+        "median": 1,
+        "p90": 1
+      }
+    },
+    "before_active": {
+      "first_victory_min": {
+        "p10": 2.2,
+        "median": 2.2,
+        "p90": 2.2
+      },
+      "first_hatch_min": {
+        "p10": 6.4,
+        "median": 6.4,
+        "p90": 6.4
+      },
+      "second_biome_min": {
+        "p10": 12,
+        "median": 12,
+        "p90": 12
+      },
+      "level_d1": {
+        "p10": 3,
+        "median": 4,
+        "p90": 5
+      },
+      "level_d3": {
+        "p10": 7,
+        "median": 8,
+        "p90": 9
+      },
+      "level_d7": {
+        "p10": 15,
+        "median": 16,
+        "p90": 17
+      },
+      "level_d14": {
+        "p10": 27,
+        "median": 29,
+        "p90": 30
+      },
+      "gold": {
+        "p10": 27630,
+        "median": 30396,
+        "p90": 33265
+      },
+      "dust": {
+        "p10": 995,
+        "median": 1025,
+        "p90": 1055
+      },
+      "eggs": {
+        "p10": 1,
+        "median": 5,
+        "p90": 11
+      },
+      "dragons": {
+        "p10": 54,
+        "median": 61,
+        "p90": 65
+      },
+      "upgrades": {
+        "p10": 6,
+        "median": 8,
+        "p90": 10
+      },
+      "win_rate": {
+        "p10": 0.6451612903225806,
+        "median": 0.7,
+        "p90": 0.752
+      },
+      "first5_win_rate": {
+        "p10": 0.6,
+        "median": 0.8,
+        "p90": 1
+      },
+      "avg_battle_turns": {
+        "p10": 6.804511278195489,
+        "median": 6.946153846153846,
+        "p90": 7.082089552238806
+      },
+      "empty_flight": {
+        "p10": 0.34,
+        "median": 0.34,
+        "p90": 0.34
+      },
+      "stranded_runs": {
+        "p10": 0,
+        "median": 2,
+        "p90": 3
+      },
+      "blocked": {
+        "p10": 0,
+        "median": 1,
+        "p90": 1
+      },
+      "both_zero_days": {
+        "p10": 0,
+        "median": 0,
+        "p90": 0
+      },
+      "tutorial_complete": {
+        "p10": 1,
+        "median": 1,
+        "p90": 1
+      }
+    },
+    "before_efficient": {
+      "first_victory_min": {
+        "p10": 2.2,
+        "median": 2.2,
+        "p90": 2.2
+      },
+      "first_hatch_min": {
+        "p10": 6.4,
+        "median": 6.4,
+        "p90": 6.4
+      },
+      "second_biome_min": {
+        "p10": 12,
+        "median": 12,
+        "p90": 12
+      },
+      "level_d1": {
+        "p10": 5,
+        "median": 6,
+        "p90": 7
+      },
+      "level_d3": {
+        "p10": 13,
+        "median": 14,
+        "p90": 15
+      },
+      "level_d7": {
+        "p10": 27,
+        "median": 28,
+        "p90": 30
+      },
+      "level_d14": {
+        "p10": 49,
+        "median": 51,
+        "p90": 54
+      },
+      "gold": {
+        "p10": 77097,
+        "median": 83552,
+        "p90": 90653
+      },
+      "dust": {
+        "p10": 1025,
+        "median": 1055,
+        "p90": 1055
+      },
+      "eggs": {
+        "p10": 0,
+        "median": 1,
+        "p90": 4
+      },
+      "dragons": {
+        "p10": 81,
+        "median": 93,
+        "p90": 103
+      },
+      "upgrades": {
+        "p10": 6,
+        "median": 8,
+        "p90": 11
+      },
+      "win_rate": {
+        "p10": 0.7649572649572649,
+        "median": 0.7982062780269058,
+        "p90": 0.8326359832635983
+      },
+      "first5_win_rate": {
+        "p10": 0.6,
+        "median": 0.8,
+        "p90": 1
+      },
+      "avg_battle_turns": {
+        "p10": 6.708333333333333,
+        "median": 6.8054298642533935,
+        "p90": 6.904347826086957
+      },
+      "empty_flight": {
+        "p10": 0.34,
+        "median": 0.34,
+        "p90": 0.34
+      },
+      "stranded_runs": {
+        "p10": 0,
+        "median": 2,
+        "p90": 3
+      },
+      "blocked": {
+        "p10": 0,
+        "median": 0,
+        "p90": 0
+      },
+      "both_zero_days": {
+        "p10": 0,
+        "median": 0,
+        "p90": 0
+      },
+      "tutorial_complete": {
+        "p10": 1,
+        "median": 1,
+        "p90": 1
+      }
+    },
+    "after_cautious": {
+      "first_victory_min": {
+        "p10": 2.2,
+        "median": 2.2,
+        "p90": 5.4
+      },
+      "first_hatch_min": {
+        "p10": 6.4,
+        "median": 6.4,
+        "p90": 6.4
+      },
+      "second_biome_min": {
+        "p10": 12,
+        "median": 12,
+        "p90": 12
+      },
+      "level_d1": {
+        "p10": 2,
+        "median": 2,
+        "p90": 3
+      },
+      "level_d3": {
+        "p10": 3,
+        "median": 4,
+        "p90": 5
+      },
+      "level_d7": {
+        "p10": 6,
+        "median": 7,
+        "p90": 8
+      },
+      "level_d14": {
+        "p10": 11,
+        "median": 12,
+        "p90": 13
+      },
+      "gold": {
+        "p10": 7920,
+        "median": 9978,
+        "p90": 11745
+      },
+      "dust": {
+        "p10": 965,
+        "median": 995,
+        "p90": 1040
+      },
+      "eggs": {
+        "p10": 1,
+        "median": 2,
+        "p90": 5
+      },
+      "dragons": {
+        "p10": 17,
+        "median": 20,
+        "p90": 23
+      },
+      "upgrades": {
+        "p10": 7,
+        "median": 9,
+        "p90": 12
+      },
+      "win_rate": {
+        "p10": 0.5098039215686274,
+        "median": 0.5961538461538461,
+        "p90": 0.6792452830188679
+      },
+      "first5_win_rate": {
+        "p10": 0.4,
+        "median": 0.6,
+        "p90": 1
+      },
+      "avg_battle_turns": {
+        "p10": 6.884615384615385,
+        "median": 7.113207547169812,
+        "p90": 7.333333333333333
+      },
+      "empty_flight": {
+        "p10": 0.22,
+        "median": 0.22,
+        "p90": 0.22
+      },
+      "stranded_runs": {
+        "p10": 0,
+        "median": 1,
+        "p90": 2
+      },
+      "blocked": {
+        "p10": 0,
+        "median": 0,
+        "p90": 0
+      },
+      "both_zero_days": {
+        "p10": 0,
+        "median": 0,
+        "p90": 0
+      },
+      "tutorial_complete": {
+        "p10": 0,
+        "median": 1,
+        "p90": 1
+      }
+    },
+    "after_active": {
+      "first_victory_min": {
+        "p10": 2.2,
+        "median": 2.2,
+        "p90": 2.2
+      },
+      "first_hatch_min": {
+        "p10": 6.4,
+        "median": 6.4,
+        "p90": 6.4
+      },
+      "second_biome_min": {
+        "p10": 12,
+        "median": 12,
+        "p90": 12
+      },
+      "level_d1": {
+        "p10": 3,
+        "median": 4,
+        "p90": 5
+      },
+      "level_d3": {
+        "p10": 7,
+        "median": 8,
+        "p90": 9
+      },
+      "level_d7": {
+        "p10": 15,
+        "median": 16,
+        "p90": 17
+      },
+      "level_d14": {
+        "p10": 27,
+        "median": 29,
+        "p90": 30
+      },
+      "gold": {
+        "p10": 25113,
+        "median": 28182,
+        "p90": 31152
+      },
+      "dust": {
+        "p10": 1025,
+        "median": 1055,
+        "p90": 1085
+      },
+      "eggs": {
+        "p10": 0,
+        "median": 1,
+        "p90": 2
+      },
+      "dragons": {
+        "p10": 34,
+        "median": 40,
+        "p90": 46
+      },
+      "upgrades": {
+        "p10": 7,
+        "median": 10,
+        "p90": 13
+      },
+      "win_rate": {
+        "p10": 0.6466165413533834,
+        "median": 0.6946564885496184,
+        "p90": 0.7443609022556391
+      },
+      "first5_win_rate": {
+        "p10": 0.4,
+        "median": 0.8,
+        "p90": 1
+      },
+      "avg_battle_turns": {
+        "p10": 6.822222222222222,
+        "median": 6.955223880597015,
+        "p90": 7.091603053435114
+      },
+      "empty_flight": {
+        "p10": 0.22,
+        "median": 0.22,
+        "p90": 0.22
+      },
+      "stranded_runs": {
+        "p10": 0,
+        "median": 1,
+        "p90": 2
+      },
+      "blocked": {
+        "p10": 0,
+        "median": 0,
+        "p90": 1
+      },
+      "both_zero_days": {
+        "p10": 0,
+        "median": 0,
+        "p90": 0
+      },
+      "tutorial_complete": {
+        "p10": 1,
+        "median": 1,
+        "p90": 1
+      }
+    },
+    "after_efficient": {
+      "first_victory_min": {
+        "p10": 2.2,
+        "median": 2.2,
+        "p90": 2.2
+      },
+      "first_hatch_min": {
+        "p10": 6.4,
+        "median": 6.4,
+        "p90": 6.4
+      },
+      "second_biome_min": {
+        "p10": 12,
+        "median": 12,
+        "p90": 12
+      },
+      "level_d1": {
+        "p10": 5,
+        "median": 6,
+        "p90": 7
+      },
+      "level_d3": {
+        "p10": 13,
+        "median": 14,
+        "p90": 15
+      },
+      "level_d7": {
+        "p10": 27,
+        "median": 28,
+        "p90": 30
+      },
+      "level_d14": {
+        "p10": 49,
+        "median": 51,
+        "p90": 53
+      },
+      "gold": {
+        "p10": 74443,
+        "median": 80984,
+        "p90": 87384
+      },
+      "dust": {
+        "p10": 1055,
+        "median": 1085,
+        "p90": 1085
+      },
+      "eggs": {
+        "p10": 0,
+        "median": 0,
+        "p90": 2
+      },
+      "dragons": {
+        "p10": 60,
+        "median": 68,
+        "p90": 77
+      },
+      "upgrades": {
+        "p10": 7,
+        "median": 10,
+        "p90": 14
+      },
+      "win_rate": {
+        "p10": 0.7575757575757576,
+        "median": 0.7956521739130434,
+        "p90": 0.825531914893617
+      },
+      "first5_win_rate": {
+        "p10": 0.6,
+        "median": 0.8,
+        "p90": 1
+      },
+      "avg_battle_turns": {
+        "p10": 6.705627705627705,
+        "median": 6.807174887892376,
+        "p90": 6.9126637554585155
+      },
+      "empty_flight": {
+        "p10": 0.22,
+        "median": 0.22,
+        "p90": 0.22
+      },
+      "stranded_runs": {
+        "p10": 0,
+        "median": 1,
+        "p90": 2
+      },
+      "blocked": {
+        "p10": 0,
+        "median": 0,
+        "p90": 0
+      },
+      "both_zero_days": {
+        "p10": 0,
+        "median": 0,
+        "p90": 0
+      },
+      "tutorial_complete": {
+        "p10": 1,
+        "median": 1,
+        "p90": 1
+      }
+    }
+  }
+}

@@ -179,6 +179,7 @@ function claimQuest(id){
   if(r.gold) S.gold+=r.gold;
   if(r.eggs){for(let i=0;i<r.eggs;i++)addEgg(ELEMENTS_LIST[rnd(0,4)],1);}
   if(r.dust) S.dust+=r.dust;
+  trackEconomy('source','quest_'+id,r);
   q.claimed=true;
   floatText('+ '+rewardText(r),'#d9a441');
   toast(`Награда получена: <b>${rewardText(r)}</b>!`);
@@ -186,7 +187,7 @@ function claimQuest(id){
 }
 // 7-дневный цикл входа: награда растёт, день 7 — легендарная (локально, без реальных таймеров)
 const STREAK_REWARDS=[
-  {gold:200},                                   // День 1 — золото
+  {gold:200, dust:15},                          // День 1 — гарантированный источник пыли
   {gold:260, dust:30},                          // День 2 — золото + пыль
   {gold:320, eggs:1},                           // День 3 — редкий ресурс (яйцо)
   {gold:420, dust:50},                          // День 4
@@ -202,6 +203,7 @@ function claimChest(){
   if(r.gold) S.gold+=r.gold;
   if(r.eggs){for(let i=0;i<r.eggs;i++)addEgg(ELEMENTS_LIST[rnd(0,4)], r.legendary?3:1);}
   if(r.dust) S.dust+=r.dust;
+  trackEconomy('source','login_chest',r);
   if(r.legendary && typeof addChest==='function') addChest(3); // легендарный сундук в награду
   S.chestReady=false;
   floatText('ПОДАРОК ОТКРЫТ','#d9a441');
@@ -386,12 +388,13 @@ function finishOnboarding(){
 }
 
 function newGameFromOnboard(){
+  S.gold=GB.Economy.startingGold; S.dust=GB.Economy.startingDust; S.eggs=[];
   addDragon(onboard.dragon,2,'common',{atk:2,def:2,hp:2,spd:2,spark:false},1);
   const d=S.dragons[0];
   if(onboard.dragonName) d.name=onboard.dragonName;
   // стартовая реликвия под стихию дракона (или базовая)
   addArtifact('emberfang',1);
-  S.dust=60;
+  addEgg(speciesById(onboard.dragon).el,1,1,{silent:true});
   S.sel=d.uid;
   S.settlement=onboard.settlement||'Драконьи Земли';
   S.tutorialGuard=true; // первый бой — гарантированная победа
@@ -400,9 +403,10 @@ function newGameFromOnboard(){
 }
 
 function newGame(){
+  S.gold=GB.Economy.startingGold; S.dust=GB.Economy.startingDust; S.eggs=[];
   addDragon('ember',2,'common',{atk:2,def:2,hp:2,spd:2,spark:false},1);
   addArtifact('emberfang',1);
-  S.dust=60;
+  addEgg('fire',1,1,{silent:true});
   S.sel=S.dragons[0].uid;
   S.settlement='Драконьи Земли';
   S.tutorialGuard=true;

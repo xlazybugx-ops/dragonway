@@ -74,6 +74,9 @@ const DECORATIONS=[
   {id:'trophy_storm', name:'Громовой трофей',  icon:'🏆', rarity:4, desc:'Осколок молнии Владыки Бурь.', trophy:true},
   {id:'trophy_shade', name:'Трофей Пустоты',   icon:'🏆', rarity:4, desc:'Беззвёздная чешуя Владыки Пустоты.', trophy:true},
   // премиум-украшения (покупаются на Рынке за золото)
+  {id:'camp_lanterns',name:'Походные фонари',       icon:'🏮', rarity:2, desc:'Тёплая дорожка к логову.', premium:true, price:1000},
+  {id:'small_hoard',  name:'Малый драконий клад',   icon:'🪙', rarity:2, desc:'Первое собственное сокровище.', premium:true, price:1800},
+  {id:'wind_chimes',  name:'Колокольчики ветра',    icon:'🔔', rarity:3, desc:'Поют, когда стая возвращается.', premium:true, price:3000},
   {id:'gold_statue', name:'Золотая статуя дракона', icon:'✨', rarity:4, desc:'Сияет на всё поселение.', premium:true, price:8000},
   {id:'beacon',      name:'Радужный маяк',          icon:'🌈', rarity:4, desc:'Виден из всех пяти миров.', premium:true, price:12000},
   {id:'gem_garden',  name:'Сад самоцветов',         icon:'💠', rarity:4, desc:'Цветы из живых кристаллов.', premium:true, price:18000},
@@ -855,6 +858,7 @@ function upgradeLair(){ const chk=lairUpgradeCheck();
       else if(chk.reason==='boss')toast('Сначала одолей владыку мира ('+chk.next.cost.boss+').'); }
     return; }
   const c=chk.next.cost; S.gold-=c.gold; S.dust-=(c.dust||0); S.lairLevel=chk.next.lvl;
+  if(typeof trackEconomy==='function')trackEconomy('sink','lair_upgrade',{gold:-c.gold,dust:-(c.dust||0)});
   if(typeof toast==='function')toast('🏰 Логово улучшено до ур. '+chk.next.lvl+' · вместимость '+chk.next.cap+' 🐉');
   if(typeof questEvent==='function')questEvent('lair');
   if(typeof persist==='function')persist(); if(typeof renderLair==='function')renderLair(); }

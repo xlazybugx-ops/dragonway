@@ -123,8 +123,8 @@ function flySprite(speciesId){
 function flightElementKey(el){ return el==='venom'?'jungle':(el==='frost'?'ice':el); }
 function flightThreatTier(level){ return level>=60?3:(level>=25?2:1); }
 function flightSpriteSrc(speciesId,tier){
-  const sp=speciesById(speciesId), key=flightElementKey(sp.el);
-  return `images/fly_${key}_${Math.max(1,Math.min(3,tier||1))}.webp`;
+  const sp=speciesById(speciesId);
+  return `images/arcade_${sp.el}.webp`;
 }
 /* Единые парящие драконы с видом сверху: класс/возраст задаёт вариант 1–3. */
 function flySpritePng(speciesId, level, threatTier){

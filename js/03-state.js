@@ -4,7 +4,7 @@
    ============================================================ */
 /* ======================= СОСТОЯНИЕ ======================= */
 let S = {
-  gold:300, eggs:[{el:'fire',tier:1},{el:'frost',tier:1},{el:'venom',tier:1},{el:'storm',tier:1}], dust:0,
+  gold:GB.Economy.startingGold, eggs:[], dust:0,
   eggPity:0, eggsSeen:{}, eggStats:{}, eggsUnique:{}, eggsSecret:{}, shards:0, // система яиц v2
   worldExplored:{}, worldCodex:{events:{},biomes:{},weather:{}}, // исследование мира
   bossSeen:{}, bossKills:{}, // кодекс и реванш боссов
@@ -55,7 +55,7 @@ let S = {
 const QUEST_POOL = [
   {id:'win_arena', icon:'⚔️', text:'Победи в дружеском поединке', goalBase:2,  unit:'побед',  reward:{gold:120}},
   {id:'explore',   icon:'🗺️', text:'Сходи в путешествие', goalBase:2, unit:'походов', reward:{gold:120}},
-  {id:'hatch',     icon:'🥚', text:'Высиди яйцо', goalBase:1, unit:'яиц', reward:{eggs:2}},
+  {id:'hatch',     icon:'🥚', text:'Высиди яйцо', goalBase:1, unit:'яиц', reward:{gold:100,dust:10}},
   {id:'forge',     icon:'🔨', text:'Улучши реликвию в кузнице', goalBase:2, unit:'ковок', reward:{dust:30}},
   {id:'recycle',   icon:'✦',  text:'Преврати реликвию в пыль', goalBase:1, unit:'шт.', reward:{dust:30}},
   {id:'breed',     icon:'🥚', text:'Выведи дракончика', goalBase:1, unit:'раз', reward:{gold:150}},
@@ -237,6 +237,9 @@ function trackEvent(type,data){
   if(!Array.isArray(S.telemetry)) S.telemetry=[];
   S.telemetry.push({type,at:Date.now(),data:data||{}});
   if(S.telemetry.length>300) S.telemetry.splice(0,S.telemetry.length-300);
+}
+function trackEconomy(kind,source,delta){
+  trackEvent('economy',{kind,source,gold:(delta&&delta.gold)||0,dust:(delta&&delta.dust)||0,eggs:(delta&&delta.eggs)||0,shards:(delta&&delta.shards)||0,level:typeof progLevel==='function'?progLevel():1});
 }
 
 function addDragon(speciesId, level=1, morph=null, genes=null, gen=1, nature=null){

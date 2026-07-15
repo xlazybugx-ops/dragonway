@@ -701,6 +701,7 @@ function openPortalUpgrade(){
   $('#portalBack').onclick=renderMap;
   if(canPay) $('#doPortalUp').onclick=()=>{
     S.gold-=cost.gold; if(cost.dust)S.dust-=cost.dust;
+    trackEconomy('sink','portal_upgrade',{gold:-cost.gold,dust:-(cost.dust||0)});
     S.portalLevel=lvl+1;
     persist(); renderLedger();
     toast(`<b>Портал улучшен до ур. ${S.portalLevel}!</b> ${unlockNote}`);
