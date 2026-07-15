@@ -1191,14 +1191,14 @@ details.ux-more[open]>summary::after{content:'▴'}
    UX REWORK — единая нижняя навигация (5 разделов) + Профиль
    ============================================================ */
 #app{padding-bottom:calc(64px + env(safe-area-inset-bottom,0))} /* место под таббар */
-#tabbar{position:fixed;left:0;right:0;bottom:0;z-index:55;display:flex;
+#tabbar{position:fixed;left:0;right:0;bottom:0;z-index:55;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));overflow:hidden;
   background:rgba(24,18,14,.96);backdrop-filter:blur(8px);
   border-top:1px solid var(--gold-soft);padding-bottom:env(safe-area-inset-bottom,0)}
-.tabbtn{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;background:none;border:none;color:var(--ink-dim);position:relative;
+.tabbtn{width:100%;min-width:0;min-height:56px;padding:3px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;background:none;border:none;color:var(--ink-dim);position:relative;overflow:hidden;
   transition:color .16s ease, transform .16s ease}
 .tabbtn .tb-ic{font-size:21px;line-height:1;filter:grayscale(.35);transition:filter .16s ease, transform .16s ease}
-.tabbtn .tb-lb{font-size:10px;font-weight:600;letter-spacing:.2px}
+.tabbtn .tb-lb{display:block;width:100%;font-size:10px;font-weight:600;letter-spacing:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tabbtn.on{color:var(--gold)}
 .tabbtn.on .tb-ic{filter:none;transform:translateY(-1px) scale(1.08)}
 .tabbtn:active{transform:scale(.94)}
@@ -1339,6 +1339,39 @@ body.flight-active #tabbar{transform:translateY(120%)} /* прячем в пол
 @media(max-height:620px){.hub-next-chip em{display:none}.hub-next-chip{min-height:48px;padding-top:6px;padding-bottom:6px}}
 .hub-zone-svc .hub-zone-label{opacity:1;transform:none;background:rgba(24,18,14,.72);
   border:1px solid var(--gold-soft);border-radius:10px;padding:3px 8px}
+
+/* v2.2.2: свайповое меню задач на карте хаба */
+.hub-task-drawer{position:absolute;left:0;right:0;top:0;z-index:18;transform:translateY(calc(-100% + 42px));
+  max-height:min(72%,560px);display:flex;flex-direction:column;background:rgba(20,14,20,.97);border-bottom:1px solid var(--gold-soft);
+  border-radius:0 0 18px 18px;box-shadow:0 14px 32px rgba(0,0,0,.55);transition:transform .32s cubic-bezier(.2,.8,.2,1);touch-action:pan-y}
+.hub-task-drawer.open{transform:translateY(0)}
+.hub-task-handle{order:2;flex:0 0 42px;min-height:42px;border:0;background:rgba(36,25,24,.98);color:#ffe9c0;
+  display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;position:relative;border-radius:0 0 18px 18px}
+.hub-task-handle>span{position:absolute;top:5px;left:50%;width:38px;height:3px;transform:translateX(-50%);border-radius:3px;background:rgba(217,164,65,.5)}
+.hub-task-handle b{margin-top:5px}.hub-task-handle em{margin-top:5px;min-width:17px;height:17px;border-radius:9px;background:var(--ember);font-style:normal;font-size:10px;display:grid;place-items:center}
+.hub-task-body{overflow-y:auto;padding:calc(12px + env(safe-area-inset-top,0)) 12px 12px;display:grid;gap:10px}
+.hub-task-body section{border:1px solid rgba(217,164,65,.22);border-radius:12px;padding:9px;background:rgba(255,255,255,.025)}
+.hub-task-body h3{margin:0 0 7px;font-size:12px;color:var(--gold)}
+.hub-task-body p{margin:0;color:var(--ink-dim);font-size:12px;line-height:1.35}
+.hub-task-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)}
+.hub-task-row:first-of-type{border-top:0}.htr-icon{font-size:20px}.htr-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.htr-main b{font-size:12px;color:#f5e8d1}.htr-main small{font-size:10px;color:var(--ink-dim)}
+.htr-main i{display:block;height:4px;border-radius:3px;background:rgba(0,0,0,.45);overflow:hidden}.htr-main i span{display:block;height:100%;background:var(--gold)}
+.hub-task-row>button{min-height:32px;padding:5px 8px;border-radius:9px;border:1px solid var(--gold);background:var(--gold);color:#21170d;font-size:10px;font-weight:700}
+.htr-ok{color:#9c4;font-weight:800}.hub-bonus-list{display:flex;flex-wrap:wrap;gap:6px}.hub-bonus-list span{padding:5px 8px;border-radius:10px;background:rgba(217,164,65,.1);font-size:10.5px}
+.hub-task-peek{position:absolute;z-index:17;top:48px;left:50%;transform:translateX(-50%);width:min(92%,420px);padding:10px 12px;
+  border:1px solid var(--gold);border-radius:14px;background:rgba(25,17,22,.96);box-shadow:0 12px 28px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:3px;animation:hubPeekIn .3s ease}
+.hub-task-peek b{color:var(--gold);font-size:13px}.hub-task-peek span{font-size:11px;color:#f5e8d1}.hub-task-peek small{margin-top:4px;color:var(--ink-dim);font-size:10px}
+.hub-task-peek.hide{opacity:0;transform:translate(-50%,-15px);pointer-events:none;transition:.35s}
+@keyframes hubPeekIn{from{opacity:0;transform:translate(-50%,-18px)}to{opacity:1;transform:translate(-50%,0)}}
+
+/* Компактный сервисный бар над основной навигацией */
+.hub-service-bar{position:absolute;left:8px;right:8px;bottom:8px;z-index:12;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:5px;
+  border:1px solid rgba(217,164,65,.5);border-radius:14px;background:rgba(20,14,18,.9);backdrop-filter:blur(8px);box-shadow:0 5px 18px rgba(0,0,0,.45)}
+.hub-service-bar button{min-width:0;min-height:38px;border:0;border-radius:10px;background:rgba(255,255,255,.035);color:#f2dfc0;display:flex;align-items:center;justify-content:center;gap:5px;font-size:14px;position:relative}
+.hub-service-bar button span{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hub-service-bar button b{position:absolute;right:5px;top:3px;width:15px;height:15px;border-radius:50%;background:var(--ember);font-size:9px;display:grid;place-items:center}
+.hub-next-chip{bottom:62px}
+@media(max-width:390px){.tabbtn .tb-lb{font-size:8.8px}.tabbtn .tb-ic img{width:29px!important;height:29px!important}.hub-service-bar button span{font-size:9px}}
 
 /* v38: всплывающая подсказка — баннер под баром ресурсов, с крестиком */
 #toast{bottom:auto;top:calc(env(safe-area-inset-top,0) + 50px);
@@ -1521,6 +1554,12 @@ body.flight-active #tabbar{transform:translateY(120%)} /* прячем в пол
 @media(prefers-reduced-motion:reduce){
   .w2-plat,.w2-menu,.w2-dim,.w2-scene{transition:none!important;animation:none!important}
 }
+
+/* 2.2.2: narrow iPhone navigation and readable Cyrillic */
+#tabbar{grid-template-columns:repeat(5,minmax(0,1fr))!important;padding-left:max(2px,env(safe-area-inset-left,0));padding-right:max(2px,env(safe-area-inset-right,0));box-sizing:border-box}
+#tabbar .tabbtn{width:100%!important;min-width:0!important;padding-left:1px!important;padding-right:1px!important;overflow:hidden}
+#tabbar .tabbtn .tb-lb{display:block;width:100%;max-width:100%;font-size:clamp(8px,2.35vw,10.5px)!important;line-height:1.12;letter-spacing:0!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:390px){#tabbar .tabbtn .tb-ic img{width:28px!important;height:28px!important}.topbar{gap:6px}.topbar-res{gap:5px}.tb-item{font-size:11px}}
 
 /* ============ v2.1.1: readable Cyrillic + unified iconography ============ */
 button,.filter-chip,.well-chip,.ws-act,.ws-big{touch-action:manipulation}
