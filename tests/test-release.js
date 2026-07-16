@@ -15,7 +15,7 @@ const css=fs.readFileSync(path.join(root,'css/style.css'),'utf8');
 const flight=fs.readFileSync(path.join(root,'js/07-flight.js'),'utf8');
 const hub=fs.readFileSync(path.join(root,'js/06c-hubmap.js'),'utf8');
 
-assert(T.GB.Release.version==='2.3.0-test','release version');
+assert(T.GB.Release.version==='3.0.0','release version');
 assert(JSON.stringify(Array.from(T.BIOME_MIN_LEVEL))===JSON.stringify([0,1,22,55]),'biome progression');
 assert(Math.abs(T.geneMult(3)-1)<1e-9,'neutral gene must be 1.0');
 assert(Math.abs(T.geneMult(6)-1.15)<1e-9,'max gene must be bounded');
@@ -45,5 +45,9 @@ assert(css.includes('repeat(5,minmax(0,1fr))'),'navigation must use five equal c
 assert(flight.includes('images/arcade_${sp.el}.webp'),'flight and battle must use transparent dragon assets');
 assert(!flight.includes('images/fly_${sp.el}_'),'opaque flight backgrounds must not be used as sprites');
 assert(hub.includes('hub-task-drawer')&&hub.includes('hub-service-bar'),'hub task drawer and service bar must render');
+const content=fs.readFileSync(path.join(root,'js/02-data-content.js'),'utf8');
+const artifactBlock=content.slice(content.indexOf('const ARTIFACTS = ['),content.indexOf('// эффекты, которые не являются'));
+assert((artifactBlock.match(/id:'/g)||[]).length===27,'all 27 artifacts must remain in catalog');
+assert((artifactBlock.match(/artifact-game-icon/g)||[]).length===27,'all artifacts must use dedicated game icons');
 
-console.log('Draconis 2.3.0 release tests: OK');
+console.log('Draconis 3.0 release tests: OK');

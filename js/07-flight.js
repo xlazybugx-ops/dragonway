@@ -41,7 +41,7 @@ const _denImgCache={}; // ПЕРФ: кэш картинок логова (не �
 const _flyMapCache={};
 const _flightDecorCache={};
 function flightDecorImage(key,index){
-  const n=String(index).padStart(2,'0'), src=`images/decor/${key}/decor_${key}_${n}.webp?v=236`;
+  const n=String(index).padStart(2,'0'), src=`images/decor/${key}/decor_${key}_${n}.webp?v=300`;
   if(_flightDecorCache[src])return _flightDecorCache[src];
   const img=new Image(); img.src=src; _flightDecorCache[src]=img; return img;
 }

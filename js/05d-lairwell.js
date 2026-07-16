@@ -127,7 +127,7 @@ function renderLair(){
 
   sec.innerHTML=`<div class="well2 ${_wellOpen?'open':''}" id="well2">
     <img class="w2-bg" src="images/lair_bg.webp" decoding="async" alt=""
-      onerror="if(!this._p){this._p=1;this.src='images/lair_bg.png';}else{this.style.display='none';this.closest('.well2').classList.add('noimg');}">
+      onerror="this.style.display='none';this.closest('.well2').classList.add('noimg');">
     <div class="w2-dim"></div>
     ${top}
     <div class="w2-scene">${side}</div>
