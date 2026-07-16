@@ -1725,9 +1725,9 @@ html body,html body *{font-family:var(--ui-font)!important}
 #fFoe .battle-fly-wrap.threat-3{transform:scaleX(-1) scale(1.16)}
 
 /* ============ v2.3.6: ориентационные макеты экранов ============ */
-.start-screen[data-step="welcome"]{background:#1a1410 url('../images/screen_title_bg.webp?v=236') center/cover no-repeat}
-.start-screen[data-step="dragon-pick"],.start-screen[data-step="dragon-name"]{background:#1a1410 url('../images/screen_character_select_bg.webp?v=236') center/cover no-repeat}
-.start-screen[data-step="settlement-name"]{background:#1a1410 url('../images/screen_settlement_name_bg.webp?v=236') center/cover no-repeat}
+.start-screen[data-step="welcome"]{background:#1a1410 url('../images/screen_title_bg.webp?v=300') center/cover no-repeat}
+.start-screen[data-step="dragon-pick"],.start-screen[data-step="dragon-name"]{background:#1a1410 url('../images/screen_character_select_bg.webp?v=300') center/cover no-repeat}
+.start-screen[data-step="settlement-name"]{background:#1a1410 url('../images/screen_settlement_name_bg.webp?v=300') center/cover no-repeat}
 .start-screen[data-step] .start-bg{display:none}
 .start-screen[data-step] .start-content{background:linear-gradient(180deg,rgba(20,12,8,.32),rgba(20,12,8,.72))}
 
