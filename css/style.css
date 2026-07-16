@@ -1711,3 +1711,65 @@ html body,html body *{font-family:var(--ui-font)!important}
   .view.on .panel>.dcard,.view.on .roster>.dcard,.view.on .codex-card{animation:none!important}
   .tabbtn .tb-ic img,.tabbtn::before{transition:none!important}
 }
+
+/* v2.3.4: финальная геометрия логова и зеркальная ориентация соперника. */
+.w2-plat{width:60%}
+.w2-hero{top:0;transform:translate(-50%,-52%)}
+.well2.open .w2-plat{width:min(96vw,495px)}
+.well2.open .w2-hero{top:1%;transform:translate(-50%,-56%)}
+@media(max-width:430px){.well2.open .w2-plat{width:98vw}}
+
+/* Отражаем весь визуальный контейнер: полёт, атака и получение урона остаются зеркальными. */
+#fFoe .battle-fly-wrap.threat-1{transform:scaleX(-1) scale(.84)}
+#fFoe .battle-fly-wrap.threat-2{transform:scaleX(-1) scale(1)}
+#fFoe .battle-fly-wrap.threat-3{transform:scaleX(-1) scale(1.16)}
+
+/* ============ v2.3.6: ориентационные макеты экранов ============ */
+.start-screen[data-step="welcome"]{background:#1a1410 url('../images/screen_title_bg.webp?v=236') center/cover no-repeat}
+.start-screen[data-step="dragon-pick"],.start-screen[data-step="dragon-name"]{background:#1a1410 url('../images/screen_character_select_bg.webp?v=236') center/cover no-repeat}
+.start-screen[data-step="settlement-name"]{background:#1a1410 url('../images/screen_settlement_name_bg.webp?v=236') center/cover no-repeat}
+.start-screen[data-step] .start-bg{display:none}
+.start-screen[data-step] .start-content{background:linear-gradient(180deg,rgba(20,12,8,.32),rgba(20,12,8,.72))}
+
+/* Экраны, спроектированные как вертикальные: поселение, логово, кузня, башня и кодекс. */
+body[data-view="hub"] #hub,body[data-view="lair"] #lair,body[data-view="forge"] #forge,
+body[data-view="spire"] #spire,body[data-view="codex"] #codex{width:min(100%,760px);margin-inline:auto}
+body[data-view="hub"] .hub-stage-photo{max-width:680px}
+
+@media(orientation:portrait){
+  .start-content{padding:calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
+  .start-dragons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:8px}
+  .start-dcard{width:auto;min-width:0;padding:10px 6px}.start-dcard-lore{display:none}
+  .start-dcard-art .dragon-art,.start-dcard-art .dragon-photo{width:72px;height:72px}
+  #hatch .panel,#arena .panel,#explore .panel{padding-inline:10px}
+  #codex .roster,.lair-roster{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .forge-layout,.breed-stage,.fighters{grid-template-columns:1fr!important}
+  .versus{display:none}
+}
+
+@media(orientation:landscape){
+  /* Приветствие, выбор дракона и названия используют свободную горизонтальную композицию. */
+  .start-content{min-height:100%;padding:18px max(24px,5vw);gap:9px}
+  .start-screen[data-step="welcome"] .start-content{align-items:flex-start;text-align:left;padding-left:max(36px,8vw)}
+  .start-screen[data-step="welcome"] .start-lede{max-width:42vw}
+  .start-screen[data-step="dragon-pick"] .start-dragons{flex-wrap:nowrap;max-width:min(900px,92vw)}
+  .start-screen[data-step="dragon-pick"] .start-dcard{width:min(26vw,210px);padding:10px}
+  .start-screen[data-step="settlement-name"] .start-content{align-items:flex-start;text-align:left;padding-left:max(40px,9vw)}
+  .start-screen[data-step="settlement-name"] .start-nav{justify-content:flex-start}
+  /* Поселение/логово/кузня/башня/кодекс сохраняют портретную колонку даже на широком экране. */
+  body[data-view="hub"] #hub,body[data-view="lair"] #lair,body[data-view="forge"] #forge,
+  body[data-view="spire"] #spire,body[data-view="codex"] #codex{width:min(68vh,760px)}
+  /* Турнир, сражения, исследование и гнездо используют ширину горизонтального экрана. */
+  body[data-view="arena"] #arena,body[data-view="explore"] #explore,body[data-view="hatch"] #hatch,
+  body[data-view="roost"] #roost{width:min(1180px,100%);margin-inline:auto}
+  #arenaSetup #arenaPicker,.breed-stage{max-width:1100px;margin-inline:auto}
+  .fighters{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+  .moves{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .flight-fs .fcv-top{padding-block:5px!important}
+}
+
+@media(orientation:landscape) and (max-height:600px){
+  .start-logo-mark{font-size:38px}.start-title{font-size:34px}.start-lede{line-height:1.35;margin-block:4px}
+  .start-dcard-lore{display:none}.start-dcard-art .dragon-art,.start-dcard-art .dragon-photo{width:68px;height:68px}
+  .start-settlement-ic{font-size:34px}.start-cta{padding:10px 24px}
+}
