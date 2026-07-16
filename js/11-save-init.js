@@ -300,6 +300,7 @@ function startScreenShell(inner){
 // Шаг 1: приветствие
 function renderStartWelcome(){
   const sc=$('#startScreen');
+  sc.dataset.step='welcome';
   sc.innerHTML=startScreenShell(`
     <div class="start-logo">
       <div class="start-logo-mark">🐉</div>
@@ -314,6 +315,7 @@ function renderStartWelcome(){
 // Шаг 2: выбор первого дракона
 function renderStartPickDragon(){
   const sc=$('#startScreen');
+  sc.dataset.step='dragon-pick';
   const cards=STARTER_DRAGONS.map(id=>{
     const sp=speciesById(id);
     const sel=onboard.dragon===id?' sel':'';
@@ -341,6 +343,7 @@ function renderStartPickDragon(){
 // Шаг 3: имя дракона
 function renderStartNameDragon(){
   const sc=$('#startScreen');
+  sc.dataset.step='dragon-name';
   const sp=speciesById(onboard.dragon);
   sc.innerHTML=startScreenShell(`
     <div class="start-step">Шаг 2 из 3</div>
@@ -359,6 +362,7 @@ function renderStartNameDragon(){
 // Шаг 4: имя поселения
 function renderStartNameSettlement(){
   const sc=$('#startScreen');
+  sc.dataset.step='settlement-name';
   sc.innerHTML=startScreenShell(`
     <div class="start-step">Шаг 3 из 3</div>
     <h2 class="start-h2">Назови свои земли</h2>

@@ -273,6 +273,7 @@ function switchView(v){
     return;
   }
   if(v!=='hub') S._treasuryOpen=false;
+  document.body.dataset.view=v;
   $$('.view').forEach(s=>s.classList.toggle('on',s.id===v));
   ensureScreenBar(v);
   if(v==='hub')renderHub();

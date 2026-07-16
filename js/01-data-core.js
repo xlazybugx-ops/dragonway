@@ -85,7 +85,7 @@ function dragonArt(speciesId){
 }
 
 /* ===== ФОТО-ДРАКОНЫ С ЭВОЛЮЦИЕЙ ПО УРОВНЮ =====
-   Картинки лежат в папке images/ рядом с HTML, имена вида {id}_{стадия}.png
+   Картинки лежат в папке images/ рядом с HTML, имена вида {id}_{стадия}.webp
    (стадии 1/25/60/100). Если файла нет — показываем рисованного SVG-дракона.
    Чтобы отключить фото целиком, поставь USE_PHOTO_DRAGONS=false. */
 const USE_PHOTO_DRAGONS=true;
@@ -101,7 +101,7 @@ function dragonVisual(speciesId, level){
   const svg=dragonArt(speciesId);
   if(!USE_PHOTO_DRAGONS) return svg;
   const stage=stageForLevel(level||1);
-  const src=`images/${speciesId}_${stage}.webp`;
+  const src=`images/${speciesId}_${stage}.webp?v=2.3.4-ai60`;
   // если картинка не загрузится — onerror подменит контейнер на SVG
   const svgEsc=svg.replace(/"/g,'&quot;');
   return `<img class="dragon-art dragon-photo" src="${src}" alt="" loading="lazy" decoding="async"

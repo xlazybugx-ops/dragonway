@@ -39,6 +39,21 @@ function grantWorldReward(reward){ const f=flight; if(!f)return '…'; const R=f
 const FLY_ART_KEY={emberreach:'fire',mirelot:'jungle',glacior:'ice',stormpeak:'storm',voidedge:'shade'};
 const _denImgCache={}; // ПЕРФ: кэш картинок логова (не грузить одно и то же повторно)
 const _flyMapCache={};
+const _flightDecorCache={};
+function flightDecorImage(key,index){
+  const n=String(index).padStart(2,'0'), src=`images/decor/${key}/decor_${key}_${n}.webp?v=236`;
+  if(_flightDecorCache[src])return _flightDecorCache[src];
+  const img=new Image(); img.src=src; _flightDecorCache[src]=img; return img;
+}
+function buildFlightDecor(region,W,H){
+  const key=flyArtKey(region); if(!['fire','jungle','ice','storm'].includes(key))return [];
+  const rndDecor=seeded(`${region.id||region.worldId}:${region.biomeN||1}:decor`.split('').reduce((a,c)=>a+c.charCodeAt(0),17));
+  return Array.from({length:36},(_,i)=>({
+    img:flightDecorImage(key,1+Math.floor(rndDecor()*20)),
+    x:100+rndDecor()*(W-200),y:150+rndDecor()*(H-300),
+    size:72+rndDecor()*92,rot:(rndDecor()-.5)*1.15,alpha:.68+rndDecor()*.28,flip:rndDecor()>.5?-1:1,z:i
+  })).sort((a,b)=>a.y-b.y);
+}
 function flyArtKey(region){ return FLY_ART_KEY[region.worldId]||region.scene; }
 function loadFlyMap(region,tier,cb){
   // Полёт использует отдельную ортографическую карту сверху; панорамный biome_* остаётся обложкой мира.
@@ -214,6 +229,7 @@ function buildFlightTier(region){
     f.weather=(typeof rollWeather==='function')?rollWeather(region):null; worldSeen('biomes',region.scene); if(f.weather)worldSeen('weather',f.weather.id);
     f.beasts=0; f.cnt={treasure:0,scroll:0};
     f.items=[];f.storms=[];f.dens=[];f.wilds=[];f.elites=[];f.secrets=[];f.pockets=[];f.winds=[];f.floats=[];f.clouds=[];
+    f.decor=buildFlightDecor(region,W,H);
     f.trialEnt=null; f.trialDone=false;
     f.drag={x:W/2,y:H-140,vx:0,vy:0,heading:-Math.PI/2,flap:0,hurt:0,bank:0,trail:[]};
     f.stam=(GB.Run&&GB.Run.staminaMax)||140; f.paused=false; f.warp=false; f._pend=null; f.battleWin=undefined;
@@ -802,6 +818,11 @@ function renderFlight(){
     const sx=cam.x+(Math.random()-.5)*shake,sy=cam.y+(Math.random()-.5)*shake;
     ctx.clearRect(0,0,vw,vh);
     if(f.bg)ctx.drawImage(f.bg,0,0,f.bg.width,f.bg.height,-sx,-sy,W,H);
+    // Сгенерированный биомный декор лежит над землёй, но под погодой и игровыми сущностями.
+    if(f.decor)f.decor.forEach(o=>{const px=o.x-sx,py=o.y-sy,s=o.size;
+      if(px<-s||py<-s||px>vw+s||py>vh+s||!o.img.complete||!o.img.naturalWidth)return;
+      ctx.save();ctx.globalAlpha=o.alpha;ctx.translate(px,py);ctx.rotate(o.rot);ctx.scale(o.flip,1);
+      ctx.drawImage(o.img,-s/2,-s/2,s,s);ctx.restore();});
     if(f.weather&&f.weather.tint){ctx.fillStyle=f.weather.tint;ctx.fillRect(0,0,vw,vh);} // погода (визуал)
 
     f.clouds.forEach(c=>{const px=c.x-sx,py=c.y-sy;if(px<-c.r||py<-c.r||px>vw+c.r||py>vh+c.r)return;
