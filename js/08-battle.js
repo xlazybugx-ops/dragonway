@@ -179,6 +179,9 @@ function renderBattle(){
   const canSpell = b.me.spell && b.me.mana>=b.me.spell.manaCost;
   const canUlt = b.me.ult && b.me.mana>=b.me.ult.manaCost;
   const biomeKey=battleBiomeKey(b);
+  const biomeDepth=(b.fromFlight&&typeof flight!=='undefined'&&flight&&flight.region)
+    ?Math.max(1,Math.min(3,flight.region.biomeN||1))
+    :Math.max(1,Math.min(3,Math.ceil(b.foe.level/20)));
   // оценка урона приёма по текущим статам (диапазон с учётом стихии)
   const estDmg=(pow)=>{
     const base=GB.Battle.damageK*(b.me.atk*b.me.atk/(b.me.atk+b.foe.def))*pow;
@@ -195,7 +198,7 @@ function renderBattle(){
   };
   stage.innerHTML=`
   <div class="arena">
-    <div class="arena-bg battle-biome"><img src="images/biome_${biomeKey}.webp" alt="" decoding="async" onerror="this.style.display='none'">${sceneSVG(elScene,'battle')}</div>
+    <div class="arena-bg battle-biome"><img src="images/textures/texture_${biomeKey}_${biomeDepth}.webp?v=302" alt="" decoding="async" onerror="this.src='images/biome_${biomeKey}.webp';this.onerror=()=>this.style.display='none'">${sceneSVG(elScene,'battle')}</div>
     <div class="turn-strip" id="turnStrip"></div>
     <div class="fighters">
       <div class="fighter" id="fMe">

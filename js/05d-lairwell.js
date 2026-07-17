@@ -15,10 +15,10 @@ let _wellOpen=false, _wellGenes=false; // состояние между ренд
 
 /* балконы фона lair_bg (в % кадра 768×1408) — 4 слева, 4 справа */
 const W2_SPOTS=[
-  {x:16,y:23.5},{x:84,y:25},
-  {x:15,y:43},  {x:85,y:44.5},
-  {x:15,y:62},  {x:85,y:63.5},
-  {x:16,y:80.5},{x:84,y:82},
+  {x:19,y:27.5},{x:81,y:28},
+  {x:19,y:47},  {x:81,y:47.5},
+  {x:19,y:66},  {x:81,y:66.5},
+  {x:19,y:85},  {x:81,y:85.5},
 ];
 const W2_PHRASES=['Привет!','Полетаем?','Я скучал!','Смотри, кристалл!','*урчит*','Возьми меня в бой!','Хррр…','Тут уютно!'];
 
@@ -126,7 +126,7 @@ function renderLair(){
     </div>`;
 
   sec.innerHTML=`<div class="well2 ${_wellOpen?'open':''}" id="well2">
-    <img class="w2-bg" src="images/lair_bg.webp" decoding="async" alt=""
+    <img class="w2-bg" src="images/lair_bg.webp?v=301" decoding="async" alt=""
       onerror="this.style.display='none';this.closest('.well2').classList.add('noimg');">
     <div class="w2-dim"></div>
     ${top}
@@ -176,7 +176,19 @@ function renderLair(){
   ov.onclick=e=>{ if(e.target===ov) ov.style.display='none'; };
   const wcUp=$('#wcUp'); if(wcUp&&nxt) wcUp.onclick=()=>upgradeLair();
   $('#wcFlock').onclick=()=>{ if(typeof openFlockManager==='function')openFlockManager(); };
-  $('#wcGift').onclick=()=>{ ovShow('daily'); if(typeof renderDaily==='function')renderDaily(); };
+  const giftBtn=$('#wcGift');
+  if(giftBtn) giftBtn.onclick=e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    ovShow('daily');
+    if(typeof renderDaily==='function') renderDaily();
+    requestAnimationFrame(()=>{
+      const panel=$('#dailyPanel');
+      if(panel) panel.scrollIntoView({behavior:'smooth',block:'start'});
+      const claim=$('#chestBtn');
+      if(claim) claim.focus({preventScroll:true});
+    });
+  };
   $('#wcEggs').onclick=()=>switchView('hatch');
   $('#wsRen').onclick=()=>renameDragon(hero);
   $('#wsFeed').onclick=()=>feedDragon(hero);

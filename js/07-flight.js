@@ -40,6 +40,27 @@ const FLY_ART_KEY={emberreach:'fire',mirelot:'jungle',glacior:'ice',stormpeak:'s
 const _denImgCache={}; // ПЕРФ: кэш картинок логова (не грузить одно и то же повторно)
 const _flyMapCache={};
 const _flightDecorCache={};
+const _flightFxCache={};
+const _flightPoiCache={};
+function flightFxImage(name){
+  const src=`images/effects/${name}.webp?v=302`;
+  if(_flightFxCache[src])return _flightFxCache[src];
+  const img=new Image();img.src=src;_flightFxCache[src]=img;return img;
+}
+function flightPoiImage(key,index){
+  const src=`images/poi/poi_${key}_${String(index).padStart(2,'0')}.webp?v=303`;
+  if(_flightPoiCache[src])return _flightPoiCache[src];
+  const img=new Image();img.src=src;_flightPoiCache[src]=img;return img;
+}
+function flightDenImage(key,index){
+  const cacheKey=`${key}:${index}`;
+  if(_denImgCache[cacheKey])return _denImgCache[cacheKey];
+  const img=new Image();
+  img.src=`images/dens/den_${key}_${String(index).padStart(2,'0')}.webp?v=304`;
+  img.onerror=()=>{img.onerror=null;img.src=`images/den_${key}.png`;};
+  _denImgCache[cacheKey]=img;
+  return img;
+}
 function flightDecorImage(key,index){
   const n=String(index).padStart(2,'0'), src=`images/decor/${key}/decor_${key}_${n}.webp?v=300`;
   if(_flightDecorCache[src])return _flightDecorCache[src];
@@ -57,7 +78,8 @@ function buildFlightDecor(region,W,H){
 function flyArtKey(region){ return FLY_ART_KEY[region.worldId]||region.scene; }
 function loadFlyMap(region,tier,cb){
   // Полёт использует отдельную ортографическую карту сверху; панорамный biome_* остаётся обложкой мира.
-  const src=`images/flightmap_${flyArtKey(region)}.webp`;
+  const depth=Math.max(1,Math.min(3,tier||region.biomeN||1));
+  const src=`images/textures/texture_${flyArtKey(region)}_${depth}.webp?v=302`;
   const cached=_flyMapCache[src];
   if(cached){
     if(cached.complete&&cached.naturalWidth) cb(cached);
@@ -189,7 +211,8 @@ function flyTiledBg(img,W,H){
   const sc=0.5, c=document.createElement('canvas');
   c.width=Math.max(64,Math.round(W*sc)); c.height=Math.max(64,Math.round(H*sc));
   const x=c.getContext('2d');
-  const cols=2, rows=3, tw=c.width/cols, th=c.height/rows;
+  const tw=Math.min(720,Math.max(420,img.width*0.48)),th=tw;
+  const cols=Math.ceil(c.width/tw)+1,rows=Math.ceil(c.height/th)+1;
   for(let i=0;i<cols;i++)for(let j=0;j<rows;j++){
     x.save();
     x.translate(i*tw+(i%2?tw:0), j*th+(j%2?th:0));
@@ -230,6 +253,8 @@ function buildFlightTier(region){
     f.beasts=0; f.cnt={treasure:0,scroll:0};
     f.items=[];f.storms=[];f.dens=[];f.wilds=[];f.elites=[];f.secrets=[];f.pockets=[];f.winds=[];f.floats=[];f.clouds=[];
     f.decor=buildFlightDecor(region,W,H);
+    f.hazardImg=flightFxImage(`hazard_${flyArtKey(region)}`);
+    f.windImg=flightFxImage('wind_threads');
     f.trialEnt=null; f.trialDone=false;
     f.drag={x:W/2,y:H-140,vx:0,vy:0,heading:-Math.PI/2,flap:0,hurt:0,bank:0,trail:[]};
     f.stam=(GB.Run&&GB.Run.staminaMax)||140; f.paused=false; f.warp=false; f._pend=null; f.battleWin=undefined;
@@ -242,7 +267,10 @@ function buildFlightTier(region){
     const put=(icon,type,n,val,zone)=>{for(let i=0;i<n;i++){
       const zx=zone?zone.x+(Math.random()-.5)*zone.r*1.6:90+Math.random()*(W-180);
       const zy=zone?zone.y+(Math.random()-.5)*zone.r*1.6:170+Math.random()*(H-340);
-      f.items.push({icon,type,val:val||0,x:Math.max(60,Math.min(W-60,zx)),y:Math.max(120,Math.min(H-80,zy)),r:16,taken:false,pulse:Math.random()*6});}};
+      const poiN=type==='choice'?(1+Math.floor(Math.random()*10)):0;
+      f.items.push({icon,type,val:val||0,x:Math.max(60,Math.min(W-60,zx)),y:Math.max(120,Math.min(H-80,zy)),
+        r:type==='choice'?42:16,taken:false,pulse:Math.random()*6,poiN,
+        poiImg:poiN?flightPoiImage(flyArtKey(region),poiN):null});}};
     put('🪙','coin',Math.round((18+bn*3)*2.4),coinVal);
     put('💎','gem',(4+bn*2)*2,coinVal*3);
     // яйца НЕ разбросаны по карте — редкая награда за победы/события/испытания
@@ -275,8 +303,9 @@ function buildFlightTier(region){
       r:60+Math.random()*40,a:Math.random()*6,va:.3+Math.random()*.5,vx:(Math.random()-.5)*40,vy:(Math.random()-.5)*40,
       ph:Math.random()*4}); // фаза цикла: затишье → предупреждение → разряд
     // логова зверей — реальные бои
-    const denAt=(fx,fy)=>{const sp=weightedSpecies();
+    const denAt=(fx,fy)=>{const sp=weightedSpecies(),denVariant=1+Math.floor(Math.random()*3);
       return {x:W*fx,y:H*fy,name:'Логово: '+sp.name,sp,enemyImg:flySpritePng(sp.id,1,1),threat:1,
+        denVariant,denImg:flightDenImage(flyArtKey(region),denVariant),
         beast:{x:W*fx+40,y:H*fy,tx:W*fx,ty:H*fy,wait:0},patrolR:150,aggro:200,speedMul:.78,defeated:false,cool:0};};
     f.dens=[];
     for(let i=0;i<(RN.denCount||4);i++)
@@ -554,6 +583,37 @@ function renderFlight(){
   }
 
   /* --- загадочное место (❓) --- */
+  function choiceThreat(item){
+    if(Math.random()>=0.20)return false;
+    const roll=Math.random(),st=statsOf(f.d);
+    if(roll<.45){
+      const sp=weightedSpecies();
+      const ent={sp,rare:false,name:'Внезапная засада: '+sp.name,
+        img:flySpritePng(sp.id,Math.max(1,f.d.level),2),threat:2,
+        x:item.x,y:item.y,tx:item.x,ty:item.y,wait:0,heading:0,speed:130,defeated:false,cool:0};
+      f.floats.push({x:item.x,y:item.y,t:0,txt:'⚠️ ЗАСАДА!'});
+      encounter('wild',ent);
+      return true;
+    }
+    if(roll<.70){
+      f.slowUntil=performance.now()+12000;
+      f.floats.push({x:item.x,y:item.y,t:0,txt:'🕸️ Крылья скованы: скорость −45% на 12 сек.'});
+    }else if(roll<.85){
+      const loss=Math.max(1,Math.round(st.maxHp*.25));
+      f.d.curHp=Math.max(1,(f.d.curHp||st.maxHp)-loss);
+      f.floats.push({x:item.x,y:item.y,t:0,txt:`💔 Ловушка: −${loss} здоровья`});
+    }else if(roll<.95){
+      f.stam=0;f.drag.vx*=.2;f.drag.vy*=.2;
+      f.floats.push({x:item.x,y:item.y,t:0,txt:'🌀 Истощение: запас сил потерян'});
+    }else{
+      f.d.curHp=1;f.stam=0;f.drag.vx=f.drag.vy=0;
+      f.floats.push({x:item.x,y:item.y,t:0,txt:'☠️ Роковой исход: дракон пал, но был спасён стаей'});
+      persist();
+      setTimeout(()=>finishFlight(false),900);
+    }
+    persist();
+    return false;
+  }
   function choiceCard(item){
     f.paused=true;
     const ev=(typeof rollWorldEvent==='function')?rollWorldEvent():null;
@@ -563,7 +623,8 @@ function renderFlight(){
     // REWORK: у каждого исхода видно ожидаемую ценность — осознанное решение, а не лотерея
     const riskTag=o=>{const rr=(typeof REWARD_RISK!=='undefined')&&REWARD_RISK[o.reward];
       return rr&&o.reward!=='none'?`<span style="opacity:.65;font-size:11px"> · ${rr.v}</span>`:'';};
-    encEl.innerHTML=`<div class="enc-card"><div class="enc-icon">${ev.icon}</div><div class="enc-name">${ev.name}</div><div class="enc-sub">${ev.q}</div>`
+    const poiSrc=`images/poi/poi_${flyArtKey(f.region)}_${String(item.poiN||1).padStart(2,'0')}.webp?v=303`;
+    encEl.innerHTML=`<div class="enc-card"><img class="enc-poi" src="${poiSrc}" alt=""><div class="enc-name">${ev.name}</div><div class="enc-sub">${ev.q}</div>`
       + ev.opts.map((o,i)=>`<button ${i?'class="ghost"':''} data-c="${i}">${o.t}${riskTag(o)}</button>`).join('') + `</div>`;
     encEl.querySelectorAll('[data-c]').forEach(btn=>btn.onpointerdown=()=>{
       const opt=ev.opts[+btn.dataset.c];
@@ -572,6 +633,7 @@ function renderFlight(){
       if(opt.reward!=='none'){ f.cnt.treasure++; exploreProgress(); }
       f.floats.push({x:item.x,y:item.y,t:0,txt});
       renderLedger();
+      choiceThreat(item);
     });
   }
 
@@ -652,7 +714,8 @@ function renderFlight(){
       jy=(keys.has('ArrowDown')||keys.has('KeyS')?1:0)-(keys.has('ArrowUp')||keys.has('KeyW')?1:0);
       const l=Math.hypot(jx,jy);if(l>1){jx/=l;jy/=l;}
     }
-    const tired=f.stam<=0,spdCap=P.speed*(tired?.4:1);
+    const tired=f.stam<=0,slowed=(f.slowUntil||0)>now;
+    const spdCap=P.speed*(tired?.4:1)*(slowed?.55:1);
     const k=1-Math.pow(P.inertia,dt*60);
     dg.vx+=(jx*spdCap-dg.vx)*k;dg.vy+=(jy*spdCap-dg.vy)*k;
     const spd=Math.hypot(dg.vx,dg.vy);
@@ -844,9 +907,17 @@ function renderFlight(){
       ctx.restore();});
     // предметы
     f.items.forEach(it=>{if(it.taken)return;const px=it.x-sx,py=it.y-sy;
-      if(px<-30||py<-30||px>vw+30||py>vh+30)return;it.pulse+=dt*3;
-      ctx.fillStyle='rgba(255,215,106,.22)';ctx.beginPath();ctx.arc(px,py+2,15,0,7);ctx.fill();
-      ctx.font='24px serif';ctx.fillText(it.icon,px,py+Math.sin(it.pulse)*3);});
+      const ir=it.type==='choice'?62:30;
+      if(px<-ir||py<-ir||px>vw+ir||py>vh+ir)return;it.pulse+=dt*3;
+      if(it.type==='choice'&&it.poiImg&&it.poiImg.complete&&it.poiImg.naturalWidth){
+        const ps=104+Math.sin(it.pulse)*3;
+        ctx.save();ctx.globalAlpha=.94;ctx.drawImage(it.poiImg,px-ps/2,py-ps*.58,ps,ps);ctx.restore();
+        ctx.save();ctx.globalAlpha=.22+Math.sin(it.pulse)*.05;ctx.strokeStyle='#9fe6ff';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(px,py+8,32,0,7);ctx.stroke();ctx.restore();
+      }else{
+        ctx.fillStyle='rgba(255,215,106,.22)';ctx.beginPath();ctx.arc(px,py+2,15,0,7);ctx.fill();
+        ctx.font='24px serif';ctx.fillText(it.icon,px,py+Math.sin(it.pulse)*3);
+      }});
 
     // портал
     {const px=f.portal.x-sx,py=f.portal.y-sy,rdy=flyPortalReady(),pulse=1+Math.sin(now/300)*0.08;
@@ -863,13 +934,14 @@ function renderFlight(){
     // логова
     f.dens.forEach(dd=>{const px=dd.x-sx,py=dd.y-sy;
       if(px>-200&&py>-200&&px<vw+200&&py<vh+200){
-        if(f.denImg&&f.denImg.complete&&f.denImg.naturalWidth){
-          const dw2=180,dh2=dw2*f.denImg.naturalHeight/f.denImg.naturalWidth;
+        const denImg=dd.denImg||f.denImg;
+        if(denImg&&denImg.complete&&denImg.naturalWidth){
+          const dw2=196,dh2=dw2*denImg.naturalHeight/denImg.naturalWidth;
           const bob=Math.sin(now/700+dd.x*0.01)*5;
           const lift=(bob+5)/10;
           ctx.save();ctx.globalAlpha=.3-lift*.12;ctx.fillStyle='#000';
           ctx.beginPath();ctx.ellipse(px,py+dh2*0.62,dw2*0.34*(1-lift*.12),dh2*0.15*(1-lift*.12),0,0,7);ctx.fill();ctx.restore();
-          ctx.drawImage(f.denImg,px-dw2/2,py-dh2/2-bob,dw2,dh2);
+          ctx.drawImage(denImg,px-dw2/2,py-dh2/2-bob,dw2,dh2);
         } else {ctx.font='34px serif';ctx.fillText('🕳️',px,py);}
         ctx.font='italic 12px Georgia';ctx.fillStyle='rgba(255,230,200,.92)';ctx.fillText(dd.name,px,py+58);
         if(!dd.defeated){drawSprite(dd.enemyImg,dd.beast.x,dd.beast.y,Math.atan2(dd.beast.ty-dd.beast.y,dd.beast.tx-dd.beast.x),sx,sy,44,now,null,false);
@@ -895,12 +967,16 @@ function renderFlight(){
       ctx.globalAlpha=.05;ctx.fillStyle='#ff5a46';ctx.fill();ctx.restore(); }
     // REWORK: воздушные потоки — пунктирное русло со стрелками
     for(const wl of f.winds){ const x1=wl.x1-sx,y1=wl.y1-sy,x2=wl.x2-sx,y2=wl.y2-sy;
-      if(Math.max(x1,x2)<-100||Math.max(y1,y2)<-100||Math.min(x1,x2)>vw+100||Math.min(y1,y2)>vh+100)continue;
-      ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle='#bfe8ff';ctx.lineWidth=wl.w*0.5;
-      ctx.lineCap='round';ctx.setLineDash([26,34]);ctx.lineDashOffset=-(now/28)%60;
-      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
-      ctx.globalAlpha=.8;ctx.font='20px serif';
-      ctx.fillText('💨',(x1+x2)/2,(y1+y2)/2);ctx.restore(); }
+      if(Math.max(x1,x2)<-140||Math.max(y1,y2)<-140||Math.min(x1,x2)>vw+140||Math.min(y1,y2)>vh+140)continue;
+      const len=Math.hypot(x2-x1,y2-y1)+wl.w*.8,ang=Math.atan2(y2-y1,x2-x1),laneW=wl.w*1.2;
+      ctx.save();ctx.translate((x1+x2)/2,(y1+y2)/2);ctx.rotate(ang);ctx.globalAlpha=.28;
+      ctx.beginPath();ctx.roundRect(-len/2,-laneW/2,len,laneW,laneW/2);ctx.clip();
+      if(f.windImg&&f.windImg.complete&&f.windImg.naturalWidth){
+        const tile=laneW*1.55,offset=(now/26)%tile;
+        for(let xx=-len/2-tile+offset;xx<len/2+tile;xx+=tile)
+          ctx.drawImage(f.windImg,xx,-laneW/2,tile,laneW);
+      }
+      ctx.restore(); }
     // REWORK: найденные секретные зоны — мягкое свечение
     for(const sz of f.secrets){ if(!sz.found)continue; const px=sz.x-sx,py=sz.y-sy;
       if(px<-160||py<-160||px>vw+160||py>vh+160)continue;
@@ -928,9 +1004,12 @@ function renderFlight(){
     // грозы: видимые фазы
     f.storms.forEach(s=>{const px=s.x-sx,py=s.y-sy;if(px<-140||py<-140||px>vw+140||py>vh+140)return;
       const warn=s.ph>2.6&&s.ph<=3.6, strike=s.ph>3.6;
-      ctx.save();ctx.translate(px,py);ctx.rotate(Math.sin(s.a)*.15);
-      ctx.globalAlpha=strike?1:(warn?.9:.55);
-      ctx.font=(s.r*1.1)+'px serif';ctx.fillText('⛈️',0,0);ctx.restore();
+      ctx.save();ctx.translate(px,py);ctx.rotate(s.a+Math.sin(now/900)*.08);
+      ctx.globalAlpha=strike?.82:(warn?.62:.38);
+      const hz=s.r*2.45*(1+Math.sin(now/380+s.a)*.035);
+      if(f.hazardImg&&f.hazardImg.complete&&f.hazardImg.naturalWidth)
+        ctx.drawImage(f.hazardImg,-hz/2,-hz/2,hz,hz);
+      ctx.restore();
       if(warn){ // предупреждение: пунктирное кольцо растёт
         const k=(s.ph-2.6);
         ctx.save();ctx.strokeStyle='rgba(255,230,120,'+(0.4+k*0.5)+')';ctx.lineWidth=3;
@@ -938,7 +1017,7 @@ function renderFlight(){
       } else if(strike){ // разряд!
         ctx.save();ctx.globalAlpha=.75;ctx.fillStyle='rgba(255,240,150,.35)';
         ctx.beginPath();ctx.arc(px,py,s.r*.8,0,7);ctx.fill();
-        ctx.font=(s.r*.9)+'px serif';ctx.fillText('⚡',px,py);ctx.restore();
+        ctx.restore();
       }
       ctx.globalAlpha=1;});
 
