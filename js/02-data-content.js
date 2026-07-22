@@ -6,11 +6,11 @@
    3 уровня сундуков по глубине биома. Открываются ключом (мини-игра подбора)
    или в кузне за ресурсы. Лут: золото, пыль, артефакты, украшения хаба, яйца. */
 const CHEST_TYPES=[
-  {tier:1, name:'Простой сундук', icon:'<img class="loot-icon chest-tier-icon" src="images/chest_tier1.png" alt="Простой сундук">', zones:1, keyName:'Простой ключ',  keyIcon:'🔑',
+  {tier:1, name:'Простой сундук', icon:'<img class="loot-icon chest-tier-icon" src="images/chest_tier1.webp" loading="lazy" decoding="async" alt="Простой сундук">', zones:1, keyName:'Простой ключ',  keyIcon:'🔑',
    forgeCost:{gold:120, dust:15}},
-  {tier:2, name:'Крепкий сундук', icon:'<img class="loot-icon chest-tier-icon" src="images/chest_tier2.png" alt="Крепкий сундук">', zones:2, keyName:'Резной ключ',   keyIcon:'🗝️',
+  {tier:2, name:'Крепкий сундук', icon:'<img class="loot-icon chest-tier-icon" src="images/chest_tier2.webp" loading="lazy" decoding="async" alt="Крепкий сундук">', zones:2, keyName:'Резной ключ',   keyIcon:'🗝️',
    forgeCost:{gold:480, dust:30}},
-  {tier:3, name:'Древний сундук', icon:'<img class="loot-icon chest-tier-icon" src="images/chest_tier3.png" alt="Древний сундук">', zones:3, keyName:'Древний ключ',  keyIcon:'🔐',
+  {tier:3, name:'Древний сундук', icon:'<img class="loot-icon chest-tier-icon" src="images/chest_tier3.webp" loading="lazy" decoding="async" alt="Древний сундук">', zones:3, keyName:'Древний ключ',  keyIcon:'🔐',
    forgeCost:{gold:1080, dust:45}},
 ];
 const chestType=tier=>CHEST_TYPES.find(c=>c.tier===tier)||CHEST_TYPES[0];
@@ -344,6 +344,7 @@ function openChestWithKey(chestIdx){
     chestsArr().splice(chestIdx,1);
     const perfect = result==='perfect';
     const loot=rollChestLoot(tier, perfect);
+    if(typeof completeLesson==='function')completeLesson('treasury');
     showChestResult(tier, loot, result);
     persist(); renderLedger();
   });
@@ -357,6 +358,7 @@ function openChestWithForge(chestIdx){
   S.gold-=cost.gold; S.dust-=cost.dust;
   chestsArr().splice(chestIdx,1);
   const loot=rollChestLoot(tier, false);
+  if(typeof completeLesson==='function')completeLesson('treasury');
   showChestResult(tier, loot, 'forge');
   persist(); renderLedger();
 }

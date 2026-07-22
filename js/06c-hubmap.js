@@ -43,6 +43,8 @@ function bindHubTaskDrawer(){
   const wrap=$('#hubWrap'),drawer=$('#hubTaskDrawer'),handle=$('#hubTaskHandle');if(!wrap||!drawer||!handle)return;
   handle.onclick=()=>setHubTasksOpen(!drawer.classList.contains('open'));
   drawer.querySelectorAll('[data-hub-claim]').forEach(b=>b.onclick=()=>{claimQuest(b.dataset.hubClaim);renderHub();setTimeout(()=>setHubTasksOpen(true),0);});
+  const daily=$('#hubDailyClaim'); if(daily)daily.onclick=()=>{claimChest();renderHub();setTimeout(()=>setHubTasksOpen(true),0);};
+  const weekly=$('#hubWeeklyClaim');if(weekly)weekly.onclick=()=>{claimWeekly();renderHub();setTimeout(()=>setHubTasksOpen(true),0);};
   let sy=0,sx=0,tracking=false;
   wrap.addEventListener('pointerdown',e=>{sy=e.clientY;sx=e.clientX;tracking=true;},{passive:true});
   wrap.addEventListener('pointerup',e=>{if(!tracking)return;tracking=false;const dy=e.clientY-sy,dx=e.clientX-sx;
@@ -76,9 +78,14 @@ function renderHub(){
   const chip=ns?`<button class="hub-next-chip tap" id="nextStepBtn" aria-label="Следующий шаг: ${ns.title}">
     <span class="hn-icon">${ns.icon}</span><span class="hn-copy"><small>Следующий шаг</small><b>${ns.title}</b>${ns.why?`<em>${ns.why}</em>`:''}</span><span class="hn-arrow">›</span>
   </button>`:'';
+  const dailyReward=typeof chestReward==='function'?chestReward():null;
+  const weekly=(typeof ensureWeekly==='function')?ensureWeekly():null,weeklyD=weekly&&typeof weeklyDef==='function'?weeklyDef():null;
+  const weeklyPct=weekly&&weeklyD?Math.round(weekly.progress/weeklyD.goal*100):0;
   const taskDrawer=`<aside class="hub-task-drawer" id="hubTaskDrawer" aria-expanded="false">
-    <button class="hub-task-handle" id="hubTaskHandle" aria-label="Открыть или закрыть задачи"><span></span><b>Задачи и бонусы</b><em>${(S.quests||[]).filter(q=>q.done&&!q.claimed).length||''}</em></button>
-    <div class="hub-task-body"><section><h3>Квестовые задачи</h3>${hubQuestRows()}</section><section><h3>Активные бонусы</h3><div class="hub-bonus-list">${hubBonusRows()}</div></section><section><h3>Подсказка</h3><p>${ns?(ns.icon+' '+ns.title+(ns.why?' — '+ns.why:'')):'Исследуй мир и развивай свою стаю.'}</p></section></div>
+    <button class="hub-task-handle" id="hubTaskHandle" aria-label="Открыть или закрыть дела на сегодня"><span></span><b>Сегодня</b><em>${(S.quests||[]).filter(q=>q.done&&!q.claimed).length+(S.chestReady?1:0)||''}</em></button>
+    <div class="hub-task-body"><section><h3>Подарок дня · серия ${S.streak||1} ${S.streakShield?'· 🛡️':''}</h3>${S.chestReady
+      ?`<button class="hub-daily-claim" id="hubDailyClaim">🎁 Забрать · ${dailyReward?rewardText(dailyReward):'награда'}</button>`
+      :'<p>✓ Подарок получен. Новый будет завтра.</p>'}</section><section><h3>Недельная экспедиция</h3>${weekly&&weekly.complete?'<p>✓ Легенда этой недели открыта.</p>':weeklyD?`<div class="weekly-row"><b>${weekly.step+1}/5 · ${weeklyD.name}</b><i><span style="width:${weeklyPct}%"></span></i><small>${weekly.progress}/${weeklyD.goal} · ${rewardText(weeklyD.reward)}${weeklyD.final?' · декор':''}</small>${weekly.progress>=weeklyD.goal?'<button id="hubWeeklyClaim">Завершить этап</button>':''}</div>`:''}</section><section><h3>Три дела</h3>${hubQuestRows()}</section><section><h3>Активные бонусы</h3><div class="hub-bonus-list">${hubBonusRows()}</div></section></div>
   </aside>`;
   const serviceBar=`<div class="hub-service-bar" aria-label="Сервисы поселения">
     <button data-act="treasury">🎁<span>Сокровища</span>${S.chestReady?'<b>!</b>':''}</button>

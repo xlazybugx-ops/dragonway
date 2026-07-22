@@ -43,12 +43,12 @@ const _flightDecorCache={};
 const _flightFxCache={};
 const _flightPoiCache={};
 function flightFxImage(name){
-  const src=`images/effects/${name}.webp?v=302`;
+  const src=`images/effects/${name}.webp?v=300`;
   if(_flightFxCache[src])return _flightFxCache[src];
   const img=new Image();img.src=src;_flightFxCache[src]=img;return img;
 }
 function flightPoiImage(key,index){
-  const src=`images/poi/poi_${key}_${String(index).padStart(2,'0')}.webp?v=303`;
+  const src=`images/poi/poi_${key}_${String(index).padStart(2,'0')}.webp?v=300`;
   if(_flightPoiCache[src])return _flightPoiCache[src];
   const img=new Image();img.src=src;_flightPoiCache[src]=img;return img;
 }
@@ -56,7 +56,7 @@ function flightDenImage(key,index){
   const cacheKey=`${key}:${index}`;
   if(_denImgCache[cacheKey])return _denImgCache[cacheKey];
   const img=new Image();
-  img.src=`images/dens/den_${key}_${String(index).padStart(2,'0')}.webp?v=304`;
+  img.src=`images/dens/den_${key}_${String(index).padStart(2,'0')}.webp?v=300`;
   img.onerror=()=>{img.onerror=null;img.src=`images/den_${key}.png`;};
   _denImgCache[cacheKey]=img;
   return img;
@@ -79,7 +79,7 @@ function flyArtKey(region){ return FLY_ART_KEY[region.worldId]||region.scene; }
 function loadFlyMap(region,tier,cb){
   // Полёт использует отдельную ортографическую карту сверху; панорамный biome_* остаётся обложкой мира.
   const depth=Math.max(1,Math.min(3,tier||region.biomeN||1));
-  const src=`images/textures/texture_${flyArtKey(region)}_${depth}.webp?v=302`;
+  const src=`images/textures/texture_${flyArtKey(region)}_${depth}.webp?v=300`;
   const cached=_flyMapCache[src];
   if(cached){
     if(cached.complete&&cached.naturalWidth) cb(cached);
@@ -193,6 +193,7 @@ function startFlight(region,d){
   const fs=$('#flightFs');
   if(fs){ fs.style.display='block'; fs.innerHTML='<div class="fcv-load">Разжигаем миры… <span style="opacity:.55;font-size:12px">сборка v12</span></div>'; }
   buildFlightTier(region);
+  setTimeout(()=>{if(typeof showLesson==='function')showLesson('flight');},700);
 }
 
 /* REWORK: применить усиление забега (действует только до конца странствия) */
@@ -234,7 +235,7 @@ function buildFlightTier(region){
   // картинка логова этого мира (если есть)
   const _dik=flyArtKey(region); // ПЕРФ: переиспользуем Image(), не грузим повторно
   if(_denImgCache[_dik]!==undefined){ f.denImg=_denImgCache[_dik]; }
-  else { const _im=new Image(); _im.onerror=()=>{_denImgCache[_dik]=null; if(flight)flight.denImg=null;}; _im.onload=()=>{_denImgCache[_dik]=_im;}; _im.src=`images/den_${_dik}.png`; f.denImg=_im; }
+  else { const _im=new Image(); _im.onerror=()=>{_denImgCache[_dik]=null; if(flight)flight.denImg=null;}; _im.onload=()=>{_denImgCache[_dik]=_im;}; _im.src=`images/den_${_dik}.webp`; f.denImg=_im; }
   loadFlyMap(region,bn,img=>{
     if(!flight||flight!==f)return;
     // REWORK: карта ~10× больше — не растянутая, а собранная из новых участков
@@ -584,6 +585,7 @@ function renderFlight(){
 
   /* --- загадочное место (❓) --- */
   function choiceThreat(item){
+    if(S.firstHour&&S.firstHour.safeFlight)return false;
     if(Math.random()>=0.20)return false;
     const roll=Math.random(),st=statsOf(f.d);
     if(roll<.45){
@@ -623,7 +625,7 @@ function renderFlight(){
     // REWORK: у каждого исхода видно ожидаемую ценность — осознанное решение, а не лотерея
     const riskTag=o=>{const rr=(typeof REWARD_RISK!=='undefined')&&REWARD_RISK[o.reward];
       return rr&&o.reward!=='none'?`<span style="opacity:.65;font-size:11px"> · ${rr.v}</span>`:'';};
-    const poiSrc=`images/poi/poi_${flyArtKey(f.region)}_${String(item.poiN||1).padStart(2,'0')}.webp?v=303`;
+    const poiSrc=`images/poi/poi_${flyArtKey(f.region)}_${String(item.poiN||1).padStart(2,'0')}.webp?v=300`;
     encEl.innerHTML=`<div class="enc-card"><img class="enc-poi" src="${poiSrc}" alt=""><div class="enc-name">${ev.name}</div><div class="enc-sub">${ev.q}</div>`
       + ev.opts.map((o,i)=>`<button ${i?'class="ghost"':''} data-c="${i}">${o.t}${riskTag(o)}</button>`).join('') + `</div>`;
     encEl.querySelectorAll('[data-c]').forEach(btn=>btn.onpointerdown=()=>{
@@ -640,6 +642,8 @@ function renderFlight(){
   /* --- сбор предмета --- */
   function pickup(it){
     it.taken=true;
+    if(typeof completeLesson==='function')completeLesson('flight');
+    if(S.firstHour&&S.firstHour.phase==='first_flight'){S.firstHour.phase='first_battle';persist();}
     if(typeof incubateEggs==='function') incubateEggs(GB.Eggs.incExplore); // исследование инкубирует яйца
     const R=f.region;let txt=it.icon+' +1';
     if(it.type==='coin'||it.type==='gem'){S.gold+=it.val;f.stats.gold+=it.val;f.cnt.treasure++;txt=`${it.icon} +${it.val}`;}

@@ -38,16 +38,46 @@ function sfx(kind){
 }
 /* ===== ВИБРАЦИЯ (мобильные) ===== */
 function vibrate(pattern){
-  if(S && S.soundOn===false) return; // общий тумблер эффектов
+  if(S && S.a11y && S.a11y.vibrationOff) return;
   try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
 }
-/* ===== ОДНОРАЗОВЫЕ ПОДСКАЗКИ (туториал) ===== */
-function hintOnce(id, html){
-  if(!S.hintsSeen) S.hintsSeen={};
-  if(S.hintsSeen[id]) return;
-  S.hintsSeen[id]=true;
-  toast('💡 '+html);
-  persist();
+/* ===== УРОКИ ВЕЛЛЫ: воспроизводимые, завершаются действием ===== */
+const TUTORIALS={
+  battle:{icon:'⚔️',title:'Первый ход',text:'Выбери подсвеченный приём. Мана растёт после каждого хода.',view:'arena',target:'#moveBox .move:not(:disabled)',action:'Применить любой приём'},
+  forge:{icon:'🔨',title:'Улучшение реликвии',text:'Выбери реликвию, посмотри результат и нажми «Ковать».',view:'forge',target:'#forgeBody .btn:not(:disabled)',action:'Улучшить одну реликвию'},
+  treasury:{icon:'🗝️',title:'Сокровищница',text:'Ключ открывает мини-игру. Попади в золотой центр для бонуса.',view:'hub',target:'#hubWrap button',action:'Открыть один сундук'},
+  portal:{icon:'🗺️',title:'Новые глубины',text:'Уровень портала открывает миры и более редкие находки.',view:'explore',target:'#portalUp',action:'Улучшить портал'},
+  flight:{icon:'🪽',title:'Управление полётом',text:'Веди дракона пальцем или клавишами. Лети к светящимся точкам.',view:'explore',target:'#flightFs canvas',action:'Долететь до первой точки'},
+  hatch:{icon:'🥚',title:'Вылупление',text:'Выбери яйцо и помоги ему раскрыться. Стихия определяет вид.',view:'hatch',target:'#hatchWrap button:not(:disabled)',action:'Высидеть одно яйцо'},
+  lair:{icon:'💖',title:'Забота о драконе',text:'Еда, ласка и отдых помогают дракону быть готовым к приключению.',view:'lair',target:'#w2Plat',action:'Позаботиться о драконе'},
+};
+const LESSON_FOR_VIEW={arena:'battle',forge:'forge',explore:'flight',hatch:'hatch',lair:'lair'};
+let lessonSessionShown=0;
+function lessonState(id){ if(!S.lessons)S.lessons={}; return S.lessons[id]||(S.lessons[id]={status:'new',shown:0}); }
+function closeLesson(){ const o=$('#lessonOverlay');if(o)o.remove();document.body.classList.remove('lesson-open'); }
+function showLesson(id,opts={}){
+  const def=TUTORIALS[id];if(!def)return;
+  const st=lessonState(id);if(!opts.replay&&st.status!=='new')return;
+  if(!opts.replay&&lessonSessionShown>=2)return;
+  closeLesson();st.status='shown';st.shown=(st.shown||0)+1;S.hintsSeen=S.hintsSeen||{};S.hintsSeen[id]=true;persist();
+  if(!opts.replay)lessonSessionShown++;
+  const target=document.querySelector(def.target||'');let mark='';
+  if(target){const r=target.getBoundingClientRect();mark=`<div class="lesson-mark" style="left:${Math.max(6,r.left-8)}px;top:${Math.max(6,r.top-8)}px;width:${Math.min(innerWidth-12,r.width+16)}px;height:${r.height+16}px"></div>`;}
+  const o=document.createElement('div');o.id='lessonOverlay';o.className='lesson-overlay';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-labelledby','lessonTitle');
+  o.innerHTML=`${mark}<div class="lesson-card"><div class="lesson-vella">🐉</div><div class="lesson-copy"><small>Совет Веллы</small><h2 id="lessonTitle">${def.icon} ${def.title}</h2><p>${def.text}</p><em>Попробуй: ${def.action}</em></div><div class="lesson-actions"><button class="btn" id="lessonGo">Понятно</button><button class="btn ghost" id="lessonLater">Позже</button></div></div>`;
+  document.body.appendChild(o);document.body.classList.add('lesson-open');
+  $('#lessonGo').onclick=closeLesson;$('#lessonLater').onclick=()=>{st.status='skipped';persist();closeLesson();};$('#lessonGo').focus();
+}
+function completeLesson(id){const st=lessonState(id);if(st.status==='complete')return;st.status='complete';st.completedAt=Date.now();persist();}
+function hintOnce(id,html){
+  if(!TUTORIALS[id])TUTORIALS[id]={icon:'💡',title:'Подсказка',text:String(html).replace(/<[^>]+>/g,''),view:document.body.dataset.view||'hub',action:'Попробовать подсказку'};
+  const st=lessonState(id);
+  if(S.hintsSeen&&S.hintsSeen[id]&&st.status==='new'){st.status='shown';st.shown=1;persist();return;}
+  showLesson(id);
+}
+function renderScreenHelp(v){
+  let b=$('#screenHelp');if(b)b.remove();const id=LESSON_FOR_VIEW[v];if(!id)return;
+  b=document.createElement('button');b.id='screenHelp';b.className='screen-help';b.textContent='?';b.setAttribute('aria-label','Открыть совет Веллы');b.onclick=()=>showLesson(id,{replay:true});document.body.appendChild(b);
 }
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 
@@ -78,6 +108,7 @@ function applyA11y(){ const a=S.a11y||{}, b=document.body; if(!b)return;
   b.classList.toggle('a11y-large',!!a.large);
   b.classList.toggle('a11y-left',!!a.lefthand);
   b.classList.toggle('a11y-cb',!!a.colorblind);
+  b.classList.toggle('a11y-motion-off',!!a.motionOff);
 }
 function toggleA11y(key){ if(!S.a11y)S.a11y={}; S.a11y[key]=!S.a11y[key]; applyA11y(); if(typeof persist==='function')persist(); }
 function floatText(txt,color){const f=$('#float');f.textContent=txt;f.style.color=color;f.classList.remove('go');void f.offsetWidth;f.classList.add('go');}
@@ -87,7 +118,7 @@ function levelUpFx(d){ try{
   let el=document.getElementById('lvlFlash');
   if(!el){ el=document.createElement('div'); el.id='lvlFlash'; document.body.appendChild(el); }
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-  if(typeof S!=='undefined'&&S.soundOn&&typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate([10,40,10]);
+  if(typeof vibrate==='function')vibrate([10,40,10]);
 }catch(e){} }
 
 function weightedSpecies(){
@@ -160,7 +191,7 @@ function eggCeremony(egg, def){ try{
     +'<div class="ec-sub">Отнеси в Гнездо, чтобы высидеть</div></div>';
   el.classList.add('show');
   clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2600);
-  if(typeof S!=='undefined'&&S.soundOn&&typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(16);
+  if(typeof vibrate==='function')vibrate(16);
 }catch(e){} }
 // инкубация: любое игровое действие (бой/находка) продвигает ВСЕ яйца. Без реальных таймеров.
 // наследование окраса: чем выше редкость ЯЙЦА, тем вероятнее редкий морф у дракона

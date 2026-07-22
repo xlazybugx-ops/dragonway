@@ -6,11 +6,9 @@
 <meta name="theme-color" content="#1a1410">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <title>Драконис 3.0 · Кодекс Чешуи</title>
-<link rel="stylesheet" href="css/style.css?v=303">
+<link rel="stylesheet" href="css/style.css?v=300">
+<link rel="stylesheet" href="css/tokens.css?v=300">
 </head>
 <body>
 <div id="startScreen" class="start-screen" style="display:none"></div>
@@ -32,17 +30,7 @@
 
   <!-- LAIR -->
   <section class="view" id="lair">
-    <div class="panel panel--daily">
-      <h2>Подарок и весёлые дела</h2>
-      <p class="lede">Каждый день тебя ждёт подарок и несколько забавных дел. Не успел сегодня — ничего страшного, они подождут!</p>
-      <div id="dailyPanel"></div>
-    </div>
-    <div class="panel">
-      <h2>Логово</h2>
-      <p class="lede">Твои крылатые подопечные. Нажми, чтобы открыть свиток дракона.</p>
-      <div class="lair-roster" id="lairRoster"></div>
-    </div>
-    <div class="panel" id="detailPanel" style="display:none"></div>
+    <!-- Интерактивное логово создаётся renderLair(); задачи находятся только в поселении. -->
   </section>
 
   <!-- HATCH -->
@@ -115,6 +103,7 @@
         <button class="codex-tab on" data-ctab="species">🐉 Виды</button>
         <button class="codex-tab" data-ctab="lore">📜 Легенды</button>
         <button class="codex-tab" data-ctab="miles">🏅 Вехи</button>
+        <button class="codex-tab" data-ctab="tips">💡 Советы</button>
       </div>
       <div id="codexSpecies">
         <p class="lede">Все драконы мира. Открой каждого, поймав хотя бы одного.</p>
@@ -122,6 +111,7 @@
       </div>
       <div id="codexLore" style="display:none"></div>
       <div id="codexMiles" style="display:none"></div>
+      <div id="codexTips" style="display:none"></div>
     </div>
   </section>
 
@@ -138,9 +128,9 @@
 
 <!-- ЕДИНАЯ НИЖНЯЯ НАВИГАЦИЯ: 5 разделов -->
 <nav id="tabbar" aria-label="Основная навигация">
-  <button class="tabbtn" data-tab="hub"     title="Логово"><span class="tb-ic"><img src="images/nav_lair.webp" alt=""></span><span class="tb-lb">Логово</span></button>
+  <button class="tabbtn" data-tab="hub"     title="Поселение"><span class="tb-ic"><img src="images/nav_lair.webp" alt=""></span><span class="tb-lb">Поселение</span></button>
   <button class="tabbtn" data-tab="explore" title="Исследование"><span class="tb-ic"><img src="images/nav_explore.webp" alt=""></span><span class="tb-lb">Странствие</span></button>
-  <button class="tabbtn" data-tab="lair"    title="Команда"><span class="tb-ic"><img src="images/nav_team.webp" alt=""></span><span class="tb-lb">Команда</span></button>
+  <button class="tabbtn" data-tab="lair"    title="Логово"><span class="tb-ic"><img src="images/nav_team.webp" alt=""></span><span class="tb-lb">Логово</span></button>
   <button class="tabbtn" data-tab="codex"   title="Кодекс"><span class="tb-ic"><img src="images/nav_codex.webp" alt=""></span><span class="tb-lb">Кодекс</span></button>
   <button class="tabbtn" data-tab="profile" title="Профиль"><span class="tb-ic"><img src="images/nav_profile.webp" alt=""></span><span class="tb-lb">Профиль</span></button>
 </nav>
@@ -156,11 +146,11 @@
 <script src="js/04-systems.js?v=300"></script>
 <script src="js/05-ui-base.js?v=300"></script>
 <script src="js/05b-island.js?v=300"></script>
-<script src="js/05d-lairwell.js?v=301"></script>
+<script src="js/05d-lairwell.js?v=300"></script>
 <script src="js/06-world.js?v=300"></script>
 <script src="js/06c-hubmap.js?v=300"></script>
-<script src="js/07-flight.js?v=304"></script>
-<script src="js/08-battle.js?v=302"></script>
+<script src="js/07-flight.js?v=300"></script>
+<script src="js/08-battle.js?v=300"></script>
 <script src="js/08b-arcade.js?v=300"></script>
 <script src="js/09-forge-breed.js?v=300"></script>
 <script src="js/10-spire-codex.js?v=300"></script>

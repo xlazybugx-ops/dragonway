@@ -198,7 +198,7 @@ function renderBattle(){
   };
   stage.innerHTML=`
   <div class="arena">
-    <div class="arena-bg battle-biome"><img src="images/textures/texture_${biomeKey}_${biomeDepth}.webp?v=302" alt="" decoding="async" onerror="this.src='images/biome_${biomeKey}.webp';this.onerror=()=>this.style.display='none'">${sceneSVG(elScene,'battle')}</div>
+    <div class="arena-bg battle-biome"><img src="images/textures/texture_${biomeKey}_${biomeDepth}.webp?v=300" alt="" decoding="async" onerror="this.src='images/biome_${biomeKey}.webp?v=300';this.onerror=()=>this.style.display='none'">${sceneSVG(elScene,'battle')}</div>
     <div class="turn-strip" id="turnStrip"></div>
     <div class="fighters">
       <div class="fighter" id="fMe">
@@ -361,6 +361,7 @@ function playerMove(move){
 // выполнить удар игрока с множителем точности из мини-игры
 function resolvePlayerStrike(move, accMult){
   const b=battle;
+  if(typeof completeLesson==='function')completeLesson('battle');
   // комбо: точные попадания подряд наращивают урон (×1.1 → ×1.2 → ×1.3)
   if(accMult>=GB.Battle.combo.threshold){ b.combo=Math.min(GB.Battle.combo.max,(b.combo||0)+1); if(b.combo>1)floatText('Комбо ×'+(1+b.combo*GB.Battle.combo.perStack).toFixed(2),'#ffd24a'); }
   else if(accMult<1.0){ b.combo=0; }
@@ -409,7 +410,8 @@ function startTimingStrike(move){
   // позиции зон (в % ширины)
   const perfStart=46, perfEnd=54, goodStart=34, goodEnd=66;
   // скорость по ВРЕМЕНИ (%/сек), а не по кадрам — иначе на 120Гц экранах бегунок летит вдвое быстрее
-  const SPEED=100;
+  const assisted=!!(S.firstHour&&S.firstHour.timingAssists>0);
+  const SPEED=assisted?60:100;
   let pos=0, dir=1, raf=null, last=performance.now(), doneFlag=false;
   const marker=box.querySelector('#timingMarker');
   function tick(now){
@@ -424,6 +426,7 @@ function startTimingStrike(move){
     if(doneFlag) return; doneFlag=true;
     cancelAnimationFrame(raf);
     box.remove();
+    if(assisted){S.firstHour.timingAssists=Math.max(0,S.firstHour.timingAssists-1);persist();}
     if(label) floatText(label,color);
     resolvePlayerStrike(move, accMult);
   }
@@ -721,6 +724,7 @@ function finishWaveRun(){
 function endBattle(win){
   if(win && typeof incubateEggs==='function') incubateEggs(GB.Eggs.incBattle); // инкубация яиц за победу
   if(win) S.tutorialGuard=false;
+  if(win&&S.firstHour&&S.firstHour.phase==='first_battle'){S.firstHour.phase='first_care';S.firstHour.safeFlight=false;}
   const b=battle;b.over=true;
   const me=b.me.ref; // настоящий дракон
   if(!b.fromFlight && !b.waveCtx){

@@ -42,6 +42,7 @@ function renderLair(){
   const hpPct=Math.max(0,Math.round(hero.curHp/st.maxHp*100));
   const need=xpToNext(hero.level), xpPct=Math.min(100,Math.round(hero.xp/need*100));
   const nat=natureById(hero.nature);
+  const mood=(typeof _lairMood==='function')?_lairMood(hero):((hero.happy||0)>=4?'радостный':'ждёт заботы');
 
   /* стая на балконах: статично, тап = эмоция + облачко */
   const side=others.slice(0,W2_SPOTS.length).map((d,i)=>{
@@ -108,6 +109,7 @@ function renderLair(){
         <span class="ws-chip">⚔️ ${st.atk}</span><span class="ws-chip">🛡️ ${st.def}</span><span class="ws-chip">💨 ${st.spd}</span>
       </div>
       <div class="ws-care">
+        <span class="ws-mood mood-${Math.min(5,hero.happy||0)}">${(hero.happy||0)>=4?'✨':(hero.happy||0)>=2?'👀':'🌙'} ${mood}</span>
         <span class="ws-hearts big">${'💖'.repeat(hero.happy||0)}${'🤍'.repeat(HAPPY_MAX-(hero.happy||0))}</span>
         <button class="ws-act" id="wsFeed">🍖<i>${FOOD_COST}🪙</i></button>
         <button class="ws-act" id="wsPet">💖<i>ласка</i></button>
@@ -115,24 +117,26 @@ function renderLair(){
         <span class="ws-eq-inline">${slots}</span>
       </div>
       ${genes}
-      <div class="ws-grid">
-        <button class="ws-big" id="wsArena">⚔️ Турнир</button>
-        <button class="ws-big" id="wsSpire">🗼 Шпиль${(typeof pendingForks==='function'&&pendingForks(hero).length)?' <b class="wc-badge">'+pendingForks(hero).length+'</b>':''}</button>
-        <button class="ws-big" id="wsRoost">🧬 Род</button>
-        <button class="ws-big" id="wsDossier">📜 Досье</button>
-        <button class="ws-big" id="wsReserve">💤 Резерв</button>
-        <button class="ws-big warn" id="wsFree" ${S.dragons.length>1?'':'disabled'}>🕊️ Отпустить</button>
+      <div class="ws-primary">
+        <button class="ws-big" id="wsArena">⚔️ В турнир</button>
+        <button class="ws-big" id="wsDossier">📜 Открыть досье</button>
       </div>
+      <details class="ws-more"><summary>Ещё действия</summary><div class="ws-grid">
+        <button class="ws-big" id="wsSpire">🗼 Шпиль${(typeof pendingForks==='function'&&pendingForks(hero).length)?' <b class="wc-badge">'+pendingForks(hero).length+'</b>':''}</button>
+        <button class="ws-big" id="wsRoost">🧬 Гнездилище</button>
+        <button class="ws-big" id="wsReserve">💤 В резерв</button>
+        <button class="ws-big warn" id="wsFree" ${S.dragons.length>1?'':'disabled'}>🕊️ Отпустить</button>
+      </div></details>
     </div>`;
 
   sec.innerHTML=`<div class="well2 ${_wellOpen?'open':''}" id="well2">
-    <img class="w2-bg" src="images/lair_bg.webp?v=301" decoding="async" alt=""
+    <img class="w2-bg" src="images/lair_bg.webp?v=300" decoding="async" alt=""
       onerror="this.style.display='none';this.closest('.well2').classList.add('noimg');">
     <div class="w2-dim"></div>
     ${top}
     <div class="w2-scene">${side}</div>
     <div class="w2-plat" id="w2Plat" role="button" tabindex="0" aria-label="Открыть меню дракона ${dragonName(hero)}" aria-expanded="${_wellOpen?'true':'false'}">
-      <img class="w2-plat-img" src="images/lair_platform_v2.png" decoding="async" alt=""
+      <img class="w2-plat-img" src="images/lair_platform_v2.webp" decoding="async" alt=""
         onerror="if(!this._p){this._p=1;this.src='images/lair_platform.webp';}else{this.style.display='none';this.closest('.w2-plat').classList.add('noimg');}">
       <div class="w2-hero" id="w2Hero">
         <div class="wh-vis dragon-wrap" style="filter:${morphById(hero.morph).filter||'none'}">${dragonVisual(sp.id,hero.level)}</div>

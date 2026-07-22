@@ -8,7 +8,7 @@ let S = {
   eggPity:0, eggsSeen:{}, eggStats:{}, eggsUnique:{}, eggsSecret:{}, shards:0, // система яиц v2
   worldExplored:{}, worldCodex:{events:{},biomes:{},weather:{}}, // исследование мира
   bossSeen:{}, bossKills:{}, // кодекс и реванш боссов
-  a11y:{}, // доступность: contrast/large/lefthand/colorblind
+  a11y:{}, // contrast/large/lefthand/colorblind/motionOff/vibrationOff
   settlement:'Драконьи Земли',
   portalLevel:1,
   forgeLevel:3,
@@ -21,6 +21,8 @@ let S = {
   ascStars:0,        // звёзды владык (материал Восхождения)
   soundOn:true,      // звук и вибрация
   hintsSeen:{},      // показанные одноразовые подсказки
+  lessons:{},        // уроки Веллы: {id:{status:'shown|complete|skipped',shown:n}}
+  firstHour:null,     // мягкий маршрут новичка и два замедленных тайминга
   marketDust:null,   // дневной лимит обмена пыли на Рынке
   milestonesClaimed:{}, // забранные коллекционные вехи
   waveBest:0,        // рекорд арены волн
@@ -45,6 +47,8 @@ let S = {
   lastSeen:0,      // время последнего визита (мс) — для idle-дохода
   lastDaily:'',    // дата последнего входа (YYYY-MM-DD) — для стрика
   streak:0,        // текущая серия дней подряд
+  streakShield:1,  // один мягкий пропуск без потери серии
+  weekly:null,     // недельная экспедиция из пяти коротких этапов
   chestReady:false,// готов ли ежедневный сундук к получению
   quests:[],       // [{id,goal,prog,done,claimed}]
   questDay:'',     // дата, на которую сгенерированы квесты
@@ -274,6 +278,8 @@ function feedDragon(d){
   d.happy=Math.min(HAPPY_MAX,(d.happy||0)+1);
   // сытый дракон чуть подлечивается
   d.curHp=Math.min(statsOf(d).maxHp, d.curHp+Math.round(statsOf(d).maxHp*0.2));
+  if(typeof completeLesson==='function')completeLesson('lair');
+  if(S.firstHour&&S.firstHour.phase==='first_care')S.firstHour.phase='complete';
   floatText('🍖 ням!','#7fb24a');
   toast(`<b>${dragonName(d)}</b> ${pick(FEED_REACTIONS)}! ${'💖'.repeat(d.happy)}`);
   questEvent('feed'); persist();
@@ -281,6 +287,8 @@ function feedDragon(d){
 }
 function petDragon(d){
   d.happy=Math.min(HAPPY_MAX,(d.happy||0)+1);
+  if(typeof completeLesson==='function')completeLesson('lair');
+  if(S.firstHour&&S.firstHour.phase==='first_care')S.firstHour.phase='complete';
   floatText('💖','#cf6e8f');
   toast(`<b>${dragonName(d)}</b> ${pick(PET_REACTIONS)}! ${'💖'.repeat(d.happy)}`);
   questEvent('pet'); persist();

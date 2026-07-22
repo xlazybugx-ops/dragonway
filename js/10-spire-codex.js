@@ -189,8 +189,10 @@ function renderCodex(){
     $('#codexSpecies').style.display=tab==='species'?'block':'none';
     $('#codexLore').style.display=tab==='lore'?'block':'none';
     $('#codexMiles').style.display=tab==='miles'?'block':'none';
+    $('#codexTips').style.display=tab==='tips'?'block':'none';
     if(tab==='lore') renderLore();
     if(tab==='miles') renderMilestones();
+    if(tab==='tips') renderVellaTips();
   });
   const g=$('#codexGrid');g.innerHTML='';
   SPECIES.forEach(sp=>{
@@ -220,6 +222,19 @@ function renderCodex(){
       ${found?`<div class="mdots" title="Собранные окрасы">${morphDots}</div>`:''}`;
     g.appendChild(div);
   });
+}
+
+function showCodexTab(tab){
+  const btn=document.querySelector(`#codex .codex-tab[data-ctab="${tab}"]`);if(btn)btn.click();
+}
+function renderVellaTips(){
+  const box=$('#codexTips');if(!box||typeof TUTORIALS==='undefined')return;
+  const order=['flight','battle','hatch','lair','forge','treasury','portal'];
+  box.innerHTML=`<p class="lede">Здесь можно снова посмотреть любой урок. Урок считается освоенным после действия, а не после чтения.</p><div class="tips-list">${order.map(id=>{
+    const d=TUTORIALS[id],s=lessonState(id),status=s.status==='complete'?'✓ Освоено':s.status==='skipped'?'↷ Отложено':s.status==='shown'?'◉ Показано':'○ Новое';
+    return `<button class="tip-row" data-tip="${id}"><span>${d.icon}</span><span><b>${d.title}</b><small>${d.action}</small></span><em class="${s.status}">${status}</em></button>`;
+  }).join('')}</div>`;
+  box.querySelectorAll('[data-tip]').forEach(b=>b.onclick=()=>showLesson(b.dataset.tip,{replay:true}));
 }
 
 // вкладка «Легенды»: свитки лора по мирам
@@ -256,21 +271,31 @@ function renderLore(){
 /* ===== ВКЛАДКИ ===== */
 const VIEW_TITLES={lair:'Логово',hatch:'Гнездо',explore:'Странствие',arena:'Турнир',roost:'Гнездилище Рода',forge:'Кузница',spire:'Шпиль Мироздания',codex:'Кодекс видов'};
 const PRIMARY_TABS={hub:1,lair:1,explore:1,codex:1,profile:1};
+const VIEW_BACK_LABEL={hub:'Поселение',lair:'Логово',explore:'Странствие',codex:'Кодекс',profile:'Профиль'};
+let viewTrail=[], switchingBack=false;
+function switchBack(){
+  const target=viewTrail.pop()||'hub';
+  switchingBack=true; switchView(target); switchingBack=false;
+}
 function ensureScreenBar(v){
   if(PRIMARY_TABS[v]) return; // у основных разделов — нижняя навигация, без кнопки «На главную»
   const sec=$('#'+v); if(!sec) return;
-  if(sec.querySelector(':scope > .screen-bar')) return;
-  const bar=document.createElement('div');
-  bar.className='screen-bar';
-  bar.innerHTML=`<button class="home-btn" onclick="switchView('hub')">🏠 На главную</button>
+  let bar=sec.querySelector(':scope > .screen-bar');
+  if(!bar){bar=document.createElement('div');bar.className='screen-bar';sec.insertBefore(bar,sec.firstChild);}
+  const back=viewTrail.length?viewTrail[viewTrail.length-1]:'hub';
+  bar.innerHTML=`<button class="home-btn" onclick="switchBack()">← ${VIEW_BACK_LABEL[back]||VIEW_TITLES[back]||'Назад'}</button>
     <span class="screen-bar-title">${VIEW_TITLES[v]||''}</span>`;
-  sec.insertBefore(bar, sec.firstChild);
 }
 function switchView(v){
   // поэтапное открытие: механика недоступна до нужного уровня
   if(FEATURE_MIN[v] && !featureUnlocked(v)){
     toast(`🔒 <b>${FEATURE_NAME[v]}</b> откроется на уровне ${FEATURE_MIN[v]} (сейчас ур.${progLevel()}). Расти в боях!`);
     return;
+  }
+  const current=document.body.dataset.view||document.querySelector('.view.on')?.id||'hub';
+  if(!switchingBack&&current!==v){
+    if(viewTrail[viewTrail.length-1]!==current)viewTrail.push(current);
+    if(viewTrail.length>8)viewTrail.shift();
   }
   if(v!=='hub') S._treasuryOpen=false;
   document.body.dataset.view=v;
@@ -288,6 +313,7 @@ function switchView(v){
   if(v==='profile' && typeof renderProfile==='function')renderProfile();
   if(typeof bindTabbar==='function')bindTabbar();
   if(typeof renderTabbar==='function')renderTabbar(v);
+  if(typeof renderScreenHelp==='function')renderScreenHelp(v);
   window.scrollTo({top:0,behavior:'smooth'});
 }
 

@@ -285,6 +285,7 @@ function doForge(inst){
       S.gold+=back; bonusTxt=` <span style="color:var(--gold)">🔥 Мастерская ковка! Возврат ${back}🪙</span>`;
     }
     inst.level++;
+    if(typeof completeLesson==='function')completeLesson('forge');
     const anvil=$('#anvilArt');
     if(anvil){anvil.classList.remove('forging');void anvil.offsetWidth;anvil.classList.add('forging');}
     floatText('+1 ковка',art && ELEMENTS[art.el]?ELEMENTS[art.el].color:'#d9a441');

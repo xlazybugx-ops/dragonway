@@ -54,6 +54,9 @@ function migrateDragons(){
   if(typeof S.ascStars!=='number') S.ascStars=0;
   if(typeof S.soundOn!=='boolean') S.soundOn=true;
   if(!S.hintsSeen||typeof S.hintsSeen!=='object') S.hintsSeen={};
+  if(!S.lessons||typeof S.lessons!=='object')S.lessons={};
+  if(typeof S.streak!=='number'||S.streak<1)S.streak=1;
+  if(typeof S.streakShield!=='number')S.streakShield=1;
   if(!S.milestonesClaimed||typeof S.milestonesClaimed!=='object') S.milestonesClaimed={};
   if(typeof S.waveBest!=='number') S.waveBest=0;
   if(typeof S.saveVersion!=='number') S.saveVersion=1;
@@ -117,6 +120,35 @@ function daysBetween(a,b){
   if(!a||!b) return 999;
   return Math.round((new Date(b)-new Date(a))/86400000);
 }
+function weekKey(){
+  const d=new Date(),start=new Date(d.getFullYear(),0,1),day=Math.floor((d-start)/86400000);
+  return `${d.getFullYear()}-W${String(Math.ceil((day+start.getDay()+1)/7)).padStart(2,'0')}`;
+}
+const WEEKLY_STEPS=[
+  {name:'Разведать окрестности',goal:3,reward:{gold:180}},
+  {name:'Помочь своему дракону',goal:3,reward:{dust:35}},
+  {name:'Найти след древнего пути',goal:3,reward:{gold:260,dust:20}},
+  {name:'Подготовиться к открытию',goal:3,reward:{gold:320}},
+  {name:'Открыть страницу легенды',goal:3,reward:{gold:450,dust:60},final:true},
+];
+function ensureWeekly(){
+  const key=weekKey();
+  if(!S.weekly||S.weekly.key!==key)S.weekly={key,step:0,progress:0,claimed:false,complete:false};
+  return S.weekly;
+}
+function weeklyDef(){const w=ensureWeekly();return WEEKLY_STEPS[Math.min(w.step,WEEKLY_STEPS.length-1)];}
+function weeklyProgress(amount=1){const w=ensureWeekly();if(w.complete||w.claimed)return;const d=weeklyDef();w.progress=Math.min(d.goal,w.progress+amount);persist();}
+function claimWeekly(){
+  const w=ensureWeekly(),d=weeklyDef();if(w.complete||w.claimed||w.progress<d.goal)return;
+  const r=d.reward;if(r.gold)S.gold+=r.gold;if(r.dust)S.dust+=r.dust;
+  if(d.final){
+    const free=(typeof DECORATIONS!=='undefined')?DECORATIONS.filter(x=>!x.premium&&!(S.decorOwned||[]).includes(x.id)):[];
+    if(free.length){S.decorOwned=S.decorOwned||[];S.decorOwned.push(free[0].id);}
+    if(typeof addChest==='function')addChest(2);
+    w.complete=true;toast('📖 Недельная легенда открыта! Получены декор и сундук.');
+  }else{w.step++;w.progress=0;toast(`📖 Этап пройден: <b>${d.name}</b>. ${rewardText(r)}`);}
+  renderLedger();persist();
+}
 // задание доступно, только если его механика уже открыта (не даём невыполнимых)
 function questAvailable(id){
   if(id==='forge'||id==='recycle') return featureUnlocked('forge');
@@ -138,6 +170,11 @@ function rollDailyQuests(){
 function runDaily(){
   const today=todayStr();
   if(S.lastDaily!==today){
+    const gap=daysBetween(S.lastDaily,today);
+    if(!S.lastDaily)S.streak=1;
+    else if(gap<=1)S.streak=(S.streak||0)+1;
+    else if(gap===2&&(S.streakShield||0)>0){S.streakShield--;S.streak=(S.streak||1)+1;}
+    else S.streak=Math.max(1,(S.streak||1)-1); // мягкий откат вместо полного обнуления
     // считаем, сколько дней играли всего (для приятной статистики, без давления)
     S.daysPlayed=(S.daysPlayed||0)+1;
     S.loginDay=(S.loginDay||0)+1; // позиция в 7-дневном цикле входа
@@ -150,6 +187,7 @@ function runDaily(){
     S.questDay=today;
     S.quests=rollDailyQuests();
   }
+  ensureWeekly();
 }
 // продвижение квеста по событию
 function questEvent(id, amount=1){
@@ -157,10 +195,11 @@ function questEvent(id, amount=1){
   for(const q of S.quests){
     if(q.id===id && !q.done){
       q.prog=Math.min(q.goal, q.prog+amount);
-      if(q.prog>=q.goal){q.done=true; toast(`Задание выполнено: <b>${questText(q.id)}</b> — забери награду в Логове.`);}
+      if(q.prog>=q.goal){q.done=true; toast(`Задание выполнено: <b>${questText(q.id)}</b> — забери награду в поселении.`);}
       changed=true;
     }
   }
+  weeklyProgress(Math.max(1,Math.min(3,amount)));
   if(changed){ renderDaily(); persist(); }
 }
 function questDef(id){return QUEST_POOL.find(q=>q.id===id);}
@@ -181,6 +220,7 @@ function claimQuest(id){
   if(r.dust) S.dust+=r.dust;
   trackEconomy('source','quest_'+id,r);
   q.claimed=true;
+  if(S.quests.length&&S.quests.every(x=>x.claimed))S.streakShield=Math.min(1,(S.streakShield||0)+1);
   floatText('+ '+rewardText(r),'#d9a441');
   toast(`Награда получена: <b>${rewardText(r)}</b>!`);
   renderLedger(); renderDaily(); persist();
@@ -224,58 +264,53 @@ function progressStripHTML(){
   return `<div class="progress-strip">${unlockTxt} · 🐉 Виды <b>${disc}/${specTot}</b> · 🥚 Кодекс <b>${eggPct}%</b></div>`;
 }
 
-/* ===== РЕНДЕР ЕЖЕДНЕВНОЙ ПАНЕЛИ (в Логове) ===== */
+/* ===== ПОДАРОК В ЛОГОВЕ: задачи и общий прогресс живут только в шторке поселения ===== */
 function renderDaily(){
   const box=$('#dailyPanel');
   if(!box) return;
   const r=chestReward();
-  const questHTML=S.quests.map(q=>{
-    const def=questDef(q.id);
-    const pct=Math.round(q.prog/q.goal*100);
-    return `<div class="quest${q.done?' done':''}">
-      <div class="quest-ic">${def.icon}</div>
-      <div class="quest-main">
-        <div class="quest-text">${def.text} <span class="quest-prog">${q.prog}/${q.goal}</span></div>
-        <div class="qbar"><i style="width:${pct}%"></i></div>
-      </div>
-      ${q.claimed
-        ? '<span class="quest-claimed">✓</span>'
-        : q.done
-          ? `<button class="btn quest-claim" data-claim="${q.id}">${rewardText(def.reward)}</button>`
-          : `<span class="quest-reward">${rewardText(def.reward)}</span>`}
-    </div>`;
-  }).join('');
-
   box.innerHTML=`
-    ${progressStripHTML()}
     <div class="daily-top">
       <div class="chest-wrap">
         ${S.chestReady
           ? `<button class="btn chest-btn" id="chestBtn">🎁 Подарок дня ${streakDay()+1}/7 · ${rewardText(r)}${r.legendary?' 🏆':''}</button>`
           : `<div class="chest-done">🎁 Подарок получен! Возвращайся завтра за новым сюрпризом.</div>`}
       </div>
-    </div>
-    <div class="quests-head">✨ Весёлые дела на сегодня</div>
-    <div class="quests">${questHTML||'<span class="hint">Новые дела появятся завтра.</span>'}</div>
-    ${store.ok
-      ? '<div class="save-row"><span class="save-ok">💾 Игра сохраняется сама</span><button class="save-reset" id="resetBtn">Начать заново</button></div>'
-      : '<p class="hint" style="color:var(--ember)">⚠ Чтобы игра запоминалась, скачай файл и открой его на компьютере (двойным щелчком).</p>'}`;
+    </div><button class="btn ghost daily-to-hub" id="dailyToHub">Посмотреть дела в поселении</button>`;
 
   const cb=$('#chestBtn'); if(cb) cb.onclick=claimChest;
-  box.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>claimQuest(b.dataset.claim));
-  const rb=$('#resetBtn'); if(rb) rb.onclick=confirmReset;
+  const go=$('#dailyToHub'); if(go)go.onclick=()=>{switchView('hub');setTimeout(()=>setHubTasksOpen(true),50);};
 }
-let resetArmed=false;
+function closeResetDialog(){ const el=$('#resetDialog'); if(el)el.remove(); }
 function confirmReset(){
-  const btn=$('#resetBtn');
-  if(!resetArmed){
-    resetArmed=true;
-    if(btn){btn.textContent='Точно? Нажми ещё раз';btn.classList.add('arm');}
-    setTimeout(()=>{resetArmed=false;const b=$('#resetBtn');if(b){b.textContent='Начать заново';b.classList.remove('arm');}},3000);
-    return;
-  }
-  store.clear();
-  location.reload();
+  closeResetDialog();
+  const settlement=(S.settlement||'твоё поселение');
+  const modal=document.createElement('div');
+  modal.id='resetDialog'; modal.className='reset-dialog';
+  modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+  modal.setAttribute('aria-labelledby','resetTitle');
+  modal.innerHTML=`<div class="reset-card">
+    <h2 id="resetTitle">Начать игру заново?</h2>
+    <p>Будут удалены поселение <b>«${settlement}»</b>, все драконы и награды на этом устройстве.</p>
+    <p class="hint">Сначала сохрани копию — её можно будет загрузить позже.</p>
+    <div class="reset-actions">
+      <button class="btn" id="resetExport">⬇️ Сохранить копию</button>
+      <button class="btn ghost" id="resetCancel">Отмена</button>
+    </div>
+    <button class="danger-hold" id="resetHold" aria-describedby="resetHoldHelp"><span></span><b>Удерживай 2 секунды</b></button>
+    <small id="resetHoldHelp">Отпусти кнопку, чтобы отменить удаление.</small>
+  </div>`;
+  document.body.appendChild(modal);
+  const hold=$('#resetHold'); let timer=0;
+  const cancel=()=>{ clearTimeout(timer); timer=0; hold.classList.remove('holding'); };
+  const start=e=>{ e.preventDefault(); if(timer)return; hold.classList.add('holding'); timer=setTimeout(()=>{ store.clear(); location.reload(); },2000); };
+  hold.addEventListener('pointerdown',start); hold.addEventListener('pointerup',cancel);
+  hold.addEventListener('pointercancel',cancel); hold.addEventListener('pointerleave',cancel);
+  $('#resetCancel').onclick=closeResetDialog;
+  $('#resetExport').onclick=exportSave;
+  modal.addEventListener('click',e=>{if(e.target===modal)closeResetDialog();});
+  modal.addEventListener('keydown',e=>{if(e.key==='Escape')closeResetDialog();});
+  $('#resetCancel').focus();
 }
 
 /* ===== ИНИЦИАЛИЗАЦИЯ ===== */
@@ -283,7 +318,12 @@ function confirmReset(){
 
 /* ===== СТАРТОВЫЙ ЭКРАН (онбординг при первом запуске) ===== */
 const STARTER_DRAGONS=['ember','glacier','sporewing']; // огонь, лёд, яд
-const onboard={dragon:'ember', dragonName:'', settlement:''};
+const onboard={dragon:'ember', dragonName:'', settlement:'', crack:0};
+const STARTER_NAMES={ember:['Искорка','Уголёк','Рыжик'],glacier:['Снежок','Льдинка','Хрустик'],sporewing:['Листик','Спора','Мох']};
+const SETTLEMENT_NAMES=['Драконьи Земли','Долина Крыльев','Тёплое Гнездо','Изумрудный Берег'];
+const STARTER_ELEMENT_ICON={fire:'🔥',frost:'❄️',venom:'🍃'};
+function suggestedDragonName(){const a=STARTER_NAMES[onboard.dragon]||['Дружок'];return a[Math.floor(Math.random()*a.length)];}
+function starterEggHTML(id,crack=0){const sp=speciesById(id),el=sp.el;return `<div class="starter-egg egg-${el} crack-${crack}" aria-label="Яйцо стихии ${ELEMENTS[el].name}"><i></i><b>${STARTER_ELEMENT_ICON[el]||'✦'}</b></div>`;}
 
 function showStartScreen(){
   const sc=$('#startScreen'); if(!sc) return;
@@ -303,33 +343,33 @@ function renderStartWelcome(){
   sc.dataset.step='welcome';
   sc.innerHTML=startScreenShell(`
     <div class="start-logo">
-      <div class="start-logo-mark">🐉</div>
+    <div class="start-logo-mark start-wake-egg">🥚</div>
       <h1 class="start-title">Драконис</h1>
       <div class="start-subtitle">Кодекс Чешуи</div>
     </div>
-    <p class="start-lede">Добро пожаловать, драконовод! Тебя ждут земли, полные драконьих яиц, древних реликвий и верных крылатых друзей. Высиживай, выращивай и собери их всех!</p>
-    <button class="btn start-cta" id="startBegin">✨ Начать путь</button>`);
+    <p class="start-lede">В древнем гнезде кто-то просыпается. Разбудишь его?</p>
+    <button class="btn start-cta" id="startBegin">Разбудить яйцо</button>`);
   $('#startBegin').onclick=renderStartPickDragon;
 }
 
-// Шаг 2: выбор первого дракона
+// Шаг 2: выбор стартового яйца — без характеристик взрослого дракона
 function renderStartPickDragon(){
   const sc=$('#startScreen');
   sc.dataset.step='dragon-pick';
   const cards=STARTER_DRAGONS.map(id=>{
     const sp=speciesById(id);
     const sel=onboard.dragon===id?' sel':'';
-    return `<button class="start-dcard${sel}" data-pick="${id}">
-      <div class="start-dcard-art">${dragonVisual(id,1)}</div>
-      <div class="start-dcard-name">${sp.name}</div>
-      ${elTag(sp.el)}
-      <div class="start-dcard-lore">${sp.lore}</div>
+    const mood=sp.el==='fire'?'Смелое и тёплое':sp.el==='frost'?'Спокойное и верное':'Любопытное и хитрое';
+    return `<button class="start-dcard egg-card${sel}" data-pick="${id}">
+      <div class="start-dcard-art">${starterEggHTML(id)}</div>
+      <div class="start-dcard-name">${STARTER_ELEMENT_ICON[sp.el]||'✦'} ${ELEMENTS[sp.el].name}</div>
+      <div class="start-dcard-lore">${mood}</div>
     </button>`;
   }).join('');
   sc.innerHTML=startScreenShell(`
     <div class="start-step">Шаг 1 из 3</div>
-    <h2 class="start-h2">Выбери первого дракона</h2>
-    <p class="start-hint">С ним начнётся твоё странствие. Не волнуйся — позже ты сможешь приручить и остальных!</p>
+    <h2 class="start-h2">Какое яйцо тебя зовёт?</h2>
+    <p class="start-hint">Выбирай сердцем. Остальных драконов встретишь позже.</p>
     <div class="start-dragons">${cards}</div>
     <div class="start-nav">
       <button class="btn ghost" id="startBack">← Назад</button>
@@ -337,7 +377,18 @@ function renderStartPickDragon(){
     </div>`);
   sc.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{ onboard.dragon=b.dataset.pick; renderStartPickDragon(); });
   $('#startBack').onclick=renderStartWelcome;
-  $('#startNext').onclick=renderStartNameDragon;
+  $('#startNext').onclick=()=>{onboard.crack=0;renderStartEggHatch();};
+}
+
+function renderStartEggHatch(){
+  const sc=$('#startScreen');sc.dataset.step='egg-hatch';
+  const ready=onboard.crack>=3;
+  sc.innerHTML=startScreenShell(`<div class="start-step">Пробуждение</div><h2 class="start-h2">${ready?'Он проснулся!':'Коснись яйца'}</h2>
+    <button class="starter-hatch${ready?' ready':''}" id="starterHatch">${ready?dragonVisual(onboard.dragon,1):starterEggHTML(onboard.dragon,onboard.crack)}</button>
+    <p class="start-hint">${ready?'Твой новый друг готов познакомиться.':'Каждое касание помогает малышу выбраться.'}</p>
+    ${ready?'<button class="btn start-cta" id="starterMeet">Познакомиться</button>':'<div class="crack-progress">'+[1,2,3].map(n=>`<i class="${onboard.crack>=n?'on':''}"></i>`).join('')+'</div>'}`);
+  $('#starterHatch').onclick=()=>{if(ready)return;onboard.crack++;renderStartEggHatch();};
+  const meet=$('#starterMeet');if(meet)meet.onclick=renderStartNameDragon;
 }
 
 // Шаг 3: имя дракона
@@ -349,13 +400,13 @@ function renderStartNameDragon(){
     <div class="start-step">Шаг 2 из 3</div>
     <h2 class="start-h2">Как зовут твоего дракона?</h2>
     <div class="start-chosen">${dragonVisual(onboard.dragon,1)}<div class="start-chosen-name">${sp.name}</div></div>
-    <input type="text" class="start-input" id="startDragonName" maxlength="20" placeholder="Придумай имя (или пропусти)" value="${onboard.dragonName}">
+    <input type="text" class="start-input" id="startDragonName" maxlength="20" placeholder="Имя можно изменить позже" value="${onboard.dragonName||suggestedDragonName()}">
     <div class="start-nav">
       <button class="btn ghost" id="startBack">← Назад</button>
       <button class="btn" id="startNext">Далее →</button>
     </div>`);
   const inp=$('#startDragonName'); setTimeout(()=>inp&&inp.focus(),50);
-  $('#startBack').onclick=renderStartPickDragon;
+  $('#startBack').onclick=renderStartEggHatch;
   $('#startNext').onclick=()=>{ onboard.dragonName=inp.value.trim(); renderStartNameSettlement(); };
 }
 
@@ -368,13 +419,15 @@ function renderStartNameSettlement(){
     <h2 class="start-h2">Назови свои земли</h2>
     <p class="start-hint">Как будет называться твоё драконье поселение?</p>
     <div class="start-settlement-ic">🏰</div>
-    <input type="text" class="start-input" id="startSettlement" maxlength="24" placeholder="Например: Драконьи Земли" value="${onboard.settlement}">
+    <input type="text" class="start-input" id="startSettlement" maxlength="24" placeholder="Название можно изменить позже" value="${onboard.settlement||SETTLEMENT_NAMES[0]}">
+    <button class="btn ghost" id="randomSettlement">↻ Другое название</button>
     <div class="start-nav">
       <button class="btn ghost" id="startBack">← Назад</button>
       <button class="btn start-cta" id="startFinish">🐉 Начать игру!</button>
     </div>`);
   const inp=$('#startSettlement'); setTimeout(()=>inp&&inp.focus(),50);
   $('#startBack').onclick=renderStartNameDragon;
+  $('#randomSettlement').onclick=()=>{inp.value=SETTLEMENT_NAMES[Math.floor(Math.random()*SETTLEMENT_NAMES.length)];};
   $('#startFinish').onclick=()=>{ onboard.settlement=inp.value.trim(); finishOnboarding(); };
 }
 
@@ -402,7 +455,8 @@ function newGameFromOnboard(){
   S.sel=d.uid;
   S.settlement=onboard.settlement||'Драконьи Земли';
   S.tutorialGuard=true; // первый бой — гарантированная победа
-  S.arcadeOn=false;
+  S.firstHour={phase:'first_flight',timingAssists:2,safeFlight:true};
+  S.arcadeOn=true;
   trackEvent('onboarding_complete',{starter:onboard.dragon});
 }
 
@@ -414,7 +468,7 @@ function newGame(){
   S.sel=S.dragons[0].uid;
   S.settlement='Драконьи Земли';
   S.tutorialGuard=true;
-  S.arcadeOn=false;
+  S.arcadeOn=true;
 }
 
 const loaded=loadGame();
@@ -478,9 +532,9 @@ function importSaveFromFile(file){
   reader.readAsText(file);
 }
 function openSaveManager(){
-  const wrap=$('#hubWrap'); if(!wrap) return;
-  wrap.innerHTML=`<div class="panel" style="margin:0">
-    <div class="screen-bar" style="margin-top:0"><button class="home-btn" id="svBack">← Поселение</button>
+  const box=$('#profileBody'); if(!box) return;
+  box.innerHTML=`<div class="panel save-manager" style="margin:0">
+    <div class="screen-bar" style="margin-top:0"><button class="home-btn" id="svBack">← Профиль</button>
       <span class="screen-bar-title">💾 Сохранение</span></div>
     <p class="lede">Выгрузи сейв в файл, чтобы не потерять прогресс или перенести игру на другое устройство.</p>
     <div class="btnrow" style="flex-direction:column;gap:10px">
@@ -490,11 +544,17 @@ function openSaveManager(){
       </label>
     </div>
     <p class="hint">Загрузка файла <b>заменит</b> текущий прогресс. Сначала выгрузи текущий сейв, если он дорог.</p>
+    <div class="danger-zone">
+      <h3>Для взрослого</h3>
+      <p>Удаление полностью начинает игру заново на этом устройстве.</p>
+      <button class="btn danger" id="svReset">Начать игру заново</button>
+    </div>
   </div>`;
-  $('#svBack').onclick=renderHub;
+  $('#svBack').onclick=renderProfile;
   $('#svExport').onclick=exportSave;
   $('#svImport').addEventListener('change',(e)=>{
     const f=e.target.files&&e.target.files[0];
     if(f) importSaveFromFile(f);
   });
+  $('#svReset').onclick=confirmReset;
 }

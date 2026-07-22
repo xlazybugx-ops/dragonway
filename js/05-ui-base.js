@@ -396,6 +396,8 @@ function restDragon(d){
   const cost=restCost(d);
   if(S.gold<cost){toast('Недостаёт золота на лекарей.');return;}
   S.gold-=cost; d.curHp=statsOf(d).maxHp;
+  if(typeof completeLesson==='function')completeLesson('lair');
+  if(S.firstHour&&S.firstHour.phase==='first_care')S.firstHour.phase='complete';
   toast(`<b>${speciesById(d.id).name}</b> полностью восстановлен.`);
   renderLedger();renderLair();persist();
 }
@@ -584,6 +586,7 @@ function hatchEggAt(idx,perfectRhythm){
     eggs.splice(idx,1);
     const wasNew=!S.discovered[sp.id];
     const d=addDragon(sp.id,1);
+    if(typeof completeLesson==='function')completeLesson('hatch');
     // наследование: редкость яйца → окрас и титул дракона
     const egRar=(typeof eggRarity==='function')?eggRarity(egg):1;
     if(egRar>=2){ if(typeof rollMorphByEggRarity==='function') d.morph=rollMorphByEggRarity(egRar);

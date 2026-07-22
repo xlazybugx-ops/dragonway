@@ -116,10 +116,13 @@ function _qReward(q){ try{ const d=questDef(q.id); return d?rewardText(d.reward)
 function nextStep(){
   const lvl=(typeof progLevel==='function')?progLevel():1;
   const eggs=(typeof eggsArray==='function')?eggsArray():[];
+  if(S.firstHour&&S.firstHour.phase==='first_flight')return {icon:'🪽',title:'Первое странствие',why:'Велла покажет дорогу, а первое приключение безопасно',reward:'первая находка',unlock:'уход за драконом',label:'В путь',fn:()=>switchView('explore')};
+  if(S.firstHour&&S.firstHour.phase==='first_battle')return {icon:'⚔️',title:'Первый дружеский бой',why:'Первые удары замедлены, а дракон не может проиграть',reward:'опыт и золото',unlock:'забота в логове',label:'В турнир',fn:()=>switchView('arena')};
+  if(S.firstHour&&S.firstHour.phase==='first_care')return {icon:'💖',title:'Позаботься о драконе',why:'Покорми или погладь своего нового друга',reward:'счастье дракона',unlock:'обычные приключения',label:'В логово',fn:()=>switchView('lair')};
   // 1) подарок дня
   if(S.chestReady) return {icon:'🎁',title:'Забери подарок дня',why:'Ежедневная награда растёт с серией входов',
-    reward:'золото · пыль · яйцо',unlock:'серия продолжится',label:'В Логово',
-    fn:()=>{ switchView('lair'); const dp=$('#dailyPanel'); if(dp)setTimeout(()=>dp.scrollIntoView({behavior:'smooth',block:'center'}),60); }};
+    reward:'золото · пыль · яйцо',unlock:'серия продолжится',label:'Забрать',
+    fn:()=>{ switchView('hub'); setTimeout(()=>{ if(typeof setHubTasksOpen==='function')setHubTasksOpen(true); const b=$('#hubDailyClaim');if(b)b.focus(); },60); }};
   // 2) готовое яйцо
   if(eggs.some(e=>e.incNeed&&(e.inc||0)>=e.incNeed)) return {icon:'🐣',title:'Высиди готовое яйцо',
     why:'Инкубация завершена',reward:'новый дракон',unlock:'сильнее стая',label:'В Гнездо',fn:()=>switchView('hatch')};
@@ -199,8 +202,9 @@ function openA11y(){
   if(!sc){ sc=document.createElement('div'); sc.id='a11yOverlay'; sc.className='screen'; document.body.appendChild(sc); }
   sc.style.display='flex';
   const opt=(k,l)=>`<button class="a11y-btn ${a[k]?'on':''}" data-a11y="${k}">${l}</button>`;
-  sc.innerHTML=`<h1 style="font-size:22px">♿ Доступность</h1><p style="opacity:.8;font-size:13px;max-width:320px">Настрой интерфейс под себя. Изменения сохраняются.</p><div class="a11y-panel">${opt('contrast','🌗 Высокий контраст')}${opt('large','🔎 Крупный текст')}${opt('lefthand','🤚 Для левшей')}${opt('colorblind','🎨 Без опоры на цвет')}</div><button class="btn" id="a11yClose" style="min-height:44px">Готово</button>`;
-  sc.querySelectorAll('[data-a11y]').forEach(b=>b.onclick=()=>{ if(typeof toggleA11y==='function')toggleA11y(b.dataset.a11y); b.classList.toggle('on'); });
+  sc.innerHTML=`<h1 style="font-size:22px">♿ Доступность</h1><p style="opacity:.8;font-size:13px;max-width:320px">Настрой интерфейс под себя. Изменения сохраняются.</p><div class="a11y-panel">${opt('contrast','🌗 Высокий контраст')}${opt('large','🔎 Крупный текст')}${opt('lefthand','🤚 Для левшей')}${opt('colorblind','🎨 Без опоры на цвет')}${opt('motionOff','◼ Меньше движения')}${opt('vibrationOff','📳 Без вибрации')}</div><button class="btn" id="a11yClose">Готово</button>`;
+  sc.querySelectorAll('[data-a11y]').forEach(b=>b.onclick=()=>{ if(typeof toggleA11y==='function')toggleA11y(b.dataset.a11y); b.classList.toggle('on'); b.setAttribute('aria-pressed',String(b.classList.contains('on'))); });
+  sc.querySelectorAll('[data-a11y]').forEach(b=>b.setAttribute('aria-pressed',String(b.classList.contains('on'))));
   const cl=document.getElementById('a11yClose'); if(cl)cl.onclick=()=>{ sc.style.display='none'; };
 }
 function renderHub(){
@@ -751,7 +755,6 @@ function renderTabbar(active){
     // бейдж на «Команде» — готовый подарок/яйца, на «Кодексе» — новые виды
     let badge='';
     if(b.dataset.tab==='lair' && (S.chestReady||eggCount()>0)) badge=S.chestReady?'🎁':String(eggCount());
-    if(b.dataset.tab==='profile'){ const q=(S.quests||[]).filter(x=>!x.claimed&&x.done).length; if(q)badge='●'; }
     let el=b.querySelector('.tb-badge');
     if(badge){ if(!el){el=document.createElement('span');el.className='tb-badge';b.appendChild(el);} el.textContent=badge; }
     else if(el){ el.remove(); }
@@ -776,7 +779,7 @@ function renderProfile(){
       <div class="prof-badge">🐲</div>
       <div class="prof-main">
         <div class="prof-title">Драконовод · ур. ${lvl}</div>
-        <div class="prof-sub">🔥 Серия входов: <b>${S.streak||0}</b> дн.</div>
+        <div class="prof-sub">🔥 Серия: <b>${S.streak||1}</b> · ${S.streakShield?'🛡️ один пропуск защищён':'серия мягко снизится при пропуске'}</div>
       </div>
     </div>
     <div class="prof-stats">
