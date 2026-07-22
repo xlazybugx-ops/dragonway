@@ -34,4 +34,4 @@ python -m http.server 8000
 powershell -ExecutionPolicy Bypass -File tests/run-tests.ps1
 ```
 
-Версия: **3.0.0**.
+Версия: **3.0.0**, актуальная GitHub-сборка от 23 июля 2026 года.

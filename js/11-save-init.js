@@ -323,7 +323,7 @@ const STARTER_NAMES={ember:['Искорка','Уголёк','Рыжик'],glacie
 const SETTLEMENT_NAMES=['Драконьи Земли','Долина Крыльев','Тёплое Гнездо','Изумрудный Берег'];
 const STARTER_ELEMENT_ICON={fire:'🔥',frost:'❄️',venom:'🍃'};
 function suggestedDragonName(){const a=STARTER_NAMES[onboard.dragon]||['Дружок'];return a[Math.floor(Math.random()*a.length)];}
-function starterEggHTML(id,crack=0){const sp=speciesById(id),el=sp.el;return `<div class="starter-egg egg-${el} crack-${crack}" aria-label="Яйцо стихии ${ELEMENTS[el].name}"><i></i><b>${STARTER_ELEMENT_ICON[el]||'✦'}</b></div>`;}
+function starterEggHTML(id,crack=0){const sp=speciesById(id),el=sp.el;return `<div class="starter-egg egg-${el} crack-${crack}" aria-label="Яйцо стихии ${ELEMENTS[el].name}"><img src="images/eggs/egg_${el}.webp" alt=""><i></i></div>`;}
 
 function showStartScreen(){
   const sc=$('#startScreen'); if(!sc) return;

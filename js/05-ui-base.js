@@ -437,6 +437,11 @@ const EGG_COLORS={
 let hatchSel=0; // индекс выбранного яйца в карусели
 // Кодекс Яиц: 5 стихий × 6 редкостей, найдено/неизвестно, % коллекции
 const SRC_LABEL={battle:'обычные бои',elite:'элитные враги',boss:'боссы',tower:'башня',daily:'ежедневные задания',streak:'серии побед',explore:'исследование',chest:'редкие сундуки',secret:'секретное событие',unique:'уникальное'};
+function eggImageHTML(id,alt,cls){
+  const safeId=/^egg_[a-z0-9_]+$/.test(id||'')?id:'egg_fire';
+  return `<img class="${cls||'egg-game-art'}" src="images/eggs/${safeId}.webp" alt="${String(alt||'Драконье яйцо').replace(/"/g,'&quot;')}" loading="lazy" decoding="async">`;
+}
+function eggImageId(egg){ return (egg&&egg.catId)||('egg_'+((egg&&egg.el)||'fire')); }
 // Кодекс Яиц V2 — по каталогу EGG_CATALOG (изображение/описание/редкость/источник/драконы/статистика)
 function eggCodexHTML(){
   const stats=S.eggStats||{}, seen=S.eggsSeen||{}, secret=S.eggsSecret||{};
@@ -453,7 +458,7 @@ function eggCodexHTML(){
     const dr=e.dragons.map(id=>((typeof speciesById==='function'&&speciesById(id))||{}).name||id).join(', ');
     const tip=(e.name+' · '+rd.name+' — '+e.desc+' · Источник: '+(SRC_LABEL[e.source]||e.source)+(e.cond?' · Условие: '+e.cond:'')+' · Виды: '+dr+(cnt?' · Получено '+cnt+'×':'')).replace(/"/g,'&quot;');
     cells+='<div class="egg-codex-cell '+(opened?'found':'unknown')+'" style="box-shadow:inset 0 0 0 2px '+(opened?rd.frame:'rgba(255,255,255,.08)')+'" title="'+tip+'">'
-      + (opened?('<div class="egg-codex-vis">'+eggSVG(e.el==='any'?'shade':e.el, e.rarity>=3?3:1, e.rarity)+'</div><span class="egg-codex-em">'+e.look.emoji+'</span>'):'<div class="egg-codex-q">?</div>')
+      + (opened?('<div class="egg-codex-vis">'+eggImageHTML(e.id,e.name,'egg-codex-img')+'</div>'):'<div class="egg-codex-q">?</div>')
       + '</div>';
   }
   const pct=Math.round(found/(list.length||1)*100);
@@ -485,7 +490,7 @@ function renderHatch(){
   const eggs=eggsArray();
   if(!eggs.length){
     wrap.innerHTML=`<div class="nest-empty">
-      <div class="nest-empty-art">🪹</div>
+      <img class="nest-empty-art" src="images/ui/empty-states/empty_nest.webp" alt="Пустое уютное гнездо" loading="lazy" decoding="async">
       <p class="hint">Гнездо пусто. Отправляйся в <b>Странствия</b> — там, в биомах разных миров, находят драконьи яйца. Стихия биома определяет, чьё яйцо ты найдёшь.</p>
     </div>`;
     return;
@@ -501,7 +506,7 @@ function renderHatch(){
       : `<div class="egg-tier">${el.name}</div>`;
     return `<div class="carousel-card egg-card" data-idx="${i}">
       <div class="egg-pit">
-        <div class="egg-visual" id="eggVis${i}">${eggSVG(egg.el, egg.tier, egg.rarity)}</div>
+        <div class="egg-visual" id="eggVis${i}">${eggImageHTML(eggImageId(egg),rd.name+' яйцо стихии '+el.name,'egg-game-art')}</div>
       </div>
       <div class="egg-info">
         <div class="egg-el" style="color:${rd.frame};font-weight:700">${rd.name} · ${el.name}</div>

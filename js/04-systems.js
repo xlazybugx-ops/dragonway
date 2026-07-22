@@ -186,7 +186,8 @@ function eggCeremony(egg, def){ try{
   const rd=(typeof EGG_RARITY!=='undefined'&&EGG_RARITY[r])||{name:'',color:'#d9a441'};
   const emo=(def&&def.look&&def.look.emoji)||((egg&&egg.el)&&({fire:'\uD83D\uDD25',frost:'\uD83E\uDDCA',venom:'\uD83D\uDFE2',storm:'\u26A1',shade:'\uD83C\uDF11'})[egg.el])||'\uD83E\uDD5A';
   const nm=(def&&def.name)||(rd.name?rd.name+' яйцо':'Яйцо');
-  el.innerHTML='<div class="ec-egg">'+emo+'</div><div class="ec-txt"><div class="ec-title">🥚 Новое яйцо!</div>'
+  const art=(typeof eggImageHTML==='function')?eggImageHTML((def&&def.id)||(egg&&egg.catId)||('egg_'+((egg&&egg.el)||'fire')),nm,'ec-egg-img'):emo;
+  el.innerHTML='<div class="ec-egg">'+art+'</div><div class="ec-txt"><div class="ec-title">Новое яйцо!</div>'
     +'<div class="ec-name" style="color:'+(rd.color||'#d9a441')+'">'+nm+'</div>'
     +'<div class="ec-sub">Отнеси в Гнездо, чтобы высидеть</div></div>';
   el.classList.add('show');

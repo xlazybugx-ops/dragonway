@@ -159,19 +159,25 @@ function flySprite(speciesId){
 }
 function flightElementKey(el){ return el==='venom'?'jungle':(el==='frost'?'ice':el); }
 function flightThreatTier(level){ return level>=60?3:(level>=25?2:1); }
-function flightSpriteSrc(speciesId,tier){
+function flightSpriteSrc(speciesId,level){
+  const stage=(typeof stageForLevel==='function')?stageForLevel(level||1):1;
+  return `images/flight/${speciesId}_${stage}_top.webp`;
+}
+function flightSpriteFallback(speciesId){
   const sp=speciesById(speciesId);
   return `images/arcade_${sp.el}.webp`;
 }
 /* Единые парящие драконы с видом сверху: класс/возраст задаёт вариант 1–3. */
 function flySpritePng(speciesId, level, threatTier){
   const img=new Image();
-  img.onerror=()=>{ img.onerror=null; img.src='data:image/svg+xml;utf8,'+encodeURIComponent(topDragonSVG(speciesId).replace(/class="[^"]*"/g,'')); };
-  img.src=flightSpriteSrc(speciesId,threatTier||flightThreatTier(level||1));
+  let fallbackUsed=false;
+  img.onerror=()=>{ if(!fallbackUsed){fallbackUsed=true;img.src=flightSpriteFallback(speciesId);return;}
+    img.onerror=null; img.src='data:image/svg+xml;utf8,'+encodeURIComponent(topDragonSVG(speciesId).replace(/class="[^"]*"/g,'')); };
+  img.src=flightSpriteSrc(speciesId,level||1);
   return img;
 }
 function battleFlyingHTML(sp,level,threatTier,cls){
-  return `<img class="${cls||'battle-fly-dragon'}" src="${flightSpriteSrc(sp.id,threatTier||flightThreatTier(level||1))}" alt="${sp.name}">`;
+  return `<img class="${cls||'battle-fly-dragon'}" src="${flightSpriteSrc(sp.id,level||1)}" alt="${sp.name} в полёте, вид сверху" data-fallback="${flightSpriteFallback(sp.id)}" onerror="if(!this.dataset.fallbackUsed){this.dataset.fallbackUsed='1';this.src=this.dataset.fallback;}else{this.style.display='none';}">`;
 }
 
 /* ===== СТАРТ ПОЛЁТА ===== */

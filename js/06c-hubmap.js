@@ -8,6 +8,28 @@
    ============================================================ */
 'use strict';
 
+function rewardUIImg(name,alt){
+  return `<img class="reward-ui-icon" src="images/ui/rewards/${name}.webp" alt="${alt||''}" loading="lazy" decoding="async">`;
+}
+
+/* Визуальный контракт поселения: у каждой службы есть читаемое поле размещения,
+   собственный маркер и уровень. Фоновая живопись остаётся пейзажем, а не UI. */
+const HUB_BUILDING_ART={
+  explore:'explore',roost:'roost',spire:'spire',lair:'lair',forge:'forge',
+  codex:'codex',hatch:'hatch',arena:'arena'
+};
+function hubBuildingLevel(view){
+  if(view==='lair')return Math.max(1,S.lairLevel||1);
+  if(view==='explore')return Math.max(1,S.portalLevel||1);
+  return featureUnlocked(view)?1:0;
+}
+function hubBuildingMarker(sp){
+  const art=HUB_BUILDING_ART[sp.v]||sp.v, lvl=hubBuildingLevel(sp.v), locked=lvl===0;
+  return `<span class="hub-build-field${locked?' locked':''}" aria-hidden="true"></span>
+    <img class="hub-build-marker" src="images/ui/hub/hub_${art}.webp" alt="" loading="lazy" decoding="async">
+    <span class="hub-build-level">${locked?'замок':'ур.'+lvl}</span>`;
+}
+
 /* дополнительные точки на карте (проценты, как HUB_SPOTS) */
 function hubExtraSpots(){
   const ex=[
@@ -31,7 +53,7 @@ function hubBonusRows(){
   const happy=(S.dragons||[]).filter(d=>(d.happy||0)>=HAPPY_MAX).length;
   const equipped=(S.dragons||[]).filter(d=>d.equip&&Object.values(d.equip).some(Boolean)).length;
   const rows=[];
-  if(S.chestReady)rows.push('🎁 Подарок дня готов');
+  if(S.chestReady)rows.push(rewardUIImg('reward_daily','')+' Подарок дня готов');
   if(happy)rows.push(`💖 Максимальная забота: ${happy}`);
   if(equipped)rows.push(`🧿 С артефактами: ${equipped}`);
   return rows.length?rows.map(x=>`<span>${x}</span>`).join(''):'<span>Активных временных бонусов нет</span>';
@@ -59,8 +81,9 @@ function renderHub(){
   // основные постройки (существующие HUB_SPOTS + бейджи)
   const spots=HUB_SPOTS.map(sp=>{
     const badge=hubBadge(sp.v);
-    return `<button class="hub-zone" data-go="${sp.v}"
+    return `<button class="hub-zone hub-building-slot" data-go="${sp.v}"
         style="left:${sp.x}%;top:${sp.y}%;width:${sp.w}%;height:${sp.h}%">
+      ${hubBuildingMarker(sp)}
       <span class="hub-zone-label">${sp.label}</span>
       ${badge?`<span class="hub-zone-badge">${badge}</span>`:''}
     </button>`;
@@ -71,8 +94,9 @@ function renderHub(){
   const decoEls=DECO_SLOTS.map(slot=>{
     const decoId=decos[slot.i]; if(!decoId) return '';
     const deco=decorById(decoId); if(!deco) return '';
-    return `<div class="hub-deco" style="left:${slot.x}%;top:${slot.y}%" title="${deco.name}">${deco.icon}</div>`;
+    return `<button class="hub-deco-field filled" data-deco-slot="${slot.i}" style="left:${slot.x}%;top:${slot.y}%" title="${deco.name}"><span>${deco.icon}</span></button>`;
   }).join('');
+  const emptyDecoEls=DECO_SLOTS.map(slot=>decos[slot.i]?'':`<button class="hub-deco-field" data-deco-slot="${slot.i}" style="left:${slot.x}%;top:${slot.y}%" aria-label="Свободное место для украшения"><span>＋</span></button>`).join('');
   // одна тонкая плашка-подсказка вместо карточки «Следующий шаг»
   const ns=(typeof nextStep==='function')?nextStep():null;
   const chip=ns?`<button class="hub-next-chip tap" id="nextStepBtn" aria-label="Следующий шаг: ${ns.title}">
@@ -83,9 +107,9 @@ function renderHub(){
   const weeklyPct=weekly&&weeklyD?Math.round(weekly.progress/weeklyD.goal*100):0;
   const taskDrawer=`<aside class="hub-task-drawer" id="hubTaskDrawer" aria-expanded="false">
     <button class="hub-task-handle" id="hubTaskHandle" aria-label="Открыть или закрыть дела на сегодня"><span></span><b>Сегодня</b><em>${(S.quests||[]).filter(q=>q.done&&!q.claimed).length+(S.chestReady?1:0)||''}</em></button>
-    <div class="hub-task-body"><section><h3>Подарок дня · серия ${S.streak||1} ${S.streakShield?'· 🛡️':''}</h3>${S.chestReady
-      ?`<button class="hub-daily-claim" id="hubDailyClaim">🎁 Забрать · ${dailyReward?rewardText(dailyReward):'награда'}</button>`
-      :'<p>✓ Подарок получен. Новый будет завтра.</p>'}</section><section><h3>Недельная экспедиция</h3>${weekly&&weekly.complete?'<p>✓ Легенда этой недели открыта.</p>':weeklyD?`<div class="weekly-row"><b>${weekly.step+1}/5 · ${weeklyD.name}</b><i><span style="width:${weeklyPct}%"></span></i><small>${weekly.progress}/${weeklyD.goal} · ${rewardText(weeklyD.reward)}${weeklyD.final?' · декор':''}</small>${weekly.progress>=weeklyD.goal?'<button id="hubWeeklyClaim">Завершить этап</button>':''}</div>`:''}</section><section><h3>Три дела</h3>${hubQuestRows()}</section><section><h3>Активные бонусы</h3><div class="hub-bonus-list">${hubBonusRows()}</div></section></div>
+    <div class="hub-task-body"><section><h3>${rewardUIImg(S.streakShield?'reward_streak_protected':'reward_streak','')} Подарок дня · серия ${S.streak||1}</h3>${S.chestReady
+      ?`<button class="hub-daily-claim" id="hubDailyClaim">${rewardUIImg('reward_daily','')} Забрать · ${dailyReward?rewardText(dailyReward):'награда'}</button>`
+      :'<p>✓ Подарок получен. Новый будет завтра.</p>'}</section><section><h3>${rewardUIImg('reward_expedition','')} Недельная экспедиция</h3>${weekly&&weekly.complete?'<p>✓ Легенда этой недели открыта.</p>':weeklyD?`<div class="weekly-row"><b>${weekly.step+1}/5 · ${weeklyD.name}</b><i><span style="width:${weeklyPct}%"></span></i><small>${weekly.progress}/${weeklyD.goal} · ${rewardText(weeklyD.reward)}${weeklyD.final?' · декор':''}</small>${weekly.progress>=weeklyD.goal?'<button id="hubWeeklyClaim">Завершить этап</button>':''}</div>`:''}</section><section><h3>${rewardUIImg('reward_quest_complete','')} Три дела</h3>${hubQuestRows()}</section><section><h3>Активные бонусы</h3><div class="hub-bonus-list">${hubBonusRows()}</div></section></div>
   </aside>`;
   const serviceBar=`<div class="hub-service-bar" aria-label="Сервисы поселения">
     <button data-act="treasury">🎁<span>Сокровища</span>${S.chestReady?'<b>!</b>':''}</button>
@@ -99,7 +123,9 @@ function renderHub(){
     <div class="hub-stage hub-stage-photo hub-full">
       <img class="hub-bg" src="images/hub_bg.webp" decoding="async" alt=""
         onerror="this.style.display='none';this.parentNode.classList.add('hub-bg-fallback')">
+      <div class="hub-island-fields" aria-hidden="true"></div>
       ${decoEls}
+      ${emptyDecoEls}
       ${spots}
       ${taskDrawer}
       ${peek}
@@ -111,6 +137,10 @@ function renderHub(){
     if(b.dataset.act==='treasury'&&typeof openTreasury==='function')openTreasury();
     if(b.dataset.act==='market'&&typeof openMarket==='function')openMarket();
     if(b.dataset.act==='deco'&&typeof openDecorManager==='function')openDecorManager();
+  });
+  wrap.querySelectorAll('[data-deco-slot]').forEach(b=>b.onclick=()=>{
+    S.decoSlot=+b.dataset.decoSlot;
+    if(typeof openDecorManager==='function')openDecorManager();
   });
   const nsb=$('#nextStepBtn'); if(nsb) nsb.onclick=()=>{ const n=nextStep(); if(n&&n.fn)n.fn(); };
   bindHubTaskDrawer();
