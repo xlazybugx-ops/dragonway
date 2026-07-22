@@ -1,0 +1,128 @@
+/* Draconis 3.0 — единый набор дизайн-токенов.
+   Компоненты используют смысловые переменные; биомы меняют атмосферу, но не геометрию UI. */
+:root{
+  --ds-paper:#f4e7c8;
+  --ds-paper-soft:#ead8b2;
+  --ds-ink:#4a3426;
+  --ds-ink-on-dark:#f6ead2;
+  --ds-ink-muted:#b9a88b;
+  --ds-emerald:#2f7d68;
+  --ds-emerald-deep:#235f51;
+  --ds-turquoise:#4fa9a5;
+  --ds-gold:#d6a13d;
+  --ds-gold-deep:#ad7b2d;
+  --ds-attention:#d9763d;
+  --ds-danger:#b94736;
+  --ds-lavender:#75658f;
+  --ds-night:#1a1410;
+  --ds-surface:#2b2018;
+  --ds-surface-raised:#352718;
+  --ds-border:#705432;
+
+  --ds-font-body:'Spectral',Georgia,serif;
+  --ds-font-display:'Cinzel',Georgia,serif;
+  --ds-text-xs:.75rem;
+  --ds-text-sm:.875rem;
+  --ds-text-md:1rem;
+  --ds-text-lg:1.25rem;
+  --ds-line:1.45;
+
+  --ds-space-1:4px;
+  --ds-space-2:8px;
+  --ds-space-3:12px;
+  --ds-space-4:16px;
+  --ds-space-5:24px;
+  --ds-radius-sm:8px;
+  --ds-radius-md:12px;
+  --ds-radius-lg:18px;
+  --ds-touch:48px;
+  --ds-focus:0 0 0 3px #fff,0 0 0 6px var(--ds-turquoise);
+  --ds-shadow:0 10px 28px rgba(8,5,3,.35);
+  --ds-fast:160ms;
+  --ds-normal:240ms;
+
+  /* Совместимость с существующими компонентами. */
+  --ink:var(--ds-ink-on-dark);
+  --ink-dim:var(--ds-ink-muted);
+  --vellum:var(--ds-night);
+  --panel:var(--ds-surface);
+  --panel2:var(--ds-surface-raised);
+  --edge:var(--ds-border);
+  --gold:var(--ds-gold);
+  --gold-soft:var(--ds-gold-deep);
+  --ember:var(--ds-attention);
+}
+
+html{font-size:16px}
+body{font-family:var(--ds-font-body);line-height:var(--ds-line)}
+button,input,select,textarea{font:inherit}
+
+/* Единая геометрия интерактивных элементов. */
+:where(button,.btn,[role="button"],input,select){min-height:var(--ds-touch)}
+:where(button,.btn,[role="button"],input,select,textarea):focus-visible{
+  outline:0;box-shadow:var(--ds-focus);position:relative;z-index:2
+}
+:where(button,.btn,[role="button"]):disabled{cursor:not-allowed;opacity:.48;filter:saturate(.55)}
+
+.btn,.home-btn,.prof-row,.prof-tile,.ws-big,.a11y-btn{
+  border-radius:var(--ds-radius-md);transition:transform var(--ds-fast) ease,filter var(--ds-fast) ease,border-color var(--ds-fast) ease
+}
+.btn:not(:disabled):active,.home-btn:not(:disabled):active,.prof-row:not(:disabled):active,
+.prof-tile:not(:disabled):active,.ws-big:not(:disabled):active{transform:translateY(1px) scale(.98)}
+.panel,.nextstep,.well-ov-in,.reset-card{border-radius:var(--ds-radius-lg);box-shadow:var(--ds-shadow)}
+
+/* Главная кнопка действия в каждом потоке. */
+.ns-cta,.hub-daily-claim,.chest-btn,.start-primary{
+  background:linear-gradient(180deg,var(--ds-emerald),var(--ds-emerald-deep));
+  border-color:var(--ds-turquoise);color:#fff
+}
+
+/* Цвет не является единственным признаком состояния. */
+.risk-tag.hard::before{content:'! ';font-weight:900}
+.risk-tag.easy::before{content:'✓ ';font-weight:900}
+.quest.done::before,.hub-task-row.done::before{content:'✓';color:var(--ds-emerald);font-weight:900}
+
+body.a11y-large{font-size:1.15rem;zoom:1}
+body.a11y-large :where(button,.btn,[role="button"],input,select){min-height:54px}
+body.a11y-contrast{
+  --ink:#fff;--ink-dim:#f1e4ca;--edge:#f4cf6c;--gold:#ffd45c;--gold-soft:#d6a13d
+}
+body.a11y-contrast :where(.panel,.dcard,.prof-row,.prof-tile,.ws-big){border-width:2px!important}
+body.a11y-cb .risk-tag.hard{text-decoration:underline wavy}
+body.a11y-cb .risk-tag.easy{text-decoration:underline double}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+body.a11y-motion-off *,body.a11y-motion-off *::before,body.a11y-motion-off *::after{
+  animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important
+}
+
+@media(max-width:480px){:root{--ds-touch:50px}.panel{border-radius:var(--ds-radius-md)}}
+
+/* Уроки Веллы */
+.screen-help{position:fixed;right:14px;bottom:calc(68px + env(safe-area-inset-bottom));z-index:54;width:var(--ds-touch);min-height:var(--ds-touch);border-radius:50%;border:2px solid var(--ds-gold);background:var(--ds-emerald-deep);color:#fff;font-family:var(--ds-font-display);font-size:20px;box-shadow:var(--ds-shadow)}
+body.flight-active .screen-help{bottom:16px}
+.lesson-overlay{position:fixed;inset:0;z-index:5000;background:rgba(8,5,3,.64);display:flex;align-items:flex-end;justify-content:center;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.lesson-mark{position:fixed;z-index:1;border:3px solid #ffe28a;border-radius:16px;box-shadow:0 0 0 9999px rgba(8,5,3,.32),0 0 24px rgba(255,226,138,.85);pointer-events:none}
+.lesson-card{position:relative;z-index:2;width:min(560px,100%);display:grid;grid-template-columns:auto 1fr;gap:12px;padding:18px;border:2px solid var(--ds-gold);border-radius:var(--ds-radius-lg);background:linear-gradient(180deg,#fff4d8,var(--ds-paper));color:var(--ds-ink);box-shadow:0 18px 60px rgba(0,0,0,.55)}
+.lesson-vella{width:54px;height:54px;display:grid;place-items:center;border-radius:50%;background:var(--ds-emerald);font-size:30px}.lesson-copy small{color:var(--ds-emerald-deep);font-weight:700}.lesson-copy h2{margin:2px 0 6px;font-size:19px;color:var(--ds-ink)}.lesson-copy p{margin:0 0 8px}.lesson-copy em{display:block;color:#6d5039;font-size:13px}.lesson-actions{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end}.lesson-actions .btn{min-width:120px}.lesson-actions .ghost{color:var(--ds-ink);border-color:#9d8059;background:transparent}
+.tips-list{display:grid;gap:8px}.tip-row{width:100%;display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:10px;padding:10px 12px;text-align:left;border:1px solid var(--edge);border-radius:var(--ds-radius-md);background:rgba(255,255,255,.045);color:var(--ink)}.tip-row>span:first-child{font-size:24px}.tip-row>span:nth-child(2){display:flex;flex-direction:column}.tip-row small{color:var(--ink-dim);margin-top:2px}.tip-row em{font-style:normal;font-size:12px;color:var(--ink-dim)}.tip-row em.complete{color:#8fd6b2;font-weight:700}
+@media(max-width:520px){.lesson-card{grid-template-columns:42px 1fr;padding:14px}.lesson-vella{width:42px;height:42px;font-size:24px}.lesson-actions{display:grid;grid-template-columns:1fr 1fr}.tip-row{grid-template-columns:30px 1fr}.tip-row em{grid-column:2}}
+
+/* Egg-first вступление */
+.starter-egg{position:relative;width:112px;aspect-ratio:.78;margin:auto;border:4px solid rgba(74,52,38,.72);border-radius:52% 52% 47% 47%/60% 60% 40% 40%;display:grid;place-items:center;filter:drop-shadow(0 12px 14px rgba(0,0,0,.45));overflow:hidden}
+.starter-egg b{font-size:30px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}.starter-egg i{position:absolute;inset:0;background:radial-gradient(circle at 32% 24%,rgba(255,255,255,.65),transparent 18%),radial-gradient(circle at 68% 62%,rgba(255,255,255,.22),transparent 13%)}
+.egg-fire{background:linear-gradient(145deg,#ffcc72,#dc643e 58%,#8f3429)}.egg-frost{background:linear-gradient(145deg,#f0fbff,#77c7d9 55%,#5479aa)}.egg-venom{background:linear-gradient(145deg,#e5f6a5,#75ad59 55%,#7560a0)}
+.starter-egg.crack-1::after,.starter-egg.crack-2::after,.starter-egg.crack-3::after{content:'⌁';position:absolute;top:19%;left:42%;font-size:38px;color:#fff7c4;text-shadow:0 0 8px #ffe18a;transform:rotate(72deg)}
+.starter-egg.crack-2::before,.starter-egg.crack-3::before{content:'⌁';position:absolute;top:38%;left:25%;font-size:46px;color:#fff7c4;text-shadow:0 0 8px #ffe18a;transform:rotate(-28deg)}
+.starter-egg.crack-3{box-shadow:inset 0 0 24px #fff2a5,0 0 28px rgba(255,226,138,.7)}
+.egg-card .start-dcard-art{min-height:150px;display:grid;place-items:center}.egg-card.sel{box-shadow:0 0 0 3px var(--ds-turquoise),0 14px 30px rgba(0,0,0,.45)}
+.starter-hatch{min-width:180px;min-height:220px;border:0;background:transparent;display:grid;place-items:center;cursor:pointer}.starter-hatch:not(.ready) .starter-egg{animation:eggWake 1.4s ease-in-out infinite}.starter-hatch.ready svg{width:min(260px,58vw);height:220px;animation:hatchHello .5s cubic-bezier(.2,.9,.25,1.25)}
+.crack-progress{display:flex;gap:8px}.crack-progress i{width:36px;height:7px;border-radius:8px;background:rgba(255,255,255,.2)}.crack-progress i.on{background:var(--ds-gold);box-shadow:0 0 8px var(--ds-gold)}
+.start-wake-egg{animation:eggWake 1.4s ease-in-out infinite}
+@keyframes eggWake{0%,100%{transform:rotate(-2deg) translateY(0)}35%{transform:rotate(3deg) translateY(-5px)}65%{transform:rotate(-3deg) translateY(-2px)}}
+@keyframes hatchHello{from{opacity:0;transform:scale(.5) translateY(30px)}to{opacity:1;transform:none}}
+
+.weekly-row{display:flex;flex-direction:column;gap:6px}.weekly-row>b{font-size:13px}.weekly-row>i{height:8px;overflow:hidden;border-radius:8px;background:rgba(255,255,255,.09)}.weekly-row>i span{display:block;height:100%;background:linear-gradient(90deg,var(--ds-emerald),var(--ds-turquoise));border-radius:inherit}.weekly-row>small{color:var(--ink-dim)}.weekly-row>button{min-height:44px;border:1px solid var(--ds-gold);border-radius:var(--ds-radius-md);background:var(--ds-emerald);color:#fff;font-weight:700}
+.ws-mood{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:4px 10px;border-radius:16px;background:rgba(79,169,165,.14);border:1px solid rgba(79,169,165,.42);color:#d8fbf7;font-size:12px}.ws-mood.mood-0,.ws-mood.mood-1{background:rgba(117,101,143,.22);border-color:rgba(180,158,216,.45);color:#e6dafa}

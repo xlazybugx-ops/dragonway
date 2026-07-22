@@ -1,5 +1,7 @@
 /* Драконис · Кодекс Чешуи — все стили игры */
-  /* Aptos используется системно во всём интерфейсе; внешние шрифты не загружаются. */
+  /* Один локальный кириллический variable-font гарантирует одинаковую типографику без внешней сети. */
+  @font-face{font-family:'Spectral';src:url('../fonts/Literata-Variable.ttf') format('truetype');font-style:normal;font-weight:400 900;font-display:swap}
+  @font-face{font-family:'Cinzel';src:url('../fonts/Literata-Variable.ttf') format('truetype');font-style:normal;font-weight:400 900;font-display:swap}
 
   :root{
     --ink:#e9dcc3;          /* пергаментные чернила-светлые */
@@ -473,6 +475,18 @@
   .save-reset{background:none;border:none;color:var(--ink-dim);font-size:11px;cursor:pointer;text-decoration:underline;font-family:'Spectral';padding:2px 4px}
   .save-reset:hover{color:var(--ember)}
   .save-reset.arm{color:var(--ember);font-weight:600;text-decoration:none}
+  .danger-zone{margin-top:22px;padding:16px;border:1px solid rgba(224,99,58,.55);border-radius:10px;background:rgba(224,99,58,.08)}
+  .danger-zone h3{margin:0 0 6px;color:#ff9b7b;font-family:'Cinzel',Georgia,serif;font-size:15px}
+  .danger-zone p{margin:0 0 12px;color:var(--ink-dim);font-size:13px}
+  .btn.danger{background:#7f2f25;border-color:#d76a58;color:#fff}
+  .reset-dialog{position:fixed;inset:0;z-index:4000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(10,7,5,.82);backdrop-filter:blur(5px)}
+  .reset-card{width:min(460px,100%);padding:22px;border:2px solid #d76a58;border-radius:14px;background:linear-gradient(180deg,var(--panel),var(--vellum2));box-shadow:0 18px 60px rgba(0,0,0,.65)}
+  .reset-card h2{margin:0 0 10px;color:#ffb09a;font-family:'Cinzel',Georgia,serif}
+  .reset-card p{line-height:1.45}.reset-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+  .danger-hold{position:relative;width:100%;min-height:52px;overflow:hidden;border:1px solid #d76a58;border-radius:9px;background:#301916;color:#ffd8cd;cursor:pointer;touch-action:none}
+  .danger-hold span{position:absolute;inset:0 auto 0 0;width:0;background:#a2382a;transition:none}
+  .danger-hold b{position:relative;z-index:1}.danger-hold.holding span{width:100%;transition:width 2s linear}
+  .reset-card small{display:block;margin-top:7px;color:var(--ink-dim);text-align:center}
   .quests-head{font-family:'Cinzel';font-size:13px;letter-spacing:.06em;color:var(--gold-soft);margin:14px 0 8px}
 
   /* ===== ЗАБОТА О ДРАКОНАХ ===== */
@@ -1358,6 +1372,12 @@ body.flight-active #tabbar{transform:translateY(120%)} /* прячем в пол
 .htr-main b{font-size:12px;color:#f5e8d1}.htr-main small{font-size:10px;color:var(--ink-dim)}
 .htr-main i{display:block;height:4px;border-radius:3px;background:rgba(0,0,0,.45);overflow:hidden}.htr-main i span{display:block;height:100%;background:var(--gold)}
 .hub-task-row>button{min-height:32px;padding:5px 8px;border-radius:9px;border:1px solid var(--gold);background:var(--gold);color:#21170d;font-size:10px;font-weight:700}
+.hub-daily-claim{width:100%;min-height:46px;border:1px solid var(--gold);border-radius:10px;background:linear-gradient(180deg,var(--gold),var(--gold-soft));color:#21170d;font-family:'Cinzel',Georgia,serif;font-weight:700;cursor:pointer}
+.daily-to-hub{width:100%;margin-top:12px}
+.ws-primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.ws-more{margin-top:9px;border-top:1px solid rgba(255,255,255,.08);padding-top:6px}
+.ws-more>summary{min-height:42px;display:flex;align-items:center;justify-content:center;color:var(--gold);cursor:pointer;font-family:'Cinzel',Georgia,serif;list-style:none}
+.ws-more>summary::-webkit-details-marker{display:none}
 .htr-ok{color:#9c4;font-weight:800}.hub-bonus-list{display:flex;flex-wrap:wrap;gap:6px}.hub-bonus-list span{padding:5px 8px;border-radius:10px;background:rgba(217,164,65,.1);font-size:10.5px}
 .hub-task-peek{position:absolute;z-index:17;top:48px;left:50%;transform:translateX(-50%);width:min(92%,420px);padding:10px 12px;
   border:1px solid var(--gold);border-radius:14px;background:rgba(25,17,22,.96);box-shadow:0 12px 28px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:3px;animation:hubPeekIn .3s ease}
@@ -1616,6 +1636,10 @@ html body,html body *{font-family:var(--ui-font)!important}
 .arena-bg.battle-biome>.scene{opacity:.18;mix-blend-mode:screen}
 .arena-bg.battle-biome::after{background:radial-gradient(100% 80% at 50% 43%,rgba(10,6,4,.08) 20%,rgba(10,6,4,.7) 100%),
   linear-gradient(180deg,rgba(12,8,5,.25),rgba(12,8,5,.58))}
+.enc-poi{display:block;width:min(180px,46vw);height:min(150px,30vh);object-fit:contain;margin:-12px auto 4px;
+  filter:drop-shadow(0 10px 12px rgba(0,0,0,.55));animation:poiHover 3.2s ease-in-out infinite}
+@keyframes poiHover{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@media(prefers-reduced-motion:reduce){.enc-poi{animation:none}}
 #fMe .battle-fly-dragon{animation:battleFlyLeft 1.15s ease-in-out infinite;transform-origin:50% 58%}
 #fFoe .battle-fly-dragon{animation:battleFlyRight 1.28s ease-in-out infinite;transform-origin:50% 58%}
 .fighter.cast .battle-fly-dragon{animation:battleDive .34s cubic-bezier(.2,.8,.2,1)!important}
@@ -1719,13 +1743,30 @@ html body,html body *{font-family:var(--ui-font)!important}
 .well2.open .w2-hero{top:1%;transform:translate(-50%,-56%)}
 @media(max-width:430px){.well2.open .w2-plat{width:98vw}}
 
+/* v3.0.1: redesigned lair background and grounded active dragon. */
+.w2-d{width:15.6vw;max-width:77px}
+.w2-d .w2d-vis{height:10.2vh}
+.w2-plat{top:66%;width:60%}
+.w2-hero{top:18%;width:70%;transform:translate(-50%,-100%)}
+.w2-hero .wh-vis{height:17vh}
+.well2.open .w2-plat{top:19%;width:min(96vw,495px)}
+.well2.open .w2-hero{top:20%;width:104%;transform:translate(-50%,-100%)}
+.well2.open .w2-hero .wh-vis{height:30vh}
+#wcGift{cursor:pointer;pointer-events:auto;touch-action:manipulation}
+#wcGift:focus-visible{outline:3px solid #fff;outline-offset:2px}
+@media(max-width:430px){
+  .w2-d{width:18vw}.w2-d .w2d-vis{height:9vh}
+  .well2.open .w2-plat{top:18%;width:98vw}
+  .well2.open .w2-hero .wh-vis{height:28vh}
+}
+
 /* Отражаем весь визуальный контейнер: полёт, атака и получение урона остаются зеркальными. */
 #fFoe .battle-fly-wrap.threat-1{transform:scaleX(-1) scale(.84)}
 #fFoe .battle-fly-wrap.threat-2{transform:scaleX(-1) scale(1)}
 #fFoe .battle-fly-wrap.threat-3{transform:scaleX(-1) scale(1.16)}
 
 /* ============ v2.3.6: ориентационные макеты экранов ============ */
-.start-screen[data-step="welcome"]{background:#1a1410 url('../images/screen_title_bg.webp?v=300') center/cover no-repeat}
+  .start-screen[data-step="welcome"]{background:#1a1410 url('../images/screen_title_bg.webp?v=300') center/cover no-repeat}
 .start-screen[data-step="dragon-pick"],.start-screen[data-step="dragon-name"]{background:#1a1410 url('../images/screen_character_select_bg.webp?v=300') center/cover no-repeat}
 .start-screen[data-step="settlement-name"]{background:#1a1410 url('../images/screen_settlement_name_bg.webp?v=300') center/cover no-repeat}
 .start-screen[data-step] .start-bg{display:none}
