@@ -198,7 +198,7 @@ function renderBattle(){
   };
   stage.innerHTML=`
   <div class="arena">
-    <div class="arena-bg battle-biome"><img src="images/textures/texture_${biomeKey}_${biomeDepth}.webp?v=300" alt="" decoding="async" onerror="this.src='images/biome_${biomeKey}.webp?v=300';this.onerror=()=>this.style.display='none'">${sceneSVG(elScene,'battle')}</div>
+    <div class="arena-bg battle-biome"><img src="images/textures/texture_${biomeKey}_${biomeDepth}.webp?v=311" alt="" decoding="async" onerror="this.src='images/biome_${biomeKey}.webp?v=311';this.onerror=()=>this.style.display='none'">${sceneSVG(elScene,'battle')}</div>
     <div class="turn-strip" id="turnStrip"></div>
     <div class="fighters">
       <div class="fighter" id="fMe">
@@ -249,6 +249,24 @@ function renderBattle(){
 
 function pushLog(html){battle.log.push(html);const lt=$('#battleLatest');if(lt){lt.innerHTML=html;lt.classList.remove('flash');void lt.offsetWidth;lt.classList.add('flash');}}
 
+const BATTLE_ELEMENT_VFX={fire:'fx_fire_hit',frost:'fx_frost_hit',storm:'fx_storm_hit',shade:'fx_shadow_drain',venom:'fx_slash'};
+function battleShowVfx(which,effectId){
+  const fighter=document.getElementById(which==='me'?'fMe':'fFoe');
+  if(!fighter||!effectId)return;
+  const old=fighter.querySelector('.battle-vfx');if(old)old.remove();
+  const img=document.createElement('img');
+  img.className='battle-vfx';
+  img.src=`images/effects/combat/${effectId}.webp`;
+  img.alt='';
+  img.setAttribute('aria-hidden','true');
+  img.onerror=()=>img.remove();
+  fighter.appendChild(img);
+  setTimeout(()=>img.remove(),560);
+}
+function battleStatusIcon(id,label,text){
+  return [`<img class="status-icon" src="images/ui/status/status_${id}.webp" alt="">${text||''}`,label];
+}
+
 function advMult(attEl,defEl){
   if(ADVANTAGE[attEl]===defEl)return GB.Battle.elementAdv;
   if(ADVANTAGE[defEl]===attEl)return GB.Battle.elementWeak;
@@ -279,6 +297,7 @@ function doStrike(att,def,move,labelClass,accMult){
   }
   dmg=Math.round(dmg*mult);
   if(!att.isFoe && att.happy5) dmg=Math.round(dmg*GB.Battle.happyBonus); // счастливый дракон старается (+5%)
+  const wasBlocked=!!(def.guarding||def.parryMult||(def.isBoss&&battle&&battle.bossShield>0));
   if(def.guarding){dmg=Math.round(dmg*GB.Battle.guardReduce);def.guarding=false;}
   if(def.parryMult){dmg=Math.round(dmg*def.parryMult);def.parryMult=0;}
   if(def.fx && def.fx.dmgRedPct>0) dmg=Math.max(1,Math.round(dmg*(1-def.fx.dmgRedPct/100))); // пассивка Защитника
@@ -290,6 +309,7 @@ function doStrike(att,def,move,labelClass,accMult){
   if(crit)dmg=Math.round(dmg*GB.Battle.critMult);
   sfx(crit?'crit':'hit');
   def.hp-=dmg;
+  battleShowVfx(def.isFoe?'foe':'me',wasBlocked?'fx_block':BATTLE_ELEMENT_VFX[att.el]);
   if(S.tutorialGuard && battle && def===battle.me && def.hp<1) def.hp=1; // обучение без поражения
   let extra='';
   if(mult>1)extra=' <span class="gold">(стихия превосходит!)</span>';
@@ -298,10 +318,10 @@ function doStrike(att,def,move,labelClass,accMult){
   pushLog(`${att.sp.name} ${label} <b>${move.n}</b> — <span class="dmg">${dmg} урона</span>${crit?' <span class="crit">КРИТ!</span>':''}${extra}`);
   // вампиризм от артефактов: лечит атакующего на % нанесённого урона
   const vamp=(att.fx&&att.fx.vampPct)||0;
-  if(vamp>0 && dmg>0){const heal=Math.max(1,Math.round(dmg*vamp/100));att.hp=Math.min(att.maxHp,att.hp+heal);if(!att.isFoe&&battle)battle.usedHeal=true;pushLog(`<span class="heal">🩸 ${att.sp.name} впитывает ${heal} жизни (вампиризм).</span>`);}
+  if(vamp>0 && dmg>0){const heal=Math.max(1,Math.round(dmg*vamp/100));att.hp=Math.min(att.maxHp,att.hp+heal);if(!att.isFoe&&battle)battle.usedHeal=true;battleShowVfx(att.isFoe?'foe':'me','fx_shadow_drain');pushLog(`<span class="heal">🩸 ${att.sp.name} впитывает ${heal} жизни (вампиризм).</span>`);}
   // лечение от тени/поглощения и от лечащих ульт
   if(move.n==='Поглощение'){const heal=Math.round(dmg*0.25);att.hp=Math.min(att.maxHp,att.hp+heal);if(!att.isFoe&&battle)battle.usedHeal=true;pushLog(`<span class="heal">${att.sp.name} впитывает ${heal} жизни.</span>`);}
-  if(move.heal){const heal=Math.round(att.maxHp*0.5);att.hp=Math.min(att.maxHp,att.hp+heal);if(!att.isFoe&&battle)battle.usedHeal=true;pushLog(`<span class="heal">${att.sp.name} исцеляется на ${heal}!</span>`);}
+  if(move.heal){const heal=Math.round(att.maxHp*0.5);att.hp=Math.min(att.maxHp,att.hp+heal);if(!att.isFoe&&battle)battle.usedHeal=true;battleShowVfx(att.isFoe?'foe':'me','fx_heal');pushLog(`<span class="heal">${att.sp.name} исцеляется на ${heal}!</span>`);}
   return {dmg,crit,mult};
 }
 
@@ -329,6 +349,7 @@ function playerMove(move){
       manaTxt=` <span class="mana-log">+${MANA_REGEN_GUARD}💧</span>`;
     }
     animate('me','cast');
+    battleShowVfx('me',heal>0?'fx_heal':'fx_block');
     if(heal>0){
       pushLog(`${b.me.sp.name} <b>встаёт в защиту</b> и восстанавливает <span class="heal">${heal}</span> жизни.${manaTxt}${b.guardStreak===2?' <span class="dim">Щит слабеет…</span>':''}`);
     } else {
@@ -672,14 +693,14 @@ function renderBattleStatus(){
       +`<span class="ts-arrow">→</span>`
       +`<span class="ts-chip ${meNow?'':'now'}">${(b.foe.sp&&b.foe.sp.sigil)||'👹'} ${foeName}</span>`; }
   const meChips=[];
-  if(b.me.guarding)meChips.push(['🛡️','Защита']);
-  if(b.me.parryMult)meChips.push(['⚔️','Парирование готово']);
-  if((b.combo||0)>1)meChips.push(['🔥×'+b.combo,'Комбо']);
+  if(b.me.guarding)meChips.push(battleStatusIcon('guard','Защита'));
+  if(b.me.parryMult)meChips.push(battleStatusIcon('shield','Парирование готово'));
+  if((b.combo||0)>1)meChips.push(battleStatusIcon('attack_up','Комбо','×'+b.combo));
   const foeChips=[];
-  if(b.foe.guarding)foeChips.push(['🛡️','Защита']);
-  if((b.bossShield||0)>0)foeChips.push(['🔰'+b.bossShield,'Щит: пробей ударами']);
-  if(b.bossEnrage)foeChips.push(['😡','Ярость: бьёт сильнее']);
-  if(b.bossStalled)foeChips.push(['💫','Застыл: беззащитен']);
+  if(b.foe.guarding)foeChips.push(battleStatusIcon('guard','Защита'));
+  if((b.bossShield||0)>0)foeChips.push(battleStatusIcon('shield','Щит: пробей ударами','×'+b.bossShield));
+  if(b.bossEnrage)foeChips.push(battleStatusIcon('attack_up','Ярость: бьёт сильнее'));
+  if(b.bossStalled)foeChips.push(battleStatusIcon('stun','Застыл: беззащитен'));
   const put=(id,arr)=>{ const el=document.getElementById(id); if(!el)return;
     el.innerHTML=arr.map(c=>`<span class="fx-chip" title="${c[1]}">${c[0]}</span>`).join(''); };
   put('meFx',meChips); put('foeFx',foeChips);

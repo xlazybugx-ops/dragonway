@@ -1,7 +1,20 @@
-# Draconis 3.0 — дизайн-документ генерации графики
+# Draconis 3.0 / build 3.1 — дизайн-документ генерации графики
 
 Восстановлено: 22 июля 2026 года.  
-Статус документа: рабочий источник истины для продолжения генерации.
+Верифицировано по билду: 23 июля 2026 года.  
+Статус документа: актуальный источник истины для продолжения генерации. Подробная матрица расхождений: `DESIGN-DOCUMENT-VERIFICATION-AUDIT-2026-07-23.md`.
+
+## Обновление поселения 23 июля 2026 года
+
+Подготовлены и подключены три геометрически согласованных фона 1024×1536:
+
+```text
+images/hub/hub_forest.webp
+images/hub/hub_lava.webp
+images/hub/hub_frost.webp
+```
+
+Каждый фон содержит 12 одинаково расположенных строительных площадок — четыре яруса по три — и восемь малых декоративных точек. Лесной мастер хранится в `tmp/imagegen/hub-v2/`; лавовая и ледяная версии созданы редактированием его материалов и атмосферы. Фоны не содержат зданий, подписей или интерфейсных индикаторов.
 
 ## 1. Цель
 
@@ -101,8 +114,16 @@ No readable text, letters, numbers, watermark, signature, modern plastic UI, pho
 | ультимативные способности | 10 | подготовлено | `images/ui/abilities/` |
 | базовые атаки и защита | 11 | подготовлено | `images/ui/abilities/` |
 | общие перки | 10 | подготовлено | `images/ui/abilities/` |
+| фоны поселения: лес, лава, лёд | 3 | интегрировано | `images/hub/` |
+| полноразмерные здания по уровням | 60 из 60 визуальных вариантов + construction overlay | интегрировано: P0–P3 завершены | `images/hub/buildings/` |
+| летающие драконы сверху | 60 из 60 | все пять стихийных пакетов полностью сгенерированы и интегрированы | `images/flight/` |
+| боевые статусы | 15 из 15 | интегрировано в пошаговый и аркадный боевые экраны | `images/ui/status/` |
+| боевые VFX | 7 из 7 | интегрировано в пошаговый и аркадный боевые экраны | `images/effects/combat/` |
+| декор поселения | 80 файлов вариантов | интегрировано | `images/decor/` |
 
-Последний подготовленный комплект — рамки редкости. Горизонтальный лист из шести рангов создан, очищен от хромакея, нарезан в прозрачные файлы 256×256 и проверен на прозрачность углов и центрального окна. До подключения к карточкам рамки имеют статус «подготовлено».
+Актуализация P0–P3 от 23 июля 2026 года: созданы и подключены все 60 визуальных уровней двенадцати зданий и универсальная строительная накладка. Полный комплект поселения имеет статус **интегрировано**; fallback-маркеры сохранены только как аварийная защита.
+
+Последний завершённый UI-комплект — 81 иконка способностей, атак и перков. Иконки и шесть рамок редкости физически готовы, но не считаются интегрированными, пока экраны продолжают показывать текстовые символы и emoji. Главный следующий художественный пакет — здания поселения; полётные драконы идут вторым приоритетом.
 
 ## 5. Уже созданные яйца
 
@@ -227,16 +248,15 @@ rarity_primordial.webp
 
 Лист общих перков завершён 23 июля 2026 года: десять прозрачных иконок 128×128 находятся в `images/ui/abilities/`, мастер и контрольный лист — в `tmp/imagegen/abilities-perks/`. Порядок соответствует `PERK_POOLS`. В каталоге подготовлена 81 иконка способностей и боевых действий. Следующий пакет — 15 боевых статусов из раздела 14.1.
 
-## 8. Очередь после рамок
+## 8. Актуальная очередь производства
 
-1. Интегрировать 16 готовых яиц и заменить процедурную/эмодзи-графику.
-2. Завершить 12 наград и подключить к панели «Сегодня», тостам и результатам.
-3. Подключить 6 подготовленных рамок редкости к карточкам яиц, реликвий и наград.
-4. Создать 5 листов способностей — всего 50 иконок.
-5. Создать 15 боевых статусов.
-6. Создать 7 боевых эффектов: slash, block, heal, fire hit, frost hit, storm hit, shadow drain.
-7. Создать праздничную накладку.
-8. Выполнить атмосферные пакеты: кузница, гнездилище, Шпиль, Кодекс, профиль.
+1. Создать и подключить визуальные уровни 12 зданий поселения, начиная с Логова, Гнезда и Портала.
+2. Создать 60 летающих драконов сверху и удалить зависимость основного опыта от fallback-спрайтов.
+3. Подключить 81 готовую иконку способностей и 6 рамок редкости к фактическим компонентам.
+4. Создать 15 боевых статусов.
+5. Создать 7 боевых эффектов: slash, block, heal, fire hit, frost hit, storm hit, shadow drain.
+6. Провести пиксельную overlay-проверку трёх фонов поселения на единой маске площадок.
+7. Добавлять праздничные и атмосферные накладки только после освобождения бюджета изображений.
 
 ## 9. Ворота качества
 
@@ -249,7 +269,7 @@ rarity_primordial.webp
 5. нет случайного текста, псевдорун, цифр и лишних объектов;
 6. объект не обрезан и не касается краёв;
 7. файл проверен на тёмной панели, светлом пергаменте и пяти биомах;
-8. общий вес `images/` остаётся ниже 50 МБ либо старые ресурсы дополнительно оптимизированы;
+8. общий вес `images/` остаётся ниже 100 МБ; рабочая цель — до 90 МБ, чтобы сохранить 10 МБ резерва;
 9. релизные тесты проходят без битых ссылок и производственных PNG.
 
 ## 10. Правило продолжения
@@ -261,8 +281,10 @@ rarity_primordial.webp
 ### 11.1. Что действительно имеет уровни в коде
 
 - Логово: 5 уровней, вместимость 4/6/8/10/12 драконов.
-- Портал странствий: 3 уровня.
-- Остальные здания сейчас имеют одно игровое состояние и открываются прогрессом. Для них подготовлена пятиступенчатая художественная шкала, но она не должна ошибочно отображать несуществующую механику до добавления уровней в данные.
+- Портал странствий: 8 игровых уровней.
+- Кузница: 5 уровней; у перенесённых сохранений сохраняется текущий уровень, новое строительство начинает с уровня 3.
+- Гнездо, Шпиль Мироздания, Гнездилище рода, Кодекс, Арена, Сокровищница, Рынок, Мастерская украшений и Зал хранителя: по 5 уровней.
+- Для Портала используются пять визуальных ступеней: игровые уровни 1, 2–3, 4–5, 6–7 и 8. Это сохраняет заметный рост величия без восьми почти одинаковых файлов.
 
 ### 11.2. Общий промт здания
 
@@ -297,7 +319,7 @@ Avoid: readable text, letters, numbers, flags with symbols, giant detached platf
 | ID и файлы | Подробный предметный блок |
 |---|---|
 | `lair`, `building_lair_l1…l5.webp` | a welcoming cliffside dragon lair built around a broad arched cave mouth; two rounded resting balconies, warm inner hearth, scale-shaped lintel, ventilation openings large enough for dragons; progression adds balcony tiers, carved columns, protective wing-shaped roof and finally a luminous sanctuary crown; never close or narrow the cave entrance |
-| `explore`, `building_explore_l1…l3.webp` | a circular expedition portal of ancient stone with a walkable lower threshold, three stabilizing pylons and a turquoise vertical gateway; progression adds calibrated brass rings, cartographer instruments and a taller controlled energy arch; the portal remains transparent through its center and never becomes a solid tower |
+| `explore`, `building_explore_l1…l5.webp` | a circular expedition portal of ancient stone with a walkable lower threshold, three stabilizing pylons and a turquoise vertical gateway; progression adds calibrated brass rings, cartographer instruments and a taller controlled energy arch; visual tiers map to gameplay levels 1 / 2–3 / 4–5 / 6–7 / 8; the portal remains transparent through its center and never becomes a solid tower |
 | `hatch`, `building_hatch_l1…l5.webp` | a warm hatchery pavilion with a visible bowl-shaped nest chamber, broad leaf-and-tile roof, gentle heating crystals and sheltered entrance; progression adds incubation alcoves, ringed chimney vents, keeper galleries and a ceremonial egg-shaped skylight; nurturing rather than temple-like |
 | `forge`, `building_forge_l1…l5.webp` | a compact dragon-fire forge with low stone walls, broad copper chimney, glowing but contained furnace mouth, exterior anvil ledge and tool rack; progression adds bellows towers, heat shields, masterwork brass flues and a crowned volcanic chimney; no weapon is the main subject |
 | `roost`, `building_roost_l1…l5.webp` | a lineage roost formed by two symmetrical sheltered perches joined around a central family-tree stone, woven nesting material, gentle heart-scale motif; progression adds genealogy arches, paired observation towers and a luminous ancestral canopy; preserve two clearly separate parent places |
@@ -311,7 +333,7 @@ Avoid: readable text, letters, numbers, flags with symbols, giant detached platf
 
 ### 11.5. Контроль целостности острова
 
-- Все варианты проверять поверх `hub_bg.webp` при масштабе 18–24% ширины сцены.
+- Все варианты проверять поверх каждого из `hub_forest.webp`, `hub_lava.webp`, `hub_frost.webp` при ширине здания 18–24% сцены.
 - Основание каждого уровня совмещается пиксельно; менять разрешено верхние 70% силуэта.
 - Здание не закрывает соседнюю дорогу, слот украшения или более 8% соседней площадки.
 - Магическое свечение не ярче портала фона и не образует отдельный источник погоды.
@@ -491,3 +513,110 @@ One isolated combat VFX overlay for Draconis 3.0: [DESCRIPTION]. Transparent/chr
 - внутренние обводки карточек и модальные подложки.
 
 Эти элементы должны масштабироваться, менять контраст и состояние через CSS. Генерируемая графика используется для предметной семантики: здания, драконы, способности, атаки, статусы, награды и эффекты.
+
+## 15. Производственный контракт build 3.1
+
+Этот раздел имеет приоритет при расхождении с ранними формулировками.
+
+### 15.1. Здания: имена, геометрия и мастер-промт
+
+Файлы: `images/hub/buildings/building_[id]_l[tier].webp`, где `[id]` — `lair`, `hatch`, `explore`, `forge`, `spire`, `roost`, `codex`, `arena`, `treasury`, `market`, `decor`, `profile`, а `[tier]` — 1–5. Для Портала tier соответствует игровым уровням `1 / 2–3 / 4–5 / 6–7 / 8`.
+
+```text
+Production continuity contract: one isolated [BUILDING] at visual tier [1–5] for the Draconis settlement. Cozy hand-painted storybook fantasy, polished gouache, rounded family-friendly silhouette, carved warm sandstone, dark oak, aged brass and restrained turquoise magic. Exact fixed three-quarter top-down orthographic camera, 42-degree elevation, entrance facing lower-right, warm key light from upper-left. Entire object centered on a compact oval footprint; foundation anchor at x 50 percent, y 78 percent of a 512 by 512 canvas; 8 percent side padding. Use the exact camera, anchor, base width and scale of the approved lair L1 master. Keep the lower 30 percent stable between levels. Each next tier adds height, craftsmanship and ceremonial importance, readable at 96 pixels, without widening beyond the stone plot. Transparent alpha-ready object, no terrain island, no baked circular platform, no UI badge, no characters, no level number, no long cast shadow.
+```
+
+```text
+Negative: different camera, front or side view, extreme perspective, oversized castle, full environment, painted grass base, readable runes, UI icon, scaffolding, smoke hiding the silhouette, clipped glow, cropped roof or foundation, accidental lean, photorealism, anime, horror.
+```
+
+Сначала утверждаются L1 и L5 для Логова, Гнезда и Портала. После проверки их на трёх фонах генерируются L2–L4 и остальные здания из предметных блоков 11.4.
+
+### 15.2. Универсальное строительство
+
+```text
+Friendly fantasy construction scaffolding overlay wrapping an implied compact settlement building without showing the building itself. Draconis cozy storybook style, rounded dark-oak beams, warm rope, cream canvas, small brass fittings and two turquoise safety lanterns. Exact 42-degree top-down orthographic camera, entrance opening lower-right. Centered 512 by 512, open middle so the underlying building remains visible, clear “work in progress” silhouette at 96 pixels. Transparent background, no ground, workers, text, timer, number, floating tools or long shadow.
+```
+
+Файл: `images/hub/buildings/construction_overlay.webp`. Готовность, блокировка, таймер и стрелка улучшения остаются кодовыми.
+
+### 15.3. Тематические основания
+
+Использовать только при необходимости; архитектуру зданий не дублировать по темам.
+
+```text
+FOREST — transparent oval foundation trim matching the approved building anchor: thin moss, tiny purple and yellow flowers, two warm sandstone chips and restrained roots; details only in the lowest 18 percent; no building, platform or shadow.
+LAVA — same anchor: cooled charcoal stone, two hairline amber magma seams, tiny heat-safe red succulents and brass stakes; calm, no fire wall or smoke.
+FROST — same anchor: compact snow rim, pale-blue frost crystals, two smooth icy pebbles and restrained indigo winter grass; no blizzard or large icicles.
+```
+
+Файлы: `foundation_forest.webp`, `foundation_lava.webp`, `foundation_frost.webp`.
+
+### 15.4. Летающие драконы
+
+Промты раздела 12 экспортируются строго в `images/flight/[species-id]_[stage]_top.webp`, 512×512, стадии 1–4. Голова направлена вверх, центр тела одинаков между возрастами, силуэт читается в 72 px.
+
+```text
+Additional negative: side-view or three-quarter portrait, standing or landing pose, sideways head, folded wings hiding species silhouette, asymmetric crop, landscape, circular shadow, battle UI, rider, saddle, weapon, text or frame.
+```
+
+Пакет считается завершённым только при наличии всех 60 файлов; до этого основной код продолжает использовать fallback.
+
+Эталонный пакет `ember` завершён 23 июля 2026 года: стадии `1`, `25`, `60`, `100` экспортированы в 512×512 WebP. Для всех следующих видов закреплён одинаковый игровой bounding box 380×420 с позицией `x=66`, `y=46`; после нарезки обязательно удаляются отделённые компоненты соседних ячеек.
+
+Огненный пакет завершён: `ember`, `cinderpup`, `magma`, `pyrelord`, по четыре стадии. Камера Cinderpup была отклонена после первого мастера и перегенерирована в строгом dorsal top-down виде.
+
+Серия `ember` повторно сгенерирована после пользовательской проверки: морда теперь направлена вперёд к верхнему краю по траектории полёта, видна её верхняя плоскость; голова не поднята к зрителю. Версия v2 полностью заменила четыре игровых файла.
+
+Ледяной пакет завершён: `glacier`, `permafrost`, `aurora`, по четыре стадии. Все серии используют уточнённую ориентацию ember-v2; мягкие ленточные края Aurorin проверены после удаления хромакея.
+
+Природно-ядовитый пакет завершён: `sporewing`, `blightfang`, `worldserpent`, по четыре стадии. Все двенадцать спрайтов выполнены в строгом виде сверху с мордой по направлению полёта к верхнему краю; тонкие лозовые, шипастые и корневые хвосты проверены после удаления хромакея и очистки отдельных фрагментов.
+
+Буревой пакет завершён: `tempest`, `thundercall`, по четыре стадии. У Tempest сохранены перьевые края крыльев, бирюзовые каналы и раздвоенный аэродинамический хвост; у Thundercall — корона-молот, серебряные проводящие пластины, зубчатые крылья и молниевидный хвостовой клинок. Все восемь спрайтов приняты в строгом dorsal top-down виде.
+
+Теневой пакет завершён: `umbra`, `nightwyrm`, `voidmaw`, по четыре стадии. Umbra сохраняет компактный силуэт, серповидные рога и хвост; Nightwyrm — длинные тихие крылья, лунные отметины и тонкий хвост со звёздным плавником; Voidmaw — круглую анатомическую форму головы, манта-подобные крылья и хвост с кольцом затмения. Все двенадцать спрайтов проверены на тёмной подложке после удаления зелёного хромакея.
+
+После общего аудита теневой пакет заменён версией v2: яркость верхних плоскостей и холодная контурная подсветка усилены для фиолетово-чёрной карты, средняя симметрия силуэтов повышена с 0,525 до 0,977. Нарезка выполняется по четырём связным силуэтам полного мастер-листа, а не по равным четвертям, чтобы широкие крылья не обрезались. У ледяных файлов `aurora_1/25/60/100` и `glacier_100` удалены остаточные отделённые пиксели.
+
+Второй корректирующий пакет v2 завершён для `cinderpup`, `aurora`, `blightfang` и `tempest`: заменены все 16 возрастных спрайтов, чтобы стадии одного вида сохраняли общую анатомию. Средняя симметрия пакета повышена с 0,510 до 0,942, минимальная — с 0,281 до 0,878. Ribbon-крылья Aurora, рваные крылья Blightfang, перьевые крылья Tempest и узкие крылья Cinderpup выделены из полного мастер-листа по связным силуэтам без геометрического обрезания.
+
+Матрица полётных драконов закрыта полностью: 15 видов × 4 возрастные стадии = 60 игровых WebP-файлов. Основной сценарий исследования и сражения больше не зависит от стихийного или SVG-fallback.
+
+### 15.5. Статусы и боевые эффекты
+
+Статусы: `images/ui/status/status_[id].webp`, 128×128.
+
+```text
+One compact readable status-effect icon for [STATUS], Draconis cozy storybook fantasy UI, one dominant silhouette, thick rounded dark-brown contour, controlled [ELEMENT] glow, centered and readable at 28 pixels, transparent background, 16 percent safe padding, no circular frame, letters, numbers, portrait or scene.
+```
+
+Пакет статусов завершён: 15 из 15 файлов созданы в 128×128 WebP с прозрачностью. Мастер-лист построен в строгой сетке 5×3; после нарезки удалены только микрофрагменты соседних ячеек, а смысловые раздельные части вспышки, пузырьков, капель, траекторий и обломков сохранены. Контрольный лист: `tmp/imagegen/combat-status/contact_all.jpg`.
+
+VFX: `images/effects/combat/fx_[id].webp`, 512×512.
+
+```text
+Transparent combat effect overlay for [EFFECT], hand-painted family-friendly fantasy, energetic curved motion, brightest detail around the impact while leaving the dragon readable, soft alpha falloff, contained inside canvas, no background, frame, text, gore, weapon or character baked into the effect.
+```
+
+Пакет боевых эффектов завершён: `fx_slash`, `fx_block`, `fx_heal`, `fx_fire_hit`, `fx_frost_hit`, `fx_storm_hit`, `fx_shadow_drain`. Все семь файлов экспортированы в 512×512 WebP с прозрачностью; видимая часть ограничена центральной областью не более 320×320. Контроль выполнен одновременно на светлой и тёмной подложках: `tmp/imagegen/combat-vfx/contact_light_dark.jpg`.
+
+Интеграция завершена в `js/08-battle.js` и `js/08b-arcade.js`. Пошаговый бой показывает стихийный VFX поверх получившего удар бойца, отдельные эффекты блока, лечения и поглощения, а статусные chips используют WebP-иконки. Аркадный Canvas предзагружает те же ассеты, рисует burn/poison/chill над противниками, shield/speed-up над игроком и краткие VFX в точке попадания. При ошибке загрузки изображения игровая логика и существующие кодовые частицы продолжают работать.
+
+Существующие `hazard_*.webp` и `wind_threads.webp` относятся к среде полёта и не заменяют семь боевых VFX.
+
+### 15.6. Декор
+
+Новый декор генерируется только для конкретного ID, не прошедшего визуальную проверку:
+
+```text
+One isolated settlement decoration: [DECOR NAME AND MATERIALS], Draconis cozy hand-painted storybook fantasy, fixed 42-degree top-down orthographic camera matching hub buildings, rounded child-friendly silhouette, warm upper-left light, subtle dark-brown contour, compact oval footprint, readable at 96 pixels, transparent background, 12 percent safe margin, no stone platform, landscape, readable runes, UI badge, characters or long shadow.
+```
+
+Для трофея: `prestigious but celebratory, symbolic fragment displayed safely on a low museum pedestal, no severed anatomy or gore`. Для премиального предмета: `prestige through craftsmanship and a gentle animation-ready magical accent, not excessive size or brightness`.
+
+### 15.7. Бюджет и Definition of Done
+
+- Жёсткий лимит `images/`: 100 МБ; рабочая цель: не более 90 МБ.
+- Текущая база: 49,95 МиБ, доступно около 40 МиБ рабочего бюджета и 10 МиБ резерва.
+- Цель: здание 90–120 КиБ, полётный дракон 55–85 КиБ, UI-иконка 12–25 КиБ.
+- Пакет принят, когда имена совпадают с кодом, прозрачность проверена, графика просмотрена в реальном интерфейсе, fallback не используется в основном сценарии, старое сохранение мигрирует, а релизные и весовые тесты проходят.

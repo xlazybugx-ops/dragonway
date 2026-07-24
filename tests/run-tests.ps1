@@ -10,6 +10,8 @@ Get-ChildItem (Join-Path $root 'js') -Filter '*.js' | ForEach-Object {
 
 & $node (Join-Path $PSScriptRoot 'test-release.js')
 if ($LASTEXITCODE -ne 0) { throw 'Balance tests failed' }
+& $node (Join-Path $PSScriptRoot 'test-hub-builder.js')
+if ($LASTEXITCODE -ne 0) { throw 'Settlement builder tests failed' }
 & $node (Join-Path $PSScriptRoot 'check-assets.js')
 if ($LASTEXITCODE -ne 0) { throw 'Asset reference checks failed' }
 & $node (Join-Path $PSScriptRoot 'check-performance.js')

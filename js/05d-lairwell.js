@@ -49,7 +49,7 @@ function renderLair(){
   const side=others.slice(0,W2_SPOTS.length).map((d,i)=>{
     const p=W2_SPOTS[i], s2=speciesById(d.id);
     return `<button class="w2-d" data-uid="${d.uid}" aria-label="${dragonName(d)}, уровень ${d.level}. Коснуться, чтобы поговорить" style="left:${p.x}%;top:${p.y}%">
-      ${sigilHTML(s2,d.morph,'w2d-vis',d.level)}
+      ${sigilHTML(s2,d.morph,'w2d-vis',d.level,true)}
       <span class="w2d-lvl">${d.level}</span>
       <span class="w2d-bubble" style="display:none"></span>
       <span class="w2d-pick" style="display:none">⭐ выбрать</span>
@@ -131,7 +131,7 @@ function renderLair(){
     </div>`;
 
   sec.innerHTML=`<div class="well2 ${_wellOpen?'open':''}" id="well2">
-    <img class="w2-bg" src="images/lair_bg.webp?v=300" decoding="async" alt=""
+    <img class="w2-bg" src="images/lair_bg.webp?v=311" decoding="async" alt=""
       onerror="this.style.display='none';this.closest('.well2').classList.add('noimg');">
     <div class="w2-dim"></div>
     ${top}
@@ -140,7 +140,7 @@ function renderLair(){
       <img class="w2-plat-img" src="images/lair_platform_v2.webp" decoding="async" alt=""
         onerror="if(!this._p){this._p=1;this.src='images/lair_platform.webp';}else{this.style.display='none';this.closest('.w2-plat').classList.add('noimg');}">
       <div class="w2-hero" id="w2Hero">
-        <div class="wh-vis dragon-wrap" style="filter:${morphById(hero.morph).filter||'none'}">${dragonVisual(sp.id,hero.level)}</div>
+        <div class="wh-vis dragon-wrap" style="filter:${morphById(hero.morph).filter||'none'}">${dragonVisual(sp.id,hero.level,true)}</div>
         <div class="wh-plate">${dragonName(hero)} · ур.${hero.level}</div>
       </div>
     </div>

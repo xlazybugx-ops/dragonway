@@ -17,10 +17,10 @@ function renderLedger(){
 function elTag(el){const e=ELEMENTS[el];return `<span class="elem-tag ${e.cls}">${e.name}</span>`;}
 
 // окрашенный рисованный дракон согласно морфу
-function sigilHTML(sp, morphId, cls, level){
+function sigilHTML(sp, morphId, cls, level, eager){
   const m=morphById(morphId);
   const sh=m.shiny?' shiny':'';
-  return `<div class="${cls} dragon-wrap${sh}" style="filter:${m.filter||'none'}">${dragonVisual(sp.id, level)}</div>`;
+  return `<div class="${cls} dragon-wrap${sh}" style="filter:${m.filter||'none'}">${dragonVisual(sp.id, level, eager)}</div>`;
 }
 function morphBadge(morphId){
   const m=morphById(morphId);

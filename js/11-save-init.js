@@ -48,6 +48,9 @@ function migrateDragons(){
   if(!Array.isArray(S.chests)) S.chests=[];
   if(!S.keys||typeof S.keys!=='object') S.keys={1:0,2:0,3:0};
   if(!S.decorations||typeof S.decorations!=='object') S.decorations={};
+  if(!S.hubDecorations||typeof S.hubDecorations!=='object') S.hubDecorations=Object.assign({},S.decorations);
+  if(!S.hubBuildings||typeof S.hubBuildings!=='object') S.hubBuildings={};
+  if(!('hubBuildQueue' in S)) S.hubBuildQueue=null;
   if(!Array.isArray(S.decorOwned)) S.decorOwned=[];
   if(!Array.isArray(S.scrolls)) S.scrolls=[];
   if(!S.bossesDefeated||typeof S.bossesDefeated!=='object') S.bossesDefeated={};
@@ -62,6 +65,18 @@ function migrateDragons(){
   if(typeof S.saveVersion!=='number') S.saveVersion=1;
   if(!Array.isArray(S.telemetry)) S.telemetry=[];
   if(S.saveVersion<3){ S.arenaOffers=null; S.saveVersion=3; }
+  if(S.saveVersion<4){
+    const legacy=['explore','roost','spire','lair','forge','codex','hatch','arena'];
+    const slots=['p01','p02','p03','p04','p05','p06','p07','p08'];
+    legacy.forEach((id,i)=>{
+      const unlocked=(id==='lair'||id==='explore'||id==='hatch'||id==='arena'||id==='codex'||(typeof featureUnlocked==='function'&&featureUnlocked(id)));
+      if(unlocked&&!Object.values(S.hubBuildings).some(b=>b&&b.buildingId===id)){
+        const level=id==='lair'?(S.lairLevel||1):id==='explore'?(S.portalLevel||1):id==='forge'?(S.forgeLevel||3):1;
+        S.hubBuildings[slots[i]]={buildingId:id,level,state:'active',startedAt:0,completesAt:0};
+      }
+    });
+    S.saveVersion=4;
+  }
   let migrated=0;
   for(const d of S.dragons){
     // характер: назначить, если нет
@@ -454,6 +469,8 @@ function newGameFromOnboard(){
   addEgg(speciesById(onboard.dragon).el,1,1,{silent:true});
   S.sel=d.uid;
   S.settlement=onboard.settlement||'Драконьи Земли';
+  S.settlementTheme=speciesById(onboard.dragon).el==='fire'?'lava':speciesById(onboard.dragon).el==='frost'?'frost':'forest';
+  S.hubBuildings={}; S.hubBuildQueue=null; S.hubDecorations={};
   S.tutorialGuard=true; // первый бой — гарантированная победа
   S.firstHour={phase:'first_flight',timingAssists:2,safeFlight:true};
   S.arcadeOn=true;
@@ -467,6 +484,7 @@ function newGame(){
   addEgg('fire',1,1,{silent:true});
   S.sel=S.dragons[0].uid;
   S.settlement='Драконьи Земли';
+  S.settlementTheme='lava'; S.hubBuildings={}; S.hubBuildQueue=null; S.hubDecorations={};
   S.tutorialGuard=true;
   S.arcadeOn=true;
 }

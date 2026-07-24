@@ -97,14 +97,14 @@ function stageForLevel(level){
   return st;
 }
 // визуал дракона: <img> фото с авто-фолбэком на SVG, либо сразу SVG
-function dragonVisual(speciesId, level){
+function dragonVisual(speciesId, level, eager){
   const svg=dragonArt(speciesId);
   if(!USE_PHOTO_DRAGONS) return svg;
   const stage=stageForLevel(level||1);
-  const src=`images/${speciesId}_${stage}.webp?v=300`;
+  const src=`images/${speciesId}_${stage}.webp?v=311`;
   // если картинка не загрузится — onerror подменит контейнер на SVG
   const svgEsc=svg.replace(/"/g,'&quot;');
-  return `<img class="dragon-art dragon-photo" src="${src}" alt="" loading="lazy" decoding="async"
+  return `<img class="dragon-art dragon-photo" src="${src}" alt="" loading="${eager?'eager':'lazy'}" decoding="async"
      onerror="this.outerHTML=this.getAttribute('data-fallback')"
      data-fallback="${svgEsc}">`;
 }

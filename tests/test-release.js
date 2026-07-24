@@ -14,7 +14,10 @@ const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const css=fs.readFileSync(path.join(root,'css/style.css'),'utf8');
 const tokens=fs.readFileSync(path.join(root,'css/tokens.css'),'utf8');
 const flight=fs.readFileSync(path.join(root,'js/07-flight.js'),'utf8');
+const core=fs.readFileSync(path.join(root,'js/01-data-core.js'),'utf8');
+const lair=fs.readFileSync(path.join(root,'js/05d-lairwell.js'),'utf8');
 const hub=fs.readFileSync(path.join(root,'js/06c-hubmap.js'),'utf8');
+const settlement=fs.readFileSync(path.join(root,'js/06d-settlement-builder.js'),'utf8');
 
 assert(T.GB.Release.version==='3.0.0','release version');
 assert(JSON.stringify(Array.from(T.BIOME_MIN_LEVEL))===JSON.stringify([0,1,22,55]),'biome progression');
@@ -46,11 +49,15 @@ assert(index.includes('data-tab="hub"     title="Поселение"'),'hub must
 assert(index.includes('data-tab="lair"    title="Логово"'),'dragon home must be named Lair');
 assert(!index.includes('no-cache, no-store'),'production HTML must allow asset caching');
 const versions=[...index.matchAll(/[?&]v=([^"'&]+)/g)].map(m=>m[1]);
-assert(versions.length>0&&versions.every(v=>v==='300'),'static asset versions must be unified');
+assert(versions.length>0&&versions.every(v=>v==='301'),'static asset versions must be unified');
 assert(css.includes('repeat(5,minmax(0,1fr))'),'navigation must use five equal columns');
 assert(css.includes("fonts/Literata-Variable.ttf"),'local Cyrillic font must be bundled');
 assert(fs.existsSync(path.join(root,'fonts/Literata-Variable.ttf')),'local font file must exist');
-assert(index.includes('css/tokens.css?v=300'),'design tokens must be connected after legacy styles');
+assert(index.includes('css/tokens.css?v=301'),'design tokens must be connected after legacy styles');
+assert(core.includes('loading="${eager?\'eager\':\'lazy\'}"'),'dragon visuals must support eager loading');
+assert(lair.includes("sigilHTML(s2,d.morph,'w2d-vis',d.level,true)"),'lair side dragons must load eagerly');
+assert(lair.includes('dragonVisual(sp.id,hero.level,true)'),'lair hero dragon must load eagerly');
+assert(css.includes('.well2.open .w2-scene{opacity:.62;pointer-events:none}'),'open lair must keep side dragons visible');
 assert(tokens.includes('--ds-paper:#f4e7c8')&&tokens.includes('--ds-emerald:#2f7d68'),'storybook palette tokens must exist');
 assert(tokens.includes('--ds-touch:48px'),'minimum touch target must be tokenized');
 assert(tokens.includes('body.a11y-motion-off'),'manual reduced-motion mode must exist');
@@ -58,6 +65,8 @@ assert(flight.includes('images/arcade_${sp.el}.webp'),'flight and battle must us
 assert(!flight.includes('images/fly_${sp.el}_'),'opaque flight backgrounds must not be used as sprites');
 assert(hub.includes('hub-task-drawer')&&hub.includes('hub-service-bar'),'hub task drawer and service bar must render');
 assert(hub.includes('hub-build-field')&&hub.includes('hub-deco-field'),'settlement must expose building and decoration placement fields');
+assert(settlement.includes('HUB2_PLOTS')&&settlement.includes('hub2StartBuild'),'interactive settlement builder must be connected');
+assert(['forest','lava','frost'].every(theme=>fs.existsSync(path.join(root,'images','hub',`hub_${theme}.webp`))),'all three elemental settlement backgrounds must exist');
 assert(hub.includes('<b>Сегодня</b>')&&hub.includes('hubDailyClaim'),'hub must own daily tasks and daily reward');
 const content=fs.readFileSync(path.join(root,'js/02-data-content.js'),'utf8');
 const eggIds=Array.from(content.matchAll(/\{id:'(egg_[a-z0-9_]+)'/g),m=>m[1]);
@@ -114,7 +123,6 @@ assert(save.includes('const WEEKLY_STEPS=')&&save.includes('function claimWeekly
 assert(save.includes('streakShield')&&save.includes('мягкий откат вместо полного обнуления'),'login streak must forgive or soften missed days');
 assert(save.includes('S.quests.every(x=>x.claimed)'),'finishing daily tasks must restore streak protection');
 assert(hub.includes('Недельная экспедиция')&&hub.includes('hubWeeklyClaim'),'weekly progress must be visible and claimable in Today drawer');
-const lair=fs.readFileSync(path.join(root,'js/05d-lairwell.js'),'utf8');
 assert(lair.includes('ws-mood')&&lair.includes('_lairMood'),'selected dragon must communicate mood in plain language');
 assert(lair.includes('transform-origin:50% 100%')||css.includes('transform-origin:50% 100%'),'side dragons must be grounded by their feet on balcony anchors');
 

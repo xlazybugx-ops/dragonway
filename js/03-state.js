@@ -10,6 +10,10 @@ let S = {
   bossSeen:{}, bossKills:{}, // кодекс и реванш боссов
   a11y:{}, // contrast/large/lefthand/colorblind/motionOff/vibrationOff
   settlement:'Драконьи Земли',
+  settlementTheme:null,
+  hubBuildings:{},
+  hubBuildQueue:null,
+  hubDecorations:{},
   portalLevel:1,
   forgeLevel:3,
   chests:[],       // накопленные сундуки [{tier}]
@@ -26,7 +30,7 @@ let S = {
   marketDust:null,   // дневной лимит обмена пыли на Рынке
   milestonesClaimed:{}, // забранные коллекционные вехи
   waveBest:0,        // рекорд арены волн
-  saveVersion:3,     // схема тест-релиза 2.1
+  saveVersion:4,     // схема поселения с размещаемыми постройками
   arenaOffers:null,  // фиксированный набор соперников; не позволяет бесплатно искать выгодный ролл
   telemetry:[],      // локальный обезличенный журнал для закрытой беты
   lairLevel:1,       // уровень логова → вместимость активных драконов (ЧАСТЬ 3)

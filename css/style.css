@@ -1528,7 +1528,7 @@ body.flight-active #tabbar{transform:translateY(120%)} /* прячем в пол
 .well2.open .w2-dim{opacity:1;pointer-events:auto}
 /* стая на балконах: статично */
 .w2-scene{position:absolute;inset:0;z-index:2;transition:opacity .35s ease}
-.well2.open .w2-scene{opacity:.25;pointer-events:none}
+.well2.open .w2-scene{opacity:.62;pointer-events:none}
 .w2-d{position:absolute;transform:translate(-50%,-100%);transform-origin:50% 100%;background:none;border:none;cursor:pointer;
   width:13vw;max-width:64px;padding:0}
 .w2-d .w2d-vis{width:100%;height:8.5vh}
@@ -1648,6 +1648,11 @@ html body,html body *{font-family:var(--ui-font)!important}
 /* Парящие драконы в бою: одна система изображений с исследованием */
 .battle-fly-wrap{display:flex;align-items:center;justify-content:center;height:clamp(92px,19vw,150px)!important}
 .battle-fly-dragon{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 9px 13px rgba(0,0,0,.62))}
+.fighter{position:relative}
+.battle-vfx{position:absolute;z-index:8;left:50%;top:42%;width:min(150px,78%);height:min(150px,78%);object-fit:contain;pointer-events:none;transform:translate(-50%,-50%) scale(.55);opacity:0;animation:battleAssetFx .56s ease-out forwards}
+@keyframes battleAssetFx{0%{opacity:0;transform:translate(-50%,-50%) scale(.42) rotate(-5deg)}28%{opacity:1;transform:translate(-50%,-50%) scale(1.08) rotate(0)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.24)}}
+.fx-chip{display:inline-flex;align-items:center;gap:3px}
+.status-icon{display:block;width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.75))}
 .battle-fly-wrap.threat-1{transform:scale(.84)}
 .battle-fly-wrap.threat-2{transform:scale(1)}
 .battle-fly-wrap.threat-3{transform:scale(1.16);filter:drop-shadow(0 0 12px rgba(216,180,255,.38))}
@@ -1691,7 +1696,8 @@ html body,html body *{font-family:var(--ui-font)!important}
   .well2.open .w2-plat{top:17%;width:92vw}.well2.open .w2-hero .wh-vis{height:24vh}.well2.open .w2-menu{max-height:46%}
 }
 @media(prefers-reduced-motion:reduce){
-  #fMe .battle-fly-dragon,#fFoe .battle-fly-dragon,.fighter.cast .battle-fly-dragon,.fighter.hit .battle-fly-dragon{animation:none!important}
+  #fMe .battle-fly-dragon,#fFoe .battle-fly-dragon,.fighter.cast .battle-fly-dragon,.fighter.hit .battle-fly-dragon,.battle-vfx{animation:none!important}
+  .battle-vfx{opacity:1;transform:translate(-50%,-50%)}
 }
 .topbar .game-icon{width:17px;height:17px}.well-chip .game-icon,.ws-act .game-icon,.ws-big .game-icon{width:18px;height:18px}
 
@@ -1785,10 +1791,87 @@ html body,html body *{font-family:var(--ui-font)!important}
 #fFoe .battle-fly-wrap.threat-2{transform:scaleX(-1) scale(1)}
 #fFoe .battle-fly-wrap.threat-3{transform:scaleX(-1) scale(1.16)}
 
+/* ============ v3.1: развивающееся поселение ============ */
+body[data-view="hub"] #hub{width:min(100%,760px);height:calc(100dvh - var(--topbar-h,58px) - var(--tabbar-h,64px));overflow:hidden}
+#hubWrap{height:100%;overflow-y:auto;scrollbar-width:none;background:#17202a}
+#hubWrap::-webkit-scrollbar{display:none}
+.hub2-stage{position:relative;width:100%;min-height:100%;aspect-ratio:2/3;overflow:hidden;background:#16202a;isolation:isolate}
+.hub2-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;z-index:0}
+.hub2-stage::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(8,12,18,.35) 0,transparent 10%,transparent 83%,rgba(8,8,12,.42) 100%)}
+.hub2-title{position:sticky;top:8px;z-index:20;width:max-content;max-width:72%;margin:8px auto 0;padding:6px 13px;
+  display:flex;gap:8px;align-items:center;border:1px solid rgba(244,231,200,.38);border-radius:18px;
+  color:#fff4d0;background:rgba(20,14,12,.76);backdrop-filter:blur(7px);box-shadow:0 5px 16px rgba(0,0,0,.36)}
+.hub2-title b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hub2-plot{position:absolute;z-index:5;transform:translate(-50%,-50%);width:23%;aspect-ratio:1;border:0;border-radius:50%;
+  padding:0;background:transparent;color:#fff;cursor:pointer;touch-action:manipulation}
+.hub2-plot::before{content:"";position:absolute;inset:8%;border-radius:50%;border:2px solid transparent;transition:.2s}
+.hub2-plot.free::before{border-color:rgba(102,215,206,.72);background:rgba(36,125,111,.13);box-shadow:0 0 14px rgba(102,215,206,.25)}
+.hub2-plot.starter::before{animation:hub2Starter 1.8s ease-in-out infinite;border-color:#75e7db;background:rgba(102,215,206,.2)}
+.hub2-plot.selected::before{border:3px solid #79e9df;background:rgba(52,190,177,.26);box-shadow:0 0 22px rgba(102,215,206,.8)}
+.hub2-plot.locked{filter:grayscale(.7);opacity:.62}
+.hub2-plot img{position:absolute;left:50%;top:48%;width:58%;height:58%;object-fit:contain;transform:translate(-50%,-50%);
+  filter:drop-shadow(0 8px 7px rgba(0,0,0,.68))}
+.hub2-plot img.hub2-building-art{top:48%;width:100%;height:100%;filter:drop-shadow(0 7px 5px rgba(0,0,0,.58))}
+.hub2-plot img.hub2-construction{z-index:2;top:48%;width:100%;height:100%;opacity:.94;filter:drop-shadow(0 6px 4px rgba(0,0,0,.5))}
+.hub2-plot img.hub2-marker{width:58%;height:58%}
+.hub2-plus,.hub2-lock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;
+  width:35%;aspect-ratio:1;border-radius:50%;font-size:clamp(16px,4vw,25px);background:rgba(18,20,18,.6);color:#dffcf7}
+.hub2-level{position:absolute;right:6%;bottom:10%;padding:2px 6px;border-radius:10px;font-size:clamp(8px,1.8vw,11px);
+  font-weight:800;color:#fff3cb;background:rgba(20,12,9,.82);border:1px solid rgba(217,164,65,.6)}
+.hub2-status{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);white-space:nowrap;padding:3px 7px;border-radius:10px;
+  font-size:clamp(8px,1.7vw,11px);background:rgba(25,18,12,.9);color:#fff1c6}.hub2-status i{font-style:normal}
+.hub2-up{position:absolute;right:9%;top:7%;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;
+  color:#2a1a08;background:#e0ad42;box-shadow:0 0 0 4px rgba(224,173,66,.24);animation:hub2Up 1.8s ease-in-out infinite}
+.hub2-plot.building img.hub2-building-art,.hub2-plot.upgrading img.hub2-building-art{opacity:.52;filter:grayscale(.25) drop-shadow(0 8px 7px rgba(0,0,0,.68))}
+.hub2-plot.ready::before{border-color:#8dde72;box-shadow:0 0 20px rgba(141,222,114,.8);animation:hub2Ready 1.5s ease infinite}
+.hub2-deco{position:absolute;z-index:7;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;
+  border:1px dashed rgba(244,231,200,.64);color:#f4e7c8;background:rgba(20,14,12,.38);font-size:19px;padding:0}
+.hub2-deco.filled{border-style:solid;background:rgba(35,26,18,.72);filter:drop-shadow(0 4px 5px rgba(0,0,0,.55))}
+.hub2-vella{position:fixed;z-index:41;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  width:min(90vw,420px);display:flex;align-items:center;gap:10px;padding:9px 13px;border:1px solid rgba(217,164,65,.65);
+  border-radius:16px;color:#fff4d0;background:rgba(26,18,14,.92);box-shadow:0 8px 24px rgba(0,0,0,.48)}
+.hub2-vella b{color:#e4b554}.hub2-vella span{font-size:13px}
+.hub2-tasks-btn{position:absolute;z-index:22;right:10px;top:10px;min-height:42px;padding:7px 12px;border-radius:15px;
+  border:1px solid rgba(217,164,65,.6);color:#fff0c8;background:rgba(26,18,14,.82);font-weight:800}
+.hub2-tasks{position:fixed;z-index:48;left:50%;top:calc(62px + env(safe-area-inset-top));bottom:calc(66px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);width:min(94vw,520px);overflow-y:auto;padding:12px;border:1px solid rgba(217,164,65,.65);
+  border-radius:16px;color:#f4e7c8;background:rgba(30,21,17,.98);box-shadow:0 12px 35px rgba(0,0,0,.6)}
+.hub2-tasks header{display:flex;align-items:center;justify-content:space-between}.hub2-tasks header>b{font-size:19px;color:#f5cf78}
+.hub2-tasks header button{width:44px;height:44px;border:0;border-radius:50%;font-size:25px;color:#fff;background:rgba(255,255,255,.08)}
+.hub2-tasks section{margin-top:10px;padding:10px;border-radius:12px;background:rgba(255,255,255,.05)}
+.hub2-tasks h3{margin:0 0 7px}.hub2-tasks p{margin:5px 0;color:#d5c8b4}.hub2-tasks section>button{min-height:44px;border:0;border-radius:10px;padding:8px 12px;background:#d9a441;color:#24170b;font-weight:800}
+.hub2-sheet{position:fixed;z-index:45;left:50%;bottom:calc(66px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  width:min(94vw,520px);max-height:43vh;overflow-y:auto;padding:14px;border:1px solid rgba(217,164,65,.64);border-radius:18px 18px 10px 10px;
+  color:#f4e7c8;background:linear-gradient(180deg,rgba(42,29,23,.98),rgba(24,17,14,.99));box-shadow:0 -8px 28px rgba(0,0,0,.48)}
+.hub2-sheet>b{display:block;font-size:18px;color:#f5cf78}.hub2-sheet p{margin:7px 0 10px;line-height:1.35}
+.hub2-sheet button{min-height:48px;border:1px solid rgba(217,164,65,.65);border-radius:12px;padding:8px 12px;
+  color:#24170b;background:#d9a441;font-weight:800}.hub2-sheet button.ghost{color:#f4e7c8;background:transparent}
+.hub2-sheet button:disabled{filter:grayscale(1);opacity:.48}
+.hub2-sheet-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hub2-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.hub2-choices button{display:flex;align-items:center;gap:8px;text-align:left;color:#f4e7c8;background:rgba(255,255,255,.05)}
+.hub2-choices img{width:42px;height:42px;object-fit:contain}.hub2-choices span{display:flex;flex-direction:column}.hub2-choices small{opacity:.72}
+.hub2-locks{display:flex;flex-direction:column;gap:4px;margin:8px 0;color:#bdb4a5}
+@keyframes hub2Starter{0%,100%{box-shadow:0 0 8px rgba(102,215,206,.3)}50%{box-shadow:0 0 25px rgba(102,215,206,.95)}}
+@keyframes hub2Up{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes hub2Ready{0%,100%{filter:none}50%{filter:brightness(1.25)}}
+@media(max-width:430px){
+  body[data-view="hub"] #hub{width:100%;height:calc(100dvh - 56px - 62px)}
+  .hub2-stage{min-height:max(100%,760px)}.hub2-plot{width:25%}.hub2-deco{width:36px;height:36px;font-size:16px}
+  .hub2-title{font-size:13px}.hub2-sheet{max-height:48vh;padding:12px}.hub2-choices{grid-template-columns:1fr}
+}
+@media(orientation:landscape){
+  body[data-view="hub"] #hub{width:min(66vh,760px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .hub2-plot.starter::before,.hub2-up,.hub2-plot.ready::before{animation:none!important}
+}
+
 /* ============ v2.3.6: ориентационные макеты экранов ============ */
-  .start-screen[data-step="welcome"]{background:#1a1410 url('../images/screen_title_bg.webp?v=300') center/cover no-repeat}
-.start-screen[data-step="dragon-pick"],.start-screen[data-step="dragon-name"]{background:#1a1410 url('../images/screen_character_select_bg.webp?v=300') center/cover no-repeat}
-.start-screen[data-step="settlement-name"]{background:#1a1410 url('../images/screen_settlement_name_bg.webp?v=300') center/cover no-repeat}
+  .start-screen[data-step="welcome"]{background:#1a1410 url('../images/screen_title_bg.webp?v=311') center/cover no-repeat}
+.start-screen[data-step="dragon-pick"],.start-screen[data-step="dragon-name"]{background:#1a1410 url('../images/screen_character_select_bg.webp?v=311') center/cover no-repeat}
+.start-screen[data-step="settlement-name"]{background:#1a1410 url('../images/screen_settlement_name_bg.webp?v=311') center/cover no-repeat}
 .start-screen[data-step] .start-bg{display:none}
 .start-screen[data-step] .start-content{background:linear-gradient(180deg,rgba(20,12,8,.32),rgba(20,12,8,.72))}
 

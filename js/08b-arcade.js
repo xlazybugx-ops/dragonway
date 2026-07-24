@@ -11,6 +11,21 @@ function rand(a,b){ return a+Math.random()*(b-a); }
 function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
 function clampN(v,a,b){ return Math.max(a,Math.min(b,v)); }
 
+const AR_ASSET_CACHE={};
+const AR_ELEMENT_VFX={fire:'fx_fire_hit',frost:'fx_frost_hit',storm:'fx_storm_hit',shade:'fx_shadow_drain',venom:'fx_slash'};
+function arcAssetImage(path){
+  if(!AR_ASSET_CACHE[path]){const img=new Image();img.src=path;AR_ASSET_CACHE[path]=img;}
+  return AR_ASSET_CACHE[path];
+}
+function arcStatusImage(id){return arcAssetImage(`images/ui/status/status_${id}.webp`);}
+function arcDrawStatusIcon(ctx,id,x,y,size){
+  const img=arcStatusImage(id);if(img.complete&&img.naturalWidth)ctx.drawImage(img,x-size/2,y-size/2,size,size);
+}
+function arcAssetFx(id,x,y,size){
+  if(!arc||!id)return;
+  arc.assetFx.push({id,x,y,size:size||120,t:0,ttl:.52});
+}
+
 function physiqueOf(sp){ if(!sp) return 'strazh';
   if(sp.spd<=6) return 'koloss'; if(sp.spd>=11 && sp.def<=8) return 'vihr'; return 'strazh'; }
 const AR_PHYS={ koloss:{spd:150,atkCd:1.25,dashCd:5,iframe:0.26}, vihr:{spd:235,atkCd:0.8,dashCd:3,iframe:0.42}, strazh:{spd:190,atkCd:1.0,dashCd:4,iframe:0.34} };
@@ -158,7 +173,7 @@ function startArcadeFight(dragon, ent, opts){
   arc={fsA,ctx,cv,resize,WORLD,P,enemies,dragon,ent,opts,isDen,isTrial,bgImg,
     trial:isTrial?{mech:trialDef.mech,t:0,boss:enemies[0]}:null,
     stat:{taken:0,dealt:0,dur:0,maxHit:0}, kiteT:0, chaseWarned:false,
-    proj:[],eproj:[],hazards:[],zones:[],fx:[],floats:[],parts:[],cam:{x:0,y:0},shake:0,over:false,raf:0,last:performance.now()};
+    proj:[],eproj:[],hazards:[],zones:[],fx:[],assetFx:[],floats:[],parts:[],cam:{x:0,y:0},shake:0,over:false,raf:0,last:performance.now()};
 
   buildArcAbilities();
   bindArcInput();
@@ -225,7 +240,7 @@ function arcUse(i){ if(!arc||arc.over)return; const P=arc.P, sk=P.kit[i]; if(!sk
   else if(sk.kind==='proj'){ const a=Math.atan2(t.y-P.y,t.x-P.x);
     arc.proj.push({x:P.x,y:P.y,vx:Math.cos(a)*sk.pspd,vy:Math.sin(a)*sk.pspd,r:9,sk,life:1.4}); }
   else if(sk.kind==='self'){
-    if(sk.shieldMul){P.shield=Math.round(P.maxHp*sk.shieldMul);arcBurst(P.x,P.y,'#bcdcff',16);arcWarn('щит!','#bcdcff');}
+    if(sk.shieldMul){P.shield=Math.round(P.maxHp*sk.shieldMul);arcBurst(P.x,P.y,'#bcdcff',16);arcAssetFx('fx_block',P.x,P.y,120);arcWarn('щит!','#bcdcff');}
     if(sk.haste){P.haste=sk.haste.dur;P.hasteAtk=sk.haste.atk;P.hasteSpd=sk.haste.spd;arcWarn('ускорение!','#d8b4ff');}
     if(sk.stealth){P.iframe=Math.max(P.iframe,sk.iframe);P.stealth=sk.stealth;arcWarn('покров тьмы','#9a7bd0');}
     if(sk.aoe){ arcZoneFx(P.x,P.y,sk.aoe,'#ff8a3d'); for(const e of arc.enemies){ if(e.dead)continue; if(dist(P,e)<=sk.aoe){ arcHitE(e,sk.mul,sk);
@@ -264,10 +279,11 @@ function arcHitE(e,mul,sk){ const P=arc.P; if(!e||e.dead)return;
   let d=ar_mitig(raw*rand(0.9,1.1),e.def);
   if(isCrit)d=Math.round(d*1.5); // REWORK: криты игрока (баф забега «Меткость»)
   e.hp-=d; e.flash=0.12; arcBurst(e.x,e.y,'#ffca7a',6); arc.shake=Math.min(arc.shake+1.5,7);
+  arcAssetFx(sk&&sk.kind==='melee'?'fx_slash':AR_ELEMENT_VFX[P.el],e.x,e.y,118);
   arc.stat.dealt+=d;
   arc.floats.push({x:e.x,y:e.y-e.r-6,txt:(isCrit?'💥':'')+d,col:isCrit?'#ffd36b':'#fff',t:0,life:0.85});
   if(P.vamp){const hv=Math.round(d*P.vamp);if(hv>0){P.hp=Math.min(P.maxHp,P.hp+hv);}}
-  if(sk&&sk.life){const heal=Math.round(d*sk.life);P.hp=Math.min(P.maxHp,P.hp+heal);arc.floats.push({x:P.x,y:P.y-30,txt:'+'+heal,col:'#7CFF9E',t:0,life:0.9});}
+  if(sk&&sk.life){const heal=Math.round(d*sk.life);P.hp=Math.min(P.maxHp,P.hp+heal);arcAssetFx('fx_shadow_drain',P.x,P.y,112);arc.floats.push({x:P.x,y:P.y-30,txt:'+'+heal,col:'#7CFF9E',t:0,life:0.9});}
   if(sk&&sk.burn)e.burns.push({dps:P.atk*sk.burn.mul,t:sk.burn.dur});
   if(sk&&sk.poison)e.poisons.push({dps:P.atk*sk.poison.mul,t:sk.poison.dur});
   if(sk&&sk.slow){e.slow=Math.max(e.slow,sk.slow.dur);e.slowMul=sk.slow.mul;}
@@ -287,7 +303,7 @@ function arcKillE(e){ if(e.dead)return; e.dead=true;e.hp=0; arcBurst(e.x,e.y,e.c
 }
 function arcHitP(rawDmg,el){ const P=arc.P; if(P.iframe>0)return;
   let dmg=ar_mitig(rawDmg*ar_elMul(el,P.el), P.def);
-  if(P.shield>0){const ab=Math.min(P.shield,dmg);P.shield-=ab;dmg-=ab;arc.floats.push({x:P.x,y:P.y-P.r-6,txt:'🛡'+ab,col:'#bcdcff',t:0,life:0.9});if(dmg<=0){P.iframe=0.28;return;}}
+  if(P.shield>0){const ab=Math.min(P.shield,dmg);P.shield-=ab;dmg-=ab;arcAssetFx('fx_block',P.x,P.y,118);arc.floats.push({x:P.x,y:P.y-P.r-6,txt:'🛡'+ab,col:'#bcdcff',t:0,life:0.9});if(dmg<=0){P.iframe=0.28;return;}}
   arc.stat.taken+=dmg; if(dmg>arc.stat.maxHit)arc.stat.maxHit=dmg; // REWORK: статистика для разбора поражения
   P.hp-=dmg;P.iframe=0.5;P.hurt=0.35;arc.shake=Math.min(arc.shake+5,11);arcBurst(P.x,P.y,'#ff5d52',12);
   arc.floats.push({x:P.x,y:P.y-P.r-6,txt:'-'+dmg,col:'#ff8a8a',t:0,life:0.9});
@@ -418,6 +434,7 @@ function arcUpdate(dt){ const P=arc.P,WORLD=arc.WORLD;
   for(const p of arc.parts){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=0.92;p.vy*=0.92;} arc.parts=arc.parts.filter(p=>p.t<p.life);
   arc.shake*=0.86;
   for(const z of arc.fx)z.t+=dt; arc.fx=arc.fx.filter(z=>z.t<z.ttl);
+  for(const z of arc.assetFx)z.t+=dt; arc.assetFx=arc.assetFx.filter(z=>z.t<z.ttl);
   arc.cam.x=clampN(P.x-innerWidth/2,0,Math.max(0,WORLD.w-innerWidth));
   arc.cam.y=clampN(P.y-innerHeight/2,0,Math.max(0,WORLD.h-innerHeight));
   arcHUD();
@@ -445,6 +462,12 @@ function arcRender(){ const ctx=arc.ctx,P=arc.P,cam=arc.cam;
     if(z.ring){ ctx.globalAlpha=Math.max(0,a);ctx.lineWidth=4;ctx.strokeStyle=z.col;ctx.stroke();ctx.globalAlpha=1; }
     else { ctx.globalAlpha=Math.max(0,a*0.28);ctx.fillStyle=z.col;ctx.fill();
       ctx.globalAlpha=Math.max(0,a*0.8);ctx.lineWidth=3;ctx.strokeStyle=z.col;ctx.stroke();ctx.globalAlpha=1; } }
+  for(const z of arc.assetFx){
+    const img=arcAssetImage(`images/effects/combat/${z.id}.webp`);
+    if(!img.complete||!img.naturalWidth)continue;
+    const k=z.t/z.ttl,a=k<.25?k/.25:Math.max(0,1-(k-.25)/.75),s=z.size*(.72+.42*Math.min(1,k/.35));
+    ctx.globalAlpha=a;ctx.drawImage(img,z.x-s/2,z.y-s/2,s,s);ctx.globalAlpha=1;
+  }
   // ЧАСТЬ 4: линия атаки к текущей цели — исключает двусмысленность одиночного удара
   if(P.target&&!P.target.dead){ ctx.save();ctx.setLineDash([4,9]);ctx.lineWidth=2;ctx.strokeStyle='rgba(255,211,107,.32)';
     ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.lineTo(P.target.x,P.target.y);ctx.stroke();ctx.restore(); }
@@ -472,9 +495,9 @@ function arcRender(){ const ctx=arc.ctx,P=arc.P,cam=arc.cam;
     if(e.trial){ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffd36b';ctx.fillText('☠️',e.x,e.y-e.r-18);}
     if(e.role==='leader'&&!e.trial){ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffd36b';ctx.fillText('👑',e.x,e.y-e.r-16);}
     const bw=e.r*2.2;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(e.x-bw/2,e.y-e.r-13,bw,4);ctx.fillStyle='#ff5d52';ctx.fillRect(e.x-bw/2,e.y-e.r-13,bw*Math.max(0,e.hp/e.maxHp),4);
-    if(e.burns.length){ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('🔥',e.x-10,e.y-e.r-18);}
-    if(e.poisons.length){ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('🟢',e.x,e.y-e.r-18);}
-    if(e.slow>0){ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('❄️',e.x+10,e.y-e.r-18);} }
+    if(e.burns.length)arcDrawStatusIcon(ctx,'burn',e.x-12,e.y-e.r-20,18);
+    if(e.poisons.length)arcDrawStatusIcon(ctx,'poison',e.x,e.y-e.r-20,18);
+    if(e.slow>0)arcDrawStatusIcon(ctx,'chill',e.x+12,e.y-e.r-20,18); }
   // ПРЕДПРОСМОТР способности до подтверждения: траектория, зона, задетые цели, счётчик
   const _aim=arcPreviewInfo();
   if(_aim){
@@ -500,8 +523,8 @@ function arcRender(){ const ctx=arc.ctx,P=arc.P,cam=arc.cam;
   }
   const blink=P.iframe>0&&Math.floor(P.iframe*20)%2===0;
   if(!blink){ ctx.globalAlpha=P.stealth>0?0.5:1; arcPlayerSprite(P); ctx.globalAlpha=1;
-    if(P.shield>0){ctx.beginPath();ctx.arc(P.x,P.y,P.r+7,0,6.283);ctx.lineWidth=3;ctx.strokeStyle='rgba(180,220,255,.8)';ctx.stroke();}
-    if(P.haste>0){ctx.beginPath();ctx.arc(P.x,P.y,P.r+11,0,6.283);ctx.lineWidth=2;ctx.strokeStyle='rgba(216,180,255,.7)';ctx.stroke();}
+    if(P.shield>0){ctx.beginPath();ctx.arc(P.x,P.y,P.r+7,0,6.283);ctx.lineWidth=3;ctx.strokeStyle='rgba(180,220,255,.8)';ctx.stroke();arcDrawStatusIcon(ctx,'shield',P.x-12,P.y-P.r-20,18);}
+    if(P.haste>0){ctx.beginPath();ctx.arc(P.x,P.y,P.r+11,0,6.283);ctx.lineWidth=2;ctx.strokeStyle='rgba(216,180,255,.7)';ctx.stroke();arcDrawStatusIcon(ctx,'speed_up',P.x+12,P.y-P.r-20,18);}
     ctx.save();ctx.translate(P.x,P.y);ctx.rotate(P.facing);ctx.beginPath();ctx.moveTo(P.r-2,0);ctx.lineTo(P.r+12,-5);ctx.lineTo(P.r+12,5);ctx.closePath();ctx.fillStyle='#ffe08a';ctx.fill();ctx.restore(); }
   for(const p of arc.parts){ctx.globalAlpha=Math.max(0,1-p.t/p.life);ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill();}ctx.globalAlpha=1;
   ctx.textAlign='center';ctx.font='bold 16px system-ui';

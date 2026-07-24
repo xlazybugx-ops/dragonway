@@ -16,7 +16,7 @@ function exploreProgress(){ if(!flight)return; if(!S.worldExplored)S.worldExplor
   const k=worldRegionKey(), step=Math.round((((typeof GB!=='undefined'&&GB.World&&GB.World.exploreStep)||4))*roleB);
   const prev=S.worldExplored[k]||0, cur=Math.min(100,prev+step); S.worldExplored[k]=cur;
   const ms=(typeof GB!=='undefined'&&GB.World&&GB.World.exploreMilestones)||[25,50,100];
-  for(let i=0;i<ms.length;i++){ if(prev<ms[i]&&cur>=ms[i]){ const g=((GB.World&&GB.World.exploreRewardGold)||60)*(i+1); S.gold+=g; if(typeof toast==='function')toast(`🗺️ ${worldRegionName()} исследован на ${ms[i]}%! +${g}🪙`); } } }
+  for(let i=0;i<ms.length;i++){ if(prev<ms[i]&&cur>=ms[i]){ const g=((GB.World&&GB.World.exploreRewardGold)||60)*(i+1); const du=i*2; S.gold+=g; if(du)S.dust+=du; if(typeof toast==='function')toast(`🗺️ ${worldRegionName()} исследован на ${ms[i]}%! +${g}🪙${du?` +${du}✦`:''}`); } } }
 function grantWorldReward(reward){ const f=flight; if(!f)return '…'; const R=f.region; let txt='';
   const rm=(f.run&&f.run.rewardMul)||1; // REWORK: риск выбранного пути ↔ награда
   if(reward==='gold'){const g=Math.round(rnd(R.gold[0],R.gold[1])*rm);S.gold+=g;f.stats.gold+=g;txt='🪙 +'+g;}
@@ -43,12 +43,12 @@ const _flightDecorCache={};
 const _flightFxCache={};
 const _flightPoiCache={};
 function flightFxImage(name){
-  const src=`images/effects/${name}.webp?v=300`;
+  const src=`images/effects/${name}.webp?v=311`;
   if(_flightFxCache[src])return _flightFxCache[src];
   const img=new Image();img.src=src;_flightFxCache[src]=img;return img;
 }
 function flightPoiImage(key,index){
-  const src=`images/poi/poi_${key}_${String(index).padStart(2,'0')}.webp?v=300`;
+  const src=`images/poi/poi_${key}_${String(index).padStart(2,'0')}.webp?v=311`;
   if(_flightPoiCache[src])return _flightPoiCache[src];
   const img=new Image();img.src=src;_flightPoiCache[src]=img;return img;
 }
@@ -56,13 +56,13 @@ function flightDenImage(key,index){
   const cacheKey=`${key}:${index}`;
   if(_denImgCache[cacheKey])return _denImgCache[cacheKey];
   const img=new Image();
-  img.src=`images/dens/den_${key}_${String(index).padStart(2,'0')}.webp?v=300`;
-  img.onerror=()=>{img.onerror=null;img.src=`images/den_${key}.png`;};
+  img.src=`images/dens/den_${key}_${String(index).padStart(2,'0')}.webp?v=311`;
+  img.onerror=function(){ this.onerror=function(){ this.onerror=null; }; this.src=`images/den_${key}.webp?v=311`; };
   _denImgCache[cacheKey]=img;
   return img;
 }
 function flightDecorImage(key,index){
-  const n=String(index).padStart(2,'0'), src=`images/decor/${key}/decor_${key}_${n}.webp?v=300`;
+  const n=String(index).padStart(2,'0'), src=`images/decor/${key}/decor_${key}_${n}.webp?v=311`;
   if(_flightDecorCache[src])return _flightDecorCache[src];
   const img=new Image(); img.src=src; _flightDecorCache[src]=img; return img;
 }
@@ -79,7 +79,7 @@ function flyArtKey(region){ return FLY_ART_KEY[region.worldId]||region.scene; }
 function loadFlyMap(region,tier,cb){
   // Полёт использует отдельную ортографическую карту сверху; панорамный biome_* остаётся обложкой мира.
   const depth=Math.max(1,Math.min(3,tier||region.biomeN||1));
-  const src=`images/textures/texture_${flyArtKey(region)}_${depth}.webp?v=300`;
+  const src=`images/textures/texture_${flyArtKey(region)}_${depth}.webp?v=311`;
   const cached=_flyMapCache[src];
   if(cached){
     if(cached.complete&&cached.naturalWidth) cb(cached);
@@ -631,7 +631,7 @@ function renderFlight(){
     // REWORK: у каждого исхода видно ожидаемую ценность — осознанное решение, а не лотерея
     const riskTag=o=>{const rr=(typeof REWARD_RISK!=='undefined')&&REWARD_RISK[o.reward];
       return rr&&o.reward!=='none'?`<span style="opacity:.65;font-size:11px"> · ${rr.v}</span>`:'';};
-    const poiSrc=`images/poi/poi_${flyArtKey(f.region)}_${String(item.poiN||1).padStart(2,'0')}.webp?v=300`;
+    const poiSrc=`images/poi/poi_${flyArtKey(f.region)}_${String(item.poiN||1).padStart(2,'0')}.webp?v=311`;
     encEl.innerHTML=`<div class="enc-card"><img class="enc-poi" src="${poiSrc}" alt=""><div class="enc-name">${ev.name}</div><div class="enc-sub">${ev.q}</div>`
       + ev.opts.map((o,i)=>`<button ${i?'class="ghost"':''} data-c="${i}">${o.t}${riskTag(o)}</button>`).join('') + `</div>`;
     encEl.querySelectorAll('[data-c]').forEach(btn=>btn.onpointerdown=()=>{
